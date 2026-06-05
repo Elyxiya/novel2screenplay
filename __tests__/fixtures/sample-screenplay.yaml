@@ -1,0 +1,72 @@
+formatVersion: novel2screenplay-v1
+metadata:
+  title: 测试剧本
+  author: 测试作者
+  sourceNovel: 测试小说
+  version: "1.0.0"
+  createdAt: "2026-06-05T10:00:00Z"
+  totalScenes: 2
+  totalCharacters: 3
+  totalLocations: 2
+
+characters:
+  - characterId: char_01
+    name: 林墨
+    aliases: [小林]
+    personalityTags: [冷静]
+    description: 主角
+    isMajor: true
+  - characterId: char_02
+    name: 苏晚
+    aliases: [晚儿]
+    personalityTags: [温柔]
+    description: 女主角
+    isMajor: true
+  - characterId: char_03
+    name: 老者
+    aliases: []
+    personalityTags: [神秘]
+    description: 神秘老者
+    isMajor: false
+
+locations:
+  - locationId: loc_01
+    name: 青云山顶
+    type: exterior
+    description: 险峻山峰
+  - locationId: loc_02
+    name: 山腰草庐
+    type: interior
+    description: 简陋竹屋
+
+scenes:
+  - sceneNumber: 1
+    slugline: 外景. 青云山顶 - 日
+    timeOfDay: morning
+    locationId: loc_01
+    characterIds: [char_01, char_02]
+    summary: 林墨与苏晚在山顶重逢
+    content:
+      - type: action
+        description: 云雾散开，露出林墨的身影。
+        sourceRefs: []
+      - type: dialogue
+        characterId: char_02
+        line: 你果然在这里。
+        direction: 微笑
+        sourceRefs: []
+
+  - sceneNumber: 2
+    slugline: 内景. 山腰草庐 - 夜
+    timeOfDay: night
+    locationId: loc_02
+    characterIds: [char_01, char_03]
+    summary: 老者深夜来访
+    content:
+      - type: action
+        description: 油灯昏黄。门外传来竹杖敲击声。
+        sourceRefs: []
+      - type: dialogue
+        characterId: char_03
+        line: 三日之后便是你的劫数。
+        sourceRefs: []

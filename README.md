@@ -1,4 +1,4 @@
-# Novel2Screenplay (小说转剧本)
+﻿# Novel2Screenplay (小说转剧本)
 
 基于 AI 的小说转剧本工具，利用大语言模型将小说章节自动转换为标准剧本格式（YAML）。
 

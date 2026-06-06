@@ -2,6 +2,7 @@ import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as SEGMENT_PROMPT } from '../llm/prompts/segment';
 import { ContextManager, MAX_SEGMENT_TOKENS } from './ContextManager';
 import type { Phase1Output } from './Phase1Analyzer';
+import { safeJsonParse } from '../utils/safe-json';
 
 /** A scene boundary detected by Phase 2 */
 export interface SceneBoundary {
@@ -67,8 +68,8 @@ export class Phase2Segmenter {
         });
 
         rawResponses.push(response.content);
-        const parsed = JSON.parse(response.content);
-        const scenes = Array.isArray(parsed) ? parsed : parsed.scenes || [];
+        const parsed = safeJsonParse(response.content) as any;
+        const scenes = Array.isArray(parsed) ? parsed : (parsed.scenes || []);
 
         // Calculate character offsets for the chapter text
         const charOffsets = this.calculateCharOffsets(chapter.text);

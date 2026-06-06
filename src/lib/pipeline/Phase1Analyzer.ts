@@ -1,6 +1,7 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as ANALYZE_PROMPT } from '../llm/prompts/analyze';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
+import { safeJsonParse } from '../utils/safe-json';
 
 /** Raw character extracted by Phase 1 */
 export interface RawCharacter {
@@ -71,7 +72,7 @@ export class Phase1Analyzer {
           maxTokens: 4096,
         });
 
-        const parsed = JSON.parse(response.content);
+        const parsed = safeJsonParse(response.content) as any;
         return {
           characters: (parsed.characters || []).map((c: RawCharacter, i: number) => ({
             ...c,

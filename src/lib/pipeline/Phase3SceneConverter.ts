@@ -5,6 +5,7 @@ import type { SceneBoundary } from './Phase2Segmenter';
 import type { RawCharacter, RawLocation } from './Phase1Analyzer';
 import { TokenBucket } from '../llm/rate-limiter';
 import type { JobStore } from '../store/job-store';
+import { safeJsonParse } from '../utils/safe-json';
 
 /** A converted scene from Phase 3 */
 export interface Phase3Output {
@@ -151,7 +152,7 @@ export class Phase3SceneConverter {
               signal: abortSignal,
             });
 
-            const parsed = JSON.parse(response.content);
+            const parsed = safeJsonParse(response.content) as any;
 
             // Map character names to IDs (temporary - Phase 4 will resolve)
             const charIdMap = this.buildCharIdMap(characters);

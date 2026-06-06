@@ -1,0 +1,173 @@
+import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
+import { getEncoding } from 'tiktoken';
+
+/**
+ * Abstract base class for HTTP-based LLM providers.
+ * Provides shared logic: fetch with timeout, retry, token estimation.
+ */
+export abstract class BaseProvider implements LLMProvider {
+  abstract readonly name: string;
+  abstract readonly modelId: string;
+  abstract readonly description: string;
+  abstract readonly contextWindow: number;
+  protected abstract readonly baseUrl: string;
+  protected abstract readonly apiKey: string;
+
+  supportsJSONMode(): boolean {
+    return true;
+  }
+
+  estimateTokens(text: string): number {
+    try {
+      const encoding = getEncoding('cl100k_base');
+      return encoding.encode(text).length;
+    } catch {
+      // Fallback: ~1.3 tokens per Chinese character
+      return Math.ceil(text.length * 1.3);
+    }
+  }
+
+  /**
+   * Fetch with timeout and retry logic.
+   * - Timeout: 30s via AbortSignal
+   * - Retry: up to 2 attempts with exponential backoff (1s, 3s)
+   */
+  protected async fetchWithRetry(
+    path: string,
+    body: unknown,
+    signal?: AbortSignal,
+    retries = 2,
+  ): Promise<Response> {
+    const url = `${this.baseUrl}${path}`;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      // Create a timeout controller for this attempt
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), 30_000);
+
+      // Combine external signal with timeout signal
+      const combinedSignal = signal
+        ? combineAbortSignals(signal, timeoutController.signal)
+        : timeoutController.signal;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: combinedSignal,
+        });
+
+        if (response.status === 429 && attempt < retries) {
+          // Rate limited: backoff and retry
+          const backoffMs = attempt === 0 ? 1000 : 3000;
+          await delay(backoffMs);
+          continue;
+        }
+
+        if (!response.ok && attempt < retries) {
+          const backoffMs = attempt === 0 ? 1000 : 3000;
+          await delay(backoffMs);
+          continue;
+        }
+
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (attempt < retries) {
+          const backoffMs = attempt === 0 ? 1000 : 3000;
+          await delay(backoffMs);
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    throw new Error(`Failed after ${retries + 1} attempts`);
+  }
+
+  /** Shared streaming fetch */
+  protected async *streamFetch(
+    path: string,
+    body: unknown,
+    signal?: AbortSignal,
+  ): AsyncGenerator<LLMStreamChunk> {
+    const url = `${this.baseUrl}${path}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({ ...body, stream: true }),
+      signal,
+    });
+
+    if (!response.ok) {
+      yield { type: 'error', error: `HTTP ${response.status}: ${response.statusText}` };
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      yield { type: 'error', error: 'No response body' };
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') {
+            yield { type: 'done' };
+            return;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content || '';
+            if (content) {
+              yield { type: 'text', content };
+            }
+          } catch {
+            // Skip unparseable chunks
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    yield { type: 'done' };
+  }
+}
+
+/** Combine two AbortSignals into one */
+function combineAbortSignals(s1: AbortSignal, s2: AbortSignal): AbortSignal {
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  s1.addEventListener('abort', onAbort, { once: true });
+  s2.addEventListener('abort', onAbort, { once: true });
+  if (s1.aborted || s2.aborted) controller.abort();
+  return controller.signal;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

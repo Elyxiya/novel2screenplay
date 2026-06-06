@@ -148,7 +148,7 @@ export class Phase3SceneConverter {
             const response = await this.provider.chat(messages, {
               responseFormat: 'json_object',
               temperature: 0.5,
-              maxTokens: 2048,
+              maxTokens: 8192,
               signal: abortSignal,
             });
 
@@ -204,6 +204,16 @@ export class Phase3SceneConverter {
               throw err;
             }
             lastError = err as Error;
+            // Log the error for debugging (response preview if available)
+            const errMsg = (err as Error).message;
+            jobStore.update(jobId, (job) => ({
+              ...job,
+              logs: [...job.logs, {
+                timestamp: Date.now(),
+                level: 'warn' as const,
+                message: `场景 #${scene.sceneIndex} 尝试 ${attempt + 1}/3 失败: ${errMsg.slice(0, 200)}`,
+              }],
+            }));
             await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
           }
         }

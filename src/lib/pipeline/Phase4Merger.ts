@@ -238,7 +238,7 @@ export class Phase4Merger {
     for (const scene of scenes) {
       let sceneWords = 0;
       for (const block of scene.content) {
-        const text = block.type === 'dialogue' ? block.line : block.description || '';
+        const text = block.type === 'dialogue' ? (block.line ?? '') : (block.description ?? '');
         const wordCount = text.length;
         totalWords += wordCount;
         sceneWords += wordCount;

@@ -23,9 +23,7 @@ export function validateScreenplay(data: unknown): ValidationResult {
   if (!parsed.success) {
     return {
       valid: false,
-      errors: parsed.error.errors.map(
-        (e) => `${e.path.join('.')}: ${e.message}`,
-      ),
+      errors: [parsed.error.message],
       warnings: [],
     };
   }

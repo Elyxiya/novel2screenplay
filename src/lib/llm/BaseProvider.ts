@@ -1,5 +1,5 @@
 import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
-import { getEncoding } from 'tiktoken';
+import { get_encoding } from 'tiktoken';
 
 /**
  * Abstract base class for HTTP-based LLM providers.
@@ -13,13 +13,16 @@ export abstract class BaseProvider implements LLMProvider {
   protected abstract readonly baseUrl: string;
   protected abstract readonly apiKey: string;
 
+  abstract chat(messages: LLMMessage[], options?: LLMChatOptions): Promise<LLMChatResponse>;
+  abstract chatStream(messages: LLMMessage[], options?: LLMChatOptions): AsyncGenerator<LLMStreamChunk>;
+
   supportsJSONMode(): boolean {
     return true;
   }
 
   estimateTokens(text: string): number {
     try {
-      const encoding = getEncoding('cl100k_base');
+      const encoding = get_encoding('cl100k_base');
       return encoding.encode(text).length;
     } catch {
       // Fallback: ~1.3 tokens per Chinese character
@@ -94,7 +97,7 @@ export abstract class BaseProvider implements LLMProvider {
   /** Shared streaming fetch */
   protected async *streamFetch(
     path: string,
-    body: unknown,
+    body: Record<string, unknown>,
     signal?: AbortSignal,
   ): AsyncGenerator<LLMStreamChunk> {
     const url = `${this.baseUrl}${path}`;

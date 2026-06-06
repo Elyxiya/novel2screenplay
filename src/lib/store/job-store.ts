@@ -106,5 +106,17 @@ export class JobStore {
   }
 }
 
-/** Singleton store */
-export const jobStore = new JobStore();
+/** Global singleton — survives Next.js hot-reload by attaching to globalThis */
+const GLOBAL_KEY = '__novel2screenplay_jobStore';
+
+function getGlobalStore(): JobStore {
+  if (typeof globalThis !== 'undefined') {
+    if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
+      (globalThis as Record<string, unknown>)[GLOBAL_KEY] = new JobStore();
+    }
+    return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as JobStore;
+  }
+  return new JobStore();
+}
+
+export const jobStore = getGlobalStore();

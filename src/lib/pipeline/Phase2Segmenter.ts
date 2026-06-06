@@ -42,7 +42,7 @@ export class Phase2Segmenter {
       .join('、');
 
     for (const chapter of chapters) {
-      const truncatedText = this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
+      const truncatedText = await this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
 
       const messages: LLMMessage[] = [
         { role: 'system', content: SEGMENT_PROMPT },
@@ -90,7 +90,7 @@ export class Phase2Segmenter {
       } catch {
         // Fallback: split by empty lines
         rawResponses.push('Fallback: empty line split');
-        const fallbackScenes = this.fallbackSplit(chapter);
+        const fallbackScenes = await this.fallbackSplit(chapter);
         for (const fs of fallbackScenes) {
           allScenes.push(fs);
         }
@@ -107,10 +107,10 @@ export class Phase2Segmenter {
   /**
    * Fallback: split by empty lines and sentence boundaries.
    */
-  private fallbackSplit(chapter: {
+  private async fallbackSplit(chapter: {
     index: number;
     text: string;
-  }): SceneBoundary[] {
+  }): Promise<SceneBoundary[]> {
     const scenes: SceneBoundary[] = [];
     const sections = chapter.text.split(/\n\n+/);
     const charOffsets = this.calculateCharOffsets(chapter.text);
@@ -123,7 +123,7 @@ export class Phase2Segmenter {
       if (section.trim().length === 0) continue;
 
       // Check if too long ( >1500 tokens)
-      const tokenCount = this.ctxManager.countTokens(section);
+      const tokenCount = await this.ctxManager.countTokens(section);
       if (tokenCount > 1500) {
         // Split by sentence boundaries
         const sentences = section.split(/(?<=[。！？\n])/);

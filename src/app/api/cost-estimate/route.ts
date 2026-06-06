@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (!target && chars) { const n = parseInt(chars, 10); if (isNaN(n) || n <= 0) return NextResponse.json({ error: '无效字数' }, { status: 400 }); target = '字'.repeat(n); }
   if (!target) return NextResponse.json({ error: '提供 text 或 chars 参数' }, { status: 400 });
 
-  const tokens = ctx.countTokens(target);
+  const tokens = await ctx.countTokens(target);
   const inputTokens = tokens;
   const outputTokens = Math.ceil(tokens * 0.3);
   const costCNY = (inputTokens / 1_000_000) + (outputTokens / 1_000_000) * 2;

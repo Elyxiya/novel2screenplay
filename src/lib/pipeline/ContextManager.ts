@@ -1,62 +1,46 @@
-import { get_encoding } from 'tiktoken';
-
 export const MAX_SCENE_TOKENS = 1500;
 export const MAX_ANALYSIS_TOKENS = 30000;
 export const MAX_SEGMENT_TOKENS = 8000;
 
-const decoder = new TextDecoder();
+/** Lazy tiktoken loader — avoids Missing tiktoken_bg.wasm at import time */
+async function countTokens(text: string): Promise<number | null> {
+  try {
+    const { get_encoding } = await import('tiktoken') as typeof import('tiktoken');
+    const enc = get_encoding('cl100k_base');
+    const count = enc.encode(text).length;
+    enc.free();
+    return count;
+  } catch { return null; }
+}
 
 export class ContextManager {
-  private encoding: ReturnType<typeof get_encoding> | null = null;
-
-  private getEnc(): ReturnType<typeof get_encoding> {
-    if (!this.encoding) {
-      try { this.encoding = get_encoding('cl100k_base'); }
-      catch { return null as unknown as ReturnType<typeof get_encoding>; }
-    }
-    return this.encoding;
+  async countTokens(text: string): Promise<number> {
+    const r = await countTokens(text);
+    return r ?? Math.ceil(text.length * 1.3);
   }
 
-  countTokens(text: string): number {
-    const enc = this.getEnc();
-    if (enc) return enc.encode(text).length;
-    return Math.ceil(text.length * 1.3);
+  async truncateToTokens(text: string, maxTokens: number): Promise<string> {
+    const r = await countTokens(text);
+    if (r === null || r <= maxTokens) return text;
+    // Estimate character ratio and slice
+    const ratio = maxTokens / r;
+    const sliceLen = Math.floor(text.length * ratio);
+    return text.slice(0, sliceLen) + '\n\n[内容已截断...]';
   }
 
-  truncateToTokens(text: string, maxTokens: number): string {
-    const enc = this.getEnc();
-    if (enc) {
-      const tokens = enc.encode(text);
-      if (tokens.length <= maxTokens) return text;
-      const decoded = enc.decode(tokens.slice(0, maxTokens));
-      return decoder.decode(decoded);
-    }
-    const maxChars = Math.floor(maxTokens / 1.3);
-    if (text.length <= maxChars) return text;
-    return text.slice(0, maxChars) + '\n\n[内容已截断...]';
+  async isSceneTooLong(text: string): Promise<boolean> {
+    const r = await countTokens(text);
+    if (r === null) return false;
+    return r > MAX_SCENE_TOKENS;
   }
 
+  /** Synchronous fallback that only uses character-length estimation */
   splitIntoChunks(text: string, maxTokens: number): string[] {
-    const enc = this.getEnc();
-    if (enc) {
-      const tokens = enc.encode(text);
-      if (tokens.length <= maxTokens) return [text];
-      const chunks: string[] = [];
-      for (let i = 0; i < tokens.length; i += maxTokens) {
-        const decoded = enc.decode(tokens.slice(i, i + maxTokens));
-        chunks.push(decoder.decode(decoded));
-      }
-      return chunks;
-    }
     const maxChars = Math.floor(maxTokens / 1.3);
     const chunks: string[] = [];
     for (let i = 0; i < text.length; i += maxChars) {
       chunks.push(text.slice(i, i + maxChars));
     }
     return chunks;
-  }
-
-  isSceneTooLong(text: string): boolean {
-    return this.countTokens(text) > MAX_SCENE_TOKENS;
   }
 }

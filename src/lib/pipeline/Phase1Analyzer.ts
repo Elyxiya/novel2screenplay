@@ -50,7 +50,7 @@ export class Phase1Analyzer {
       .map((c) => `[${c.title}]\n${c.text}`)
       .join('\n\n');
 
-    const truncatedText = this.ctxManager.truncateToTokens(fullText, MAX_ANALYSIS_TOKENS);
+    const truncatedText = await this.ctxManager.truncateToTokens(fullText, MAX_ANALYSIS_TOKENS);
 
     const messages: LLMMessage[] = [
       { role: 'system', content: ANALYZE_PROMPT },

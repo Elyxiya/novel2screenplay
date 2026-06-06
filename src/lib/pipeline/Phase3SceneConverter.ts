@@ -112,8 +112,9 @@ export class Phase3SceneConverter {
         const sceneText = chapterText.slice(scene.originalStartOffset, scene.originalEndOffset);
 
         // Truncate if too long
-        const truncatedText = this.ctxManager.isSceneTooLong(sceneText)
-          ? this.ctxManager.truncateToTokens(sceneText, MAX_SCENE_TOKENS) +
+        const isTooLong = await this.ctxManager.isSceneTooLong(sceneText);
+        const truncatedText = isTooLong
+          ? (await this.ctxManager.truncateToTokens(sceneText, MAX_SCENE_TOKENS)) +
             '\n\n[注意：该场景原文已被截断以符合输入长度限制]'
           : sceneText;
 

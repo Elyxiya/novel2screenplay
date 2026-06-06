@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PipelineEngine } from '@/lib/pipeline/PipelineEngine';
+import { initializeProviders } from '@/lib/llm/registry';
 
+initializeProviders();
 const engine = new PipelineEngine();
 
 export async function POST(request: NextRequest) {

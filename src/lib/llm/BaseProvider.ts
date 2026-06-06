@@ -1,5 +1,4 @@
 import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
-import { get_encoding } from 'tiktoken';
 
 /**
  * Abstract base class for HTTP-based LLM providers.
@@ -22,10 +21,13 @@ export abstract class BaseProvider implements LLMProvider {
 
   estimateTokens(text: string): number {
     try {
+      // Dynamic import to avoid tiktoken_bg.wasm loading issues in Next.js
+      const { get_encoding } = require('tiktoken') as typeof import('tiktoken');
       const encoding = get_encoding('cl100k_base');
-      return encoding.encode(text).length;
+      const count = encoding.encode(text).length;
+      encoding.free();
+      return count;
     } catch {
-      // Fallback: ~1.3 tokens per Chinese character
       return Math.ceil(text.length * 1.3);
     }
   }

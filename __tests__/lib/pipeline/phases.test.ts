@@ -4,20 +4,20 @@ import { ContextManager } from '../../../src/lib/pipeline/ContextManager';
 describe('ContextManager', () => {
   const cm = new ContextManager();
 
-  it('should count tokens', () => {
-    const count = cm.countTokens('你好，世界');
+  it('should count tokens', async () => {
+    const count = await cm.countTokens('你好，世界');
     expect(count).toBeGreaterThan(0);
   });
 
-  it('should truncate long text', () => {
+  it('should truncate long text', async () => {
     const text = 'a'.repeat(5000);
-    const truncated = cm.truncateToTokens(text, 100);
+    const truncated = await cm.truncateToTokens(text, 100);
     expect(truncated.length).toBeLessThan(text.length);
   });
 
-  it('should not truncate short text', () => {
+  it('should not truncate short text', async () => {
     const text = 'Hello World';
-    const truncated = cm.truncateToTokens(text, 1000);
+    const truncated = await cm.truncateToTokens(text, 1000);
     expect(truncated).toBe(text);
   });
 

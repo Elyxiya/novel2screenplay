@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { llmRegistry } from '@/lib/llm/registry';
+import { llmRegistry, initializeProviders } from '@/lib/llm/registry';
 
 export async function GET() {
+  initializeProviders();
   const providers = llmRegistry.getAll();
   const models = providers.map(p => ({ id: p.modelId, name: p.name, provider: p.name, contextWindow: p.contextWindow }));
   if (models.length === 0) return NextResponse.json({ models: [

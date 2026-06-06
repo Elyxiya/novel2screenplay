@@ -5,11 +5,13 @@ export const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
 /** Chapter header patterns (ordered by priority) */
 const CHAPTER_PATTERNS = [
-  /^第[一二三四五六七八九十百千零〇0-9]+章\s*(.*)$/gm,     // "第一章 标题"
-  /^第[0-9]+章\s*(.*)$/gm,                                   // "第1章 标题"
-  /^第[一二三四五六七八九十]+节\s*(.*)$/gm,                   // "第一节 标题"
-  /^(?:Chapter|CHAPTER|Ch)\.?\s*[0-9]+[：:.]?\s*(.*)$/gm,    // "Chapter 1: Title"
-  /^```/gm,                                                   // Code block separator
+  /^\s*序\s*[：:]\s*(.*)$/gm,                                     // "序：标题"
+  /^\s*序章\s*[：:]\s*(.*)$/gm,                                   // "序章：标题"
+  /^\s*第[一二三四五六七八九十百千零〇0-9]+章\s*[：:]?\s*(.*)$/gm, // "第一章：标题"
+  /^\s*第[0-9]+章\s*[：:]?\s*(.*)$/gm,                            // "第1章：标题"
+  /^\s*第[一二三四五六七八九十]+节\s*(.*)$/gm,                    // "第一节 标题"
+  /^\s*(?:Chapter|CHAPTER|Ch)\.?\s*[0-9]+[：:.]?\s*(.*)$/gm,     // "Chapter 1: Title"
+  /^\s*```/gm,                                                    // Code block separator
 ];
 
 /**

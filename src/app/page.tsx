@@ -16,10 +16,10 @@ export default function UploadPage() {
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
 
-  const handleUpload = useCallback(async (content: string, name?: string) => {
+  const handleUpload = useCallback(async (content: string, rawFile?: File) => {
     setLoading(true); setError('');
     const formData = new FormData();
-    if (name) { formData.append('file', new Blob([content], { type: 'text/plain' }), name); }
+    if (rawFile) { formData.append('file', rawFile); }  // Send raw file bytes — backend handles encoding
     else { formData.append('text', content); }
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
@@ -34,8 +34,7 @@ export default function UploadPage() {
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!['txt', 'md'].includes(ext || '')) { setError('仅支持 .txt 文件'); return; }
     if (file.size > 2 * 1024 * 1024) { setError('文件超过 2MB'); return; }
-    setText(await file.text());
-    await handleUpload(await file.text(), file.name);
+    await handleUpload('', file);  // Send raw file, don't pre-read as text
   }, [handleUpload]);
 
   const handlePaste = useCallback(async () => {

@@ -144,6 +144,17 @@ export class Phase3SceneConverter {
 
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
+            // Debug: log prompt stats before calling LLM
+            const promptText = messages.map(m => m.content).join(' ');
+            const promptChars = promptText.length;
+            jobStore.update(jobId, (job) => ({
+              ...job,
+              logs: [...job.logs, {
+                timestamp: Date.now(), level: 'info' as const,
+                message: `场景 #${scene.sceneIndex} 调用 LLM: maxTokens=16384, prompt≈${Math.ceil(promptChars*0.25)}tokens`,
+              }],
+            }));
+
             const response = await this.provider.chat(messages, {
               responseFormat: 'json_object',
               temperature: 0.5,

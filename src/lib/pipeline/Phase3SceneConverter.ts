@@ -1,6 +1,6 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as CONVERT_PROMPT } from '../llm/prompts/convert-scene';
-import { ContextManager, MAX_SCENE_TOKENS } from './ContextManager';
+import { ContextManager } from './ContextManager';
 import type { SceneBoundary } from './Phase2Segmenter';
 import type { RawCharacter, RawLocation } from './Phase1Analyzer';
 import { TokenBucket } from '../llm/rate-limiter';
@@ -108,15 +108,14 @@ export class Phase3SceneConverter {
 
         await this.rateLimiter.wait(abortSignal);
 
-        // Get scene text from chapter
+        // Get scene text from chapter — use full scene, no truncation
         const chapterText = chapterTexts[scene.chapterIndex] || '';
         const sceneText = chapterText.slice(scene.originalStartOffset, scene.originalEndOffset);
 
-        // Truncate if too long
-        const isTooLong = await this.ctxManager.isSceneTooLong(sceneText);
-        const truncatedText = isTooLong
-          ? (await this.ctxManager.truncateToTokens(sceneText, MAX_SCENE_TOKENS)) +
-            '\n\n[注意：该场景原文已被截断以符合输入长度限制]'
+        // Only truncate if it exceeds the model's total context window (65536 for DeepSeek)
+        const totalPrompt = charContext.length + locContext.length + sceneText.length + 2000;
+        const truncatedText = totalPrompt > 50000
+          ? sceneText.slice(0, 40000) + '\n\n[注意：场景原文过长已截断]'
           : sceneText;
 
         const messages: LLMMessage[] = [
@@ -148,7 +147,7 @@ export class Phase3SceneConverter {
             const response = await this.provider.chat(messages, {
               responseFormat: 'json_object',
               temperature: 0.5,
-              maxTokens: 8192,
+              maxTokens: 16384,
               signal: abortSignal,
             });
 

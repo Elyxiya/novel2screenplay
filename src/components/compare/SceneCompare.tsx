@@ -30,14 +30,10 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Sticky Header ── */}
-      <div className="shrink-0 border-b border-gray-100 bg-white sticky top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-sm font-bold text-blue-600 shrink-0">#{scene.sceneNumber}</span>
-            <span className="font-medium truncate">{scene.slugline}</span>
-          </div>
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 shrink-0 ml-3">
+      {/* View mode toggle — sticky below the outer panel header */}
+      <div className="shrink-0 z-10 sticky top-0 bg-white border-b border-gray-100">
+        <div className="flex justify-end px-4 py-2">
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             {([
               { key: 'split', label: '对照' },
               { key: 'screenplay', label: '剧本' },
@@ -59,7 +55,7 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
         </div>
       </div>
 
-      {/* ── Scrollable Body ── */}
+      {/* Scrollable Body */}
       <div className="flex-1 overflow-y-auto">
         {/* Split view */}
         {viewMode === 'split' && (

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-本项目提供一个 Web 界面和 API，帮助编剧和作者将叙事性小说内容转换为结构化的剧本格式。支持多种 LLM 提供商（DeepSeek / OpenAI），输出为结构化的 YAML 剧本格式。
+本项目提供一个 Web 界面和 API，帮助编剧和作者将叙事性小说内容转换为结构化的剧本格式。支持多种 LLM 提供商（DeepSeek / OpenAI），输出为结构化的 YAML 剧本格式。项目demo链接：https://pan.quark.cn/s/e254bfd0ee09
 
 ## 技术栈
 

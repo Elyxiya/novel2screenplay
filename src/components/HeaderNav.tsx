@@ -57,11 +57,15 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className={`flex-1 p-4 max-w-[1600px] w-full mx-auto flex flex-col transition-all duration-300`}>
-        <div className={showHistory && !isResultPage ? 'pr-[304px]' : ''}>
+      {isResultPage ? (
+        <div className="flex-1 flex flex-col">
           {children}
         </div>
-      </div>
+      ) : (
+        <div className={`flex-1 p-4 max-w-[1600px] w-full mx-auto flex flex-col transition-all duration-300 ${showHistory ? 'pr-[304px]' : ''}`}>
+          {children}
+        </div>
+      )}
 
       {showHistory && (
         <>
@@ -71,7 +75,7 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               onClick={() => setShowHistory(false)}
             />
           )}
-          <div className="fixed top-[49px] right-0 h-[calc(100vh-49px)] w-72 bg-white border-l shadow-xl flex flex-col z-40">
+          <div className="fixed top-[57px] right-0 h-[calc(100vh-57px)] w-72 bg-white border-l shadow-xl flex flex-col z-40">
             <HistoryPanel />
           </div>
         </>

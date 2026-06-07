@@ -78,7 +78,7 @@ export default function ResultPage() {
     if (data.success) {
       await fetchScreenplay();
     } else {
-      alert('保存失败: ' + (data.error || '未知错误'));
+      alert('保存失败: ' + (data.error || data.details?.message || '未知错误') + (data.details ? '\n\n详情: ' + data.details : ''));
     }
   };
 
@@ -197,67 +197,69 @@ export default function ResultPage() {
   const chars = new Map(sp.characters.map(c => [c.characterId, c.name]));
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto p-4 h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
-          <p className="text-sm text-gray-500">
-            {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Page-level toolbar — sticky: title, analytics, tabs */}
+      <div className="shrink-0 sticky top-0 z-20 space-y-3 p-4 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        {/* Header row */}
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
+            <p className="text-sm text-gray-500">
+              {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={downloadYaml} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              下载 YAML
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={downloadYaml} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-            下载 YAML
-          </button>
+
+        {/* Analytics */}
+        {a && (
+          <div className="grid grid-cols-4 gap-3 max-w-7xl mx-auto">
+            <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold text-blue-600">{a.dialoguePercentage}%</div><div className="text-xs text-gray-500">对白密度</div></div>
+            <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold text-green-600">{a.actionPercentage}%</div><div className="text-xs text-gray-500">动作比例</div></div>
+            <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold">{sp.metadata.totalScenes}</div><div className="text-xs text-gray-500">总场景数</div></div>
+            <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold">{(a.totalWords / 10000).toFixed(1)}万</div><div className="text-xs text-gray-500">总字数</div></div>
+          </div>
+        )}
+
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 bg-white rounded-xl border p-1 max-w-7xl mx-auto">
+          {([
+            { key: 'scenes', label: '场景', count: sp.scenes.length },
+            { key: 'characters', label: '角色', count: sp.characters.length },
+            { key: 'locations', label: '地点', count: sp.locations.length },
+            { key: 'yaml', label: 'YAML', count: null },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                tab === t.key
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {t.label}
+              {t.count !== null && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Analytics */}
-      {a && (
-        <div className="grid grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold text-blue-600">{a.dialoguePercentage}%</div><div className="text-xs text-gray-500">对白密度</div></div>
-          <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold text-green-600">{a.actionPercentage}%</div><div className="text-xs text-gray-500">动作比例</div></div>
-          <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold">{sp.metadata.totalScenes}</div><div className="text-xs text-gray-500">总场景数</div></div>
-          <div className="bg-white rounded-xl border p-4"><div className="text-2xl font-bold">{(a.totalWords / 10000).toFixed(1)}万</div><div className="text-xs text-gray-500">总字数</div></div>
-        </div>
-      )}
-
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-white rounded-xl border p-1">
-        {([
-          { key: 'scenes', label: '场景', count: sp.scenes.length },
-          { key: 'characters', label: '角色', count: sp.characters.length },
-          { key: 'locations', label: '地点', count: sp.locations.length },
-          { key: 'yaml', label: 'YAML', count: null },
-        ] as const).map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === t.key
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            {t.label}
-            {t.count !== null && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                {t.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Main content area */}
-      <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
-        {/* Tab content */}
-        <div className="flex-1 min-h-0 overflow-y-auto transition-all duration-300 pr-1">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-7xl mx-auto space-y-4">
 
           {/* ── Scenes Tab ── */}
           {tab === 'scenes' && (
-            <div className="flex gap-4 h-full" style={{ minHeight: '500px' }}>
+            <div className="flex gap-4" style={{ height: 'calc(100vh - 240px)' }}>
               {/* Scene navigator */}
               <div className="w-56 shrink-0 space-y-1 overflow-y-auto pr-1">
                 {sp.scenes.map((s, i) => (
@@ -276,9 +278,13 @@ export default function ResultPage() {
 
               {/* Scene detail panel */}
               <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
-                {/* View mode toggle */}
-                <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100 flex justify-end">
-                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {/* Scene detail header — sticky, stays fixed while content scrolls */}
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white z-20 sticky top-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-sm font-bold text-blue-600 shrink-0">#{currentScene.sceneNumber}</span>
+                    <span className="font-medium truncate">{currentScene.slugline}</span>
+                  </div>
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1 shrink-0 ml-3">
                     {([
                       { key: 'editor', label: '编辑' },
                       { key: 'compare', label: '原文对照' },
@@ -298,8 +304,8 @@ export default function ResultPage() {
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-hidden">
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto">
                   {sceneViewMode === 'editor' ? (
                     <SceneEditor
                       scene={currentScene}

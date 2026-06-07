@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@/lib/schema/yaml-serializer';
 import type { Screenplay } from '@/lib/schema/screenplay.schema';
+
+type ZodIssue = { path: (string | number)[]; message: string };
+
+function extractZodIssues(error: string, issues: ZodIssue[]): string {
+  if (!issues.length) return error;
+  return issues.map(iss => {
+    const path = iss.path.join('.').replace(/^scenes.\d+\./, 'scene:');
+    return `[${path}] ${iss.message}`;
+  }).join('\n');
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
@@ -35,7 +46,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Full YAML replacement
     if (body.yaml !== undefined) {
       const result = safeParseFromYaml(body.yaml);
-      if (!result.success) return NextResponse.json({ error: 'YAML 校验失败', details: result.error }, { status: 400 });
+      if (!result.success) {
+        const details = extractZodIssues(result.error, result.issues);
+        return NextResponse.json({ error: 'YAML 校验失败', details }, { status: 400 });
+      }
       jobStore.update(jobId, j => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: result.data } }));
       return NextResponse.json({ success: true, message: '剧本更新成功' });
     }
@@ -63,8 +77,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
       if (body.scene !== undefined) {
         const idx = updated.scenes.findIndex(s => s.sceneNumber === body.scene.sceneNumber);
-        if (idx >= 0) updated.scenes[idx] = body.scene;
-        else updated.scenes.push(body.scene);
+        // Auto-derive slugline from location + timeOfDay when slugline is not set
+        const loc = updated.locations.find(l => l.locationId === body.scene.locationId);
+        const timeLabel = body.scene.timeOfDay;
+        const derivedSlugline = body.scene.slugline || (loc ? `${loc.type === 'exterior' ? '外景' : '内景'}. ${loc.name} - ${timeLabel}` : body.scene.slugline);
+        const sceneToSave = { ...body.scene, slugline: derivedSlugline };
+        if (idx >= 0) updated.scenes[idx] = sceneToSave;
+        else updated.scenes.push(sceneToSave);
       }
       if (body.character !== undefined) {
         const idx = updated.characters.findIndex(c => c.characterId === body.character.characterId);
@@ -81,7 +100,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Validate and save
     const yaml = serializeToYaml(updated);
     const result = safeParseFromYaml(yaml);
-    if (!result.success) return NextResponse.json({ error: '修改后校验失败', details: result.error }, { status: 400 });
+    if (!result.success) {
+      console.error('[PATCH /api/result] YAML validation failed:', result.error, '\nYAML:\n', yaml);
+      const details = extractZodIssues(result.error, result.issues);
+      return NextResponse.json({ error: '修改后校验失败', details }, { status: 400 });
+    }
 
     jobStore.update(jobId, j => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: result.data } }));
     return NextResponse.json({ success: true, message: '更新成功' });

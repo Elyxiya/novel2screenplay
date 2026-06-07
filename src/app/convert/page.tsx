@@ -79,7 +79,7 @@ export default function ConvertPage() {
   const phaseIcons = ['🔍', '✂️', '🎬', '✅'];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => router.push('/configure')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回配置</button>
       </div>
@@ -90,11 +90,11 @@ export default function ConvertPage() {
         <div className="flex justify-between">
           {phaseNames.map((name, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors shrink-0
                 ${phase > i + 1 ? 'bg-green-500 text-white' : phase === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
                 {phase > i + 1 ? '✓' : phaseIcons[i]}
               </div>
-              <span className={`text-xs ${phase === i + 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>{name}</span>
+              <span className={`text-xs text-center leading-tight ${phase === i + 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>{name}</span>
             </div>
           ))}
         </div>

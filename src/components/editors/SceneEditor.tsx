@@ -4,15 +4,15 @@ import { useState, useEffect } from 'react';
 import type { Scene, Character } from '@/lib/schema/screenplay.schema';
 import type { Location } from '@/lib/schema/screenplay.schema';
 
-const TIME_OPTIONS = [
+const TIME_OPTIONS: { value: Scene['timeOfDay']; label: string }[] = [
   { value: 'dawn', label: '黎明' },
-  { value: 'morning', label: '日' },
+  { value: 'morning', label: '早晨' },
   { value: 'afternoon', label: '下午' },
   { value: 'dusk', label: '黄昏' },
-  { value: 'night', label: '夜' },
+  { value: 'night', label: '夜晚' },
   { value: 'late-night', label: '深夜' },
   { value: 'unknown', label: '未知' },
-] as const;
+];
 
 interface Props {
   scene: Scene;
@@ -38,10 +38,45 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
   };
 
   const save = async () => {
+    // Guard: don't save if scene has changed since editing started
+    if (draft.sceneNumber !== scene.sceneNumber) return;
+
+    // Guard: content must have at least one block
+    if (draft.content.length === 0) {
+      alert('场景内容不能为空');
+      return;
+    }
+
+    // Filter out blocks with empty content before saving
+    const validContent = draft.content.filter(b => {
+      if (b.type === 'action') return b.description.trim().length > 0;
+      if (b.type === 'dialogue') return b.line.trim().length > 0 && b.characterId.trim().length > 0;
+      return true;
+    });
+    if (validContent.length === 0) {
+      alert('场景内容不能为空');
+      return;
+    }
+
+    if (!draft.slugline.trim()) {
+      alert('场景标题 (Slugline) 不能为空');
+      return;
+    }
+
+    // Auto-derive characterIds from dialogue blocks
+    const characterIds = [
+      ...new Set(
+        validContent
+          .filter(b => b.type === 'dialogue')
+          .map(b => (b as { characterId: string }).characterId)
+          .filter(Boolean),
+      ),
+    ];
+    const toSave = { ...draft, content: validContent, characterIds };
     setSaving(true);
     try {
-      await onSave(draft);
-      onChange(draft);
+      await onSave(toSave);
+      onChange(toSave);
       setEditing(false);
     } finally {
       setSaving(false);
@@ -67,68 +102,65 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Sticky Header ── */}
-      <div className="shrink-0 flex items-center justify-between py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-sm font-bold text-blue-600 shrink-0">#{scene.sceneNumber}</span>
-          {editing ? (
-            <input
-              value={draft.slugline}
-              onChange={e => setDraft({ ...draft, slugline: e.target.value })}
-              className="text-base font-medium border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 min-w-0"
-            />
-          ) : (
-            <span className="font-medium truncate">{scene.slugline}</span>
-          )}
-        </div>
-        <div className="flex gap-2 shrink-0 ml-3">
-          {!editing ? (
-            <button onClick={() => setEditing(true)} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">编辑</button>
-          ) : (
-            <>
-              <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-                {saving ? '保存中...' : '保存'}
-              </button>
-              <button onClick={cancel} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">取消</button>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* ── Scrollable Body ── */}
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-4 p-4">
+          {/* Edit control bar */}
+          <div className="flex justify-end">
+            {!editing ? (
+              <button onClick={() => setEditing(true)} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">编辑</button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {saving ? '保存中...' : '保存'}
+                </button>
+                <button onClick={cancel} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">取消</button>
+              </div>
+            )}
+          </div>
+
           {/* Metadata row */}
           {editing && (
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">时间段</label>
-                <select
-                  value={draft.timeOfDay}
-                  onChange={e => setDraft({ ...draft, timeOfDay: e.target.value as Scene['timeOfDay'] })}
-                  className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">地点</label>
-                <select
-                  value={draft.locationId}
-                  onChange={e => setDraft({ ...draft, locationId: e.target.value })}
-                  className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {locations.map(l => <option key={l.locationId} value={l.locationId}>{l.name}</option>)}
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-gray-500 block mb-1">摘要</label>
+                <label className="text-xs text-gray-500 block mb-1">场景标题 (Slugline)</label>
                 <input
-                  value={draft.summary}
-                  onChange={e => setDraft({ ...draft, summary: e.target.value })}
-                  className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="场景摘要..."
+                  value={draft.slugline}
+                  onChange={e => setDraft({ ...draft, slugline: e.target.value })}
+                  className="w-full border rounded px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="外景. 地点 - 时间"
                 />
+              </div>
+              <div className="flex items-center gap-4 flex-wrap">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">时间段</label>
+                  <select
+                    value={draft.timeOfDay}
+                    onChange={e => setDraft({ ...draft, timeOfDay: e.target.value as Scene['timeOfDay'] })}
+                    className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">地点</label>
+                  <select
+                    value={draft.locationId}
+                    onChange={e => setDraft({ ...draft, locationId: e.target.value })}
+                    className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {locations.map(l => <option key={l.locationId} value={l.locationId}>{l.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 block mb-1">摘要</label>
+                  <input
+                    value={draft.summary}
+                    onChange={e => setDraft({ ...draft, summary: e.target.value })}
+                    className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="场景摘要..."
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -145,6 +177,7 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
                     <button
                       onClick={() => deleteBlock(bi)}
                       className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={draft.content.length <= 1}
                     >
                       删除
                     </button>

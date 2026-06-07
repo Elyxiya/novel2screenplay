@@ -115,7 +115,7 @@ export class Phase4Merger {
     });
 
     // 5. Compute analytics
-    const analytics = this.computeAnalytics(scenes, characters);
+    const analytics = this.computeAnalytics(scenes);
 
     // 6. Build Screenplay object
     const screenplay: Screenplay = {
@@ -228,7 +228,6 @@ export class Phase4Merger {
 
   private computeAnalytics(
     scenes: Array<{ content: Phase3Output['content']; sceneNumber: number }>,
-    characters: Screenplay['characters'],
   ): Screenplay['analytics'] {
     let totalWords = 0;
     let dialogueWords = 0;

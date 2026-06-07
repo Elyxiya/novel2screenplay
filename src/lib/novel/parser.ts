@@ -108,7 +108,7 @@ function fallbackSplit(text: string): Array<{ title: string; startIndex: number 
  * Parse raw novel text into chapters.
  * Validates encoding and file size.
  */
-export function parseNovel(text: string, fileName?: string): ParseResult {
+export function parseNovel(text: string): ParseResult {
   const warnings: string[] = [];
 
   // Check for empty content

@@ -1,8 +1,9 @@
 export function LoadingSkeleton({ rows = 3 }: { rows?: number }) {
+  const widths = ['85%', '72%', '91%', '65%', '78%'];
   return (
     <div className="space-y-3 animate-pulse">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-4 bg-gray-200 rounded" style={{ width: `${60 + Math.random() * 40}%` }} />
+        <div key={i} className="h-4 bg-gray-200 rounded" style={{ width: widths[i % widths.length] }} />
       ))}
     </div>
   );

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function ConfigurePage() {
   const router = useRouter();
+  const initialized = useRef(false);
   const [data, setData] = useState<{ novelText: string; title: string } | null>(null);
   const [model, setModel] = useState('deepseek-chat');
   const [models, setModels] = useState<string[]>(['deepseek-chat', 'gpt-4o']);
@@ -12,20 +13,29 @@ export default function ConfigurePage() {
   const [charCount, setCharCount] = useState(0);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const raw = sessionStorage.getItem('novelData');
     if (!raw) { router.push('/'); return; }
-    const d = JSON.parse(raw);
-    setData(d);
-    setCharCount(d.novelText.length);
+    try {
+      const d = JSON.parse(raw);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentionally initializing state from sessionStorage on mount
+      setData(d);
+      setCharCount(d.novelText.length);
 
-    fetch('/api/models').then(r => r.json()).then(r => {
-      if (r.models?.length) setModels(r.models.map((m: { id: string }) => m.id));
-    }).catch(() => {});
+      fetch('/api/models').then(r => r.json()).then(r => {
+        if (r.models?.length) setModels(r.models.map((m: { id: string }) => m.id));
+      }).catch(() => {});
 
-    fetch(`/api/cost-estimate?chars=${d.novelText.length}`).then(r => r.json()).then(r => {
-      setCost(`约 ¥${r.estimatedCostCNY}，${r.estimatedTokens?.toLocaleString()} tokens`);
-    }).catch(() => {});
-  }, [router]);
+      fetch(`/api/cost-estimate?chars=${d.novelText.length}`).then(r => r.json()).then(r => {
+        setCost(`约 ¥${r.estimatedCostCNY}，${r.estimatedTokens?.toLocaleString()} tokens`);
+      }).catch(() => {});
+    } catch {
+      router.push('/');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startConversion = async () => {
     if (!data) return;

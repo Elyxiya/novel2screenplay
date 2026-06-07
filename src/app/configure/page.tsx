@@ -114,6 +114,7 @@ export default function ConfigurePage() {
   const startConversion = async () => {
     if (!data || selected.size === 0) return;
     sessionStorage.setItem('config', JSON.stringify({ model, selectedChapters: [...selected] }));
+    // Pass full novel text + selected indices (NOT filtered text)
     const res = await fetch('/api/pipeline/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -150,7 +151,8 @@ export default function ConfigurePage() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-400">点击选中章节，按住 Shift 点击可选择范围</p>
+        {/* Range selector hint */}
+        <p className="text-xs text-gray-400">点击列头选中整列，按住 Shift 点击列尾可选择范围</p>
 
         <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5 max-h-80 overflow-y-auto pr-1">
           {chapters.map((ch, i) => (

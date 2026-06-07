@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { historyStore } from '@/lib/store/history-store';
 import type { Screenplay, Scene, Character, Location } from '@/lib/schema/screenplay.schema';
 import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
@@ -30,6 +31,11 @@ export default function ResultPage() {
   const fetchScreenplay = useCallback(async () => {
     const res = await fetch(`/api/result/${jobId}`);
     const data = await res.json();
+    if (res.status === 404) {
+      historyStore.remove(jobId);
+      setLoading(false);
+      return;
+    }
     if (data.screenplay) {
       setScreenplay(data.screenplay);
       setYaml(data.yaml);
@@ -104,6 +110,58 @@ export default function ResultPage() {
     }
   };
 
+  const deleteCharacter = async (characterId: string) => {
+    const res = await fetch(`/api/result/${jobId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deleteCharacterId: characterId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      await fetchScreenplay();
+    } else {
+      alert('删除失败: ' + (data.error || '未知错误'));
+    }
+  };
+
+  const deleteLocation = async (locationId: string) => {
+    const res = await fetch(`/api/result/${jobId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deleteLocationId: locationId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      await fetchScreenplay();
+    } else {
+      alert('删除失败: ' + (data.error || '未知错误'));
+    }
+  };
+
+  const addCharacter = async () => {
+    const next = sp.characters.length + 1;
+    const newChar: Character = {
+      characterId: `char_${next}`,
+      name: '新角色',
+      aliases: [],
+      personalityTags: [],
+      description: '',
+      isMajor: false,
+    };
+    await saveCharacter(newChar);
+  };
+
+  const addLocation = async () => {
+    const next = sp.locations.length + 1;
+    const newLoc: Location = {
+      locationId: `loc_${next}`,
+      name: '新地点',
+      type: 'interior',
+      description: '',
+    };
+    await saveLocation(newLoc);
+  };
+
   const downloadYaml = () => {
     const blob = new Blob([yaml], { type: 'text/yaml' });
     const a = document.createElement('a');
@@ -139,21 +197,20 @@ export default function ResultPage() {
   const chars = new Map(sp.characters.map(c => [c.characterId, c.name]));
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto p-4">
+    <div className="space-y-4 max-w-7xl mx-auto p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回首页</button>
-          <div>
-            <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
-            <p className="text-sm text-gray-500">
-              {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
-            </p>
-          </div>
+      <div className="flex items-center justify-between shrink-0">
+        <div>
+          <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
+          <p className="text-sm text-gray-500">
+            {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
+          </p>
         </div>
-        <button onClick={downloadYaml} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-          下载 YAML
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={downloadYaml} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+            下载 YAML
+          </button>
+        </div>
       </div>
 
       {/* Analytics */}
@@ -193,125 +250,141 @@ export default function ResultPage() {
         ))}
       </div>
 
-      {/* ── Scenes Tab ── */}
-      {tab === 'scenes' && (
-        <div className="flex gap-4" style={{ height: 'calc(100vh - 300px)', minHeight: '400px' }}>
-          {/* Scene navigator */}
-          <div className="w-56 shrink-0 space-y-1 overflow-y-auto pr-1">
-            {sp.scenes.map((s, i) => (
-              <button
-                key={s.sceneNumber}
-                onClick={() => setActiveScene(i)}
-                className={`w-full text-left p-2.5 rounded-lg text-sm transition-colors ${
-                  i === activeScene ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'hover:bg-gray-50 border border-transparent'
-                }`}
-              >
-                <span className="text-gray-400 text-xs">#{s.sceneNumber}.</span>
-                <span className="ml-1">{s.summary || s.slugline}</span>
-              </button>
-            ))}
-          </div>
+      {/* Main content area */}
+      <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
+        {/* Tab content */}
+        <div className="flex-1 min-h-0 overflow-y-auto transition-all duration-300 pr-1">
 
-          {/* Scene detail panel */}
-          <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
-            {/* View mode toggle */}
-            <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100 flex justify-end">
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-                {([
-                  { key: 'editor', label: '编辑' },
-                  { key: 'compare', label: '原文对照' },
-                ] as const).map(m => (
+          {/* ── Scenes Tab ── */}
+          {tab === 'scenes' && (
+            <div className="flex gap-4 h-full" style={{ minHeight: '500px' }}>
+              {/* Scene navigator */}
+              <div className="w-56 shrink-0 space-y-1 overflow-y-auto pr-1">
+                {sp.scenes.map((s, i) => (
                   <button
-                    key={m.key}
-                    onClick={() => setSceneViewMode(m.key)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                      sceneViewMode === m.key
-                        ? 'bg-white text-blue-700 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                    key={s.sceneNumber}
+                    onClick={() => setActiveScene(i)}
+                    className={`w-full text-left p-2.5 rounded-lg text-sm transition-colors ${
+                      i === activeScene ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'hover:bg-gray-50 border border-transparent'
                     }`}
                   >
-                    {m.label}
+                    <span className="text-gray-400 text-xs">#{s.sceneNumber}.</span>
+                    <span className="ml-1">{s.summary || s.slugline}</span>
                   </button>
                 ))}
               </div>
+
+              {/* Scene detail panel */}
+              <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
+                {/* View mode toggle */}
+                <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100 flex justify-end">
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                    {([
+                      { key: 'editor', label: '编辑' },
+                      { key: 'compare', label: '原文对照' },
+                    ] as const).map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => setSceneViewMode(m.key)}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                          sceneViewMode === m.key
+                            ? 'bg-white text-blue-700 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-hidden">
+                  {sceneViewMode === 'editor' ? (
+                    <SceneEditor
+                      scene={currentScene}
+                      locations={sp.locations}
+                      characters={sp.characters}
+                      onChange={() => {}}
+                      onSave={saveScene}
+                    />
+                  ) : (
+                    <SceneCompare
+                      scene={currentScene}
+                      originalText={currentSceneOriginalText}
+                      characters={sp.characters}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {sceneViewMode === 'editor' ? (
-                <SceneEditor
-                  scene={currentScene}
-                  locations={sp.locations}
-                  characters={sp.characters}
-                  onChange={() => {}}
-                  onSave={saveScene}
-                />
-              ) : (
-                <SceneCompare
-                  scene={currentScene}
-                  originalText={currentSceneOriginalText}
-                  characters={sp.characters}
-                />
-              )}
+          {/* ── Characters Tab ── */}
+          {tab === 'characters' && (
+            <div className="h-full" style={{ minHeight: '500px' }}>
+              <div className="flex justify-end mb-3">
+                <button onClick={addCharacter} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                  <span>+</span> 新增角色
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sp.characters.map(c => (
+                  <CharacterEditor key={c.characterId} character={c} onSave={saveCharacter} onDelete={deleteCharacter} />
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* ── Characters Tab ── */}
-      {tab === 'characters' && (
-        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '300px' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {sp.characters.map(c => (
-              <CharacterEditor key={c.characterId} character={c} onSave={saveCharacter} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Locations Tab ── */}
-      {tab === 'locations' && (
-        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 300px)', minHeight: '300px' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {sp.locations.map(l => (
-              <LocationEditor key={l.locationId} location={l} onSave={saveLocation} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── YAML Tab ── */}
-      {tab === 'yaml' && (
-        <div className="bg-white rounded-xl border">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="font-semibold text-sm">YAML 输出</h3>
-            <div className="flex gap-2">
-              {!editingYaml ? (
-                <>
-                  <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">编辑</button>
-                  <button onClick={() => navigator.clipboard.writeText(yaml)} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">复制</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={saveYaml} disabled={savingYaml} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs disabled:opacity-50">
-                    {savingYaml ? '保存中...' : '校验并保存'}
-                  </button>
-                  <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">取消</button>
-                </>
-              )}
+          {/* ── Locations Tab ── */}
+          {tab === 'locations' && (
+            <div className="h-full" style={{ minHeight: '500px' }}>
+              <div className="flex justify-end mb-3">
+                <button onClick={addLocation} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                  <span>+</span> 新增地点
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {sp.locations.map(l => (
+                  <LocationEditor key={l.locationId} location={l} onSave={saveLocation} onDelete={deleteLocation} />
+                ))}
+              </div>
             </div>
-          </div>
-          <textarea
-            value={editingYaml ? editYaml : yaml}
-            onChange={e => editingYaml && setEditYaml(e.target.value)}
-            readOnly={!editingYaml}
-            rows={30}
-            className={`w-full p-4 text-xs font-mono resize-y focus:outline-none overflow-y-auto ${editingYaml ? 'bg-blue-50' : ''}`}
-            style={{ height: 'calc(100vh - 360px)', minHeight: '300px' }}
-            spellCheck={false}
-          />
+          )}
+
+          {/* ── YAML Tab ── */}
+          {tab === 'yaml' && (
+            <div className="bg-white rounded-xl border h-full flex flex-col" style={{ minHeight: '500px' }}>
+              <div className="flex items-center justify-between p-4 border-b shrink-0">
+                <h3 className="font-semibold text-sm">YAML 输出</h3>
+                <div className="flex gap-2">
+                  {!editingYaml ? (
+                    <>
+                      <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">编辑</button>
+                      <button onClick={() => navigator.clipboard.writeText(yaml)} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">复制</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={saveYaml} disabled={savingYaml} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs disabled:opacity-50">
+                        {savingYaml ? '保存中...' : '校验并保存'}
+                      </button>
+                      <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded text-xs hover:bg-gray-50">取消</button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <textarea
+                value={editingYaml ? editYaml : yaml}
+                onChange={e => editingYaml && setEditYaml(e.target.value)}
+                readOnly={!editingYaml}
+                rows={30}
+                className={`w-full p-4 text-xs font-mono resize-none focus:outline-none overflow-y-auto flex-1 ${editingYaml ? 'bg-blue-50' : ''}`}
+                spellCheck={false}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

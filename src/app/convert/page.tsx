@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { historyStore } from '@/lib/store/history-store';
 
 const PHASE_LABELS = ['', '分析中', '场景切割中', '转换中', '合并校验中'];
 
@@ -35,7 +36,29 @@ export default function ConvertPage() {
         setLogs((data.logs || []).slice(-30));
         if (data.subProgress) setSubProgress(`场景 ${data.subProgress.completedScenes}/${data.subProgress.totalScenes}`);
 
-        if (data.status === 'completed') { console.log('[ConvertPage] 任务完成!'); clearInterval(poll); setTimeout(() => router.push(`/result/${jid}`), 1000); }
+        if (data.status === 'completed') {
+          console.log('[ConvertPage] 任务完成!');
+          clearInterval(poll);
+          // Save to history before redirecting
+          try {
+            const r = await fetch(`/api/result/${jid}`);
+            const d = await r.json();
+            if (d.screenplay?.metadata) {
+              historyStore.add({
+                jobId: jid,
+                title: d.screenplay.metadata.title,
+                sourceNovel: d.screenplay.metadata.sourceNovel,
+                totalScenes: d.screenplay.metadata.totalScenes,
+                totalCharacters: d.screenplay.metadata.totalCharacters,
+                totalLocations: d.screenplay.metadata.totalLocations,
+                author: d.screenplay.metadata.author ?? '',
+              });
+            }
+          } catch {
+            // non-critical, don't block redirect
+          }
+          setTimeout(() => router.push(`/result/${jid}`), 1000);
+        }
         if (data.status === 'failed') { console.log('[ConvertPage] 任务失败:', data.error); clearInterval(poll); }
       } catch (err) { console.log('[ConvertPage] 轮询错误:', err); /* ignore poll errors */ }
     }, 1500);

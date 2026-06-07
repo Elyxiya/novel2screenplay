@@ -46,47 +46,59 @@ npm run dev
 
 ## 使用流程
 
-1. **上传小说** — 拖拽 `.txt` 文件或粘贴文本，自动识别章节
-2. **配置模型** — 选择 LLM 模型，查看预估费用
+1. **上传/导入** — 拖拽 `.txt` 文件或粘贴文本，自动识别章节；也支持直接导入已有 YAML 剧本文件
+2. **配置模型** — 选择 LLM 模型、选择要转换的章节、查看预估费用
 3. **开始转换** — 四阶段流水线（分析→切割→转换→合并），实时查看进度
-4. **查看结果** — 左右对照视图 + 场景导航 + 改编指数仪表盘 + YAML 导出
+4. **查看结果** — 原文对照 + 可视化编辑（场景/角色/地点）+ 改编指数仪表盘 + YAML 导出/下载
 
 ## 项目结构
 
 ```
 src/
 ├── app/                    # Next.js App Router 页面
-│   ├── page.tsx            # 首页：上传
-│   ├── configure/page.tsx  # 配置页：模型选择 + 费用预估
-│   ├── convert/page.tsx    # 转换进度页
-│   └── result/[id]/page.tsx # 结果页：对照 + 编辑 + 导出
+│   ├── page.tsx            # 首页：上传（支持 .txt / YAML 导入）
+│   ├── configure/page.tsx  # 配置页：章节选择 + 模型选择 + 费用预估
+│   ├── convert/page.tsx    # 转换进度页（完成后自动保存到历史）
+│   ├── result/[id]/page.tsx # 结果页：原文对照 + 可视化编辑 + 导出
+│   └── history/page.tsx    # 历史记录页（localStorage 持久化）
+├── components/
+│   ├── editors/            # 可视化编辑器组件
+│   │   ├── SceneEditor.tsx      # 场景编辑器（动作/对白增删改）
+│   │   ├── CharacterEditor.tsx  # 角色编辑器（别名/标签/描述/删除）
+│   │   └── LocationEditor.tsx   # 地点编辑器（类型/描述/删除）
+│   ├── compare/
+│   │   └── SceneCompare.tsx     # 原文对照组件（分屏/剧本/原文模式）
+│   ├── HeaderNav.tsx       # 导航栏（面包屑 + 历史按钮）
+│   └── HistoryPanel.tsx    # 历史侧边栏面板
 ├── lib/
 │   ├── llm/                # LLM 抽象层
-│   │   ├── BaseProvider.ts      # 基础 Provider（超时/重试/限流）
-│   │   ├── DeepSeekProvider.ts  # DeepSeek 实现
+│   │   ├── BaseProvider.ts      # 基础 Provider（超时/重试/限流/日志）
+│   │   ├── DeepSeekProvider.ts  # DeepSeek 实现（支持模型 ID 配置）
 │   │   ├── OpenAIProvider.ts    # OpenAI 实现
 │   │   ├── registry.ts          # 注册中心
 │   │   ├── rate-limiter.ts      # TokenBucket 限流器
-│   │   └── prompts/             # 提示词模板
+│   │   └── prompts/             # 提示词模板（含防幻觉约束）
 │   ├── schema/             # 剧本数据模型
 │   │   ├── screenplay.schema.ts # Zod Schema
-│   │   ├── validator.ts         # 校验器
+│   │   ├── validator.ts         # 校验器（含自动修复）
 │   │   └── yaml-serializer.ts   # YAML 序列化
 │   ├── pipeline/           # 四阶段转换流水线
-│   │   ├── PipelineEngine.ts    # 编排器
+│   │   ├── PipelineEngine.ts    # 编排器（支持章节选择过滤）
 │   │   ├── Phase1Analyzer.ts    # 角色/地点分析
-│   │   ├── Phase2Segmenter.ts   # 场景切割
-│   │   ├── Phase3SceneConverter.ts # 场景转换（并行）
+│   │   ├── Phase2Segmenter.ts   # 场景切割（章节局部偏移）
+│   │   ├── Phase3SceneConverter.ts # 场景转换（分段并行，内容清洗）
 │   │   ├── Phase4Merger.ts      # 合并去重
 │   │   └── ContextManager.ts    # Token 管理
 │   ├── novel/              # 小说解析
 │   │   └── parser.ts
 │   └── store/              # 作业状态存储
-│       └── job-store.ts
+│       ├── job-store.ts         # 内存 JobStore
+│       └── history-store.ts     # localStorage 历史记录
 └── api/                    # API 路由
     ├── upload/             # 文件上传
+    ├── import/yaml/        # YAML 剧本导入（支持 dry-run）
     ├── pipeline/           # 流水线控制
-    └── result/             # 结果获取
+    └── result/             # 结果获取/更新（支持局部实体更新和删除）
 ```
 
 ## API
@@ -94,11 +106,13 @@ src/
 | 路由 | 方法 | 说明 |
 |------|------|------|
 | `/api/upload` | POST | 上传文件或粘贴文本 |
-| `/api/pipeline/start` | POST | 启动转换流水线 |
+| `/api/import/yaml` | POST | 导入已有 YAML 剧本（支持 dry-run 预览） |
+| `/api/pipeline/start` | POST | 启动转换流水线（`selectedChapters` 可选） |
 | `/api/pipeline/status/:jobId` | GET | 轮询任务状态 |
 | `/api/pipeline/cancel/:jobId` | POST | 取消任务 |
 | `/api/pipeline/resume/:jobId` | POST | 恢复失败任务 |
-| `/api/result/:jobId` | GET/PATCH | 获取/更新剧本 |
+| `/api/result/:jobId` | GET | 获取剧本（含 YAML + chapterTexts） |
+| `/api/result/:jobId` | PATCH | 更新剧本（支持 scene/character/location 局部更新及删除） |
 | `/api/models` | GET | 可用模型列表 |
 | `/api/cost-estimate` | GET | 费用预估 |
 

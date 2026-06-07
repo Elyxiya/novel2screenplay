@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@/lib/schema/yaml-serializer';
+import { ScreenplaySchema } from '@/lib/schema/screenplay.schema';
 import type { Screenplay } from '@/lib/schema/screenplay.schema';
+
+const TIME_OF_DAY_MAP: Record<string, string> = {
+  'late night': 'late-night',
+  'late-night': 'late-night',
+  dawn: 'dawn', morning: 'morning', afternoon: 'afternoon',
+  dusk: 'dusk', night: 'night', unknown: 'unknown',
+};
+
+function normalizeScreenplay(sp: Screenplay): Screenplay {
+  return {
+    ...sp,
+    scenes: sp.scenes.map(scene => ({
+      ...scene,
+      timeOfDay: TIME_OF_DAY_MAP[scene.timeOfDay] ?? 'unknown',
+    })),
+  };
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
@@ -32,56 +50,55 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const updated: Screenplay = JSON.parse(JSON.stringify(screenplay));
 
-    // Full YAML replacement
+    // Full YAML replacement — parse and validate via YAML round-trip
     if (body.yaml !== undefined) {
       const result = safeParseFromYaml(body.yaml);
-      if (!result.success) return NextResponse.json({ error: 'YAML 校验失败', details: result.error }, { status: 400 });
-      jobStore.update(jobId, j => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: result.data } }));
+      if (!result.success) {
+        console.error('[PATCH /result] YAML validation failed:', result.error);
+        return NextResponse.json({ error: 'YAML 校验失败', details: result.error }, { status: 400 });
+      }
+      const normalized = normalizeScreenplay(result.data);
+      jobStore.update(jobId, j => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: normalized } }));
       return NextResponse.json({ success: true, message: '剧本更新成功' });
     }
 
-    // Delete entity by ID
-    if (body.deleteCharacterId !== undefined) {
-      updated.characters = updated.characters.filter(c => c.characterId !== body.deleteCharacterId);
-      updated.metadata.totalCharacters = updated.characters.length;
-    } else if (body.deleteLocationId !== undefined) {
-      updated.locations = updated.locations.filter(l => l.locationId !== body.deleteLocationId);
-      updated.metadata.totalLocations = updated.locations.length;
-    } else {
-      // Partial entity updates
-      if (Array.isArray(body.scenes)) {
-        updated.scenes = body.scenes;
-        updated.metadata.totalScenes = body.scenes.length;
-      }
-      if (Array.isArray(body.characters)) {
-        updated.characters = body.characters;
-        updated.metadata.totalCharacters = body.characters.length;
-      }
-      if (Array.isArray(body.locations)) {
-        updated.locations = body.locations;
-        updated.metadata.totalLocations = body.locations.length;
-      }
-      if (body.scene !== undefined) {
-        const idx = updated.scenes.findIndex(s => s.sceneNumber === body.scene.sceneNumber);
-        if (idx >= 0) updated.scenes[idx] = body.scene;
-        else updated.scenes.push(body.scene);
-      }
-      if (body.character !== undefined) {
-        const idx = updated.characters.findIndex(c => c.characterId === body.character.characterId);
-        if (idx >= 0) updated.characters[idx] = body.character;
-        else updated.characters.push(body.character);
-      }
-      if (body.location !== undefined) {
-        const idx = updated.locations.findIndex(l => l.locationId === body.location.locationId);
-        if (idx >= 0) updated.locations[idx] = body.location;
-        else updated.locations.push(body.location);
-      }
+    // Partial entity updates — validate directly with Zod (avoids YAML round-trip corruption)
+    if (Array.isArray(body.scenes)) {
+      updated.scenes = body.scenes;
+      updated.metadata.totalScenes = body.scenes.length;
+    }
+    if (Array.isArray(body.characters)) {
+      updated.characters = body.characters;
+      updated.metadata.totalCharacters = body.characters.length;
+    }
+    if (Array.isArray(body.locations)) {
+      updated.locations = body.locations;
+      updated.metadata.totalLocations = body.locations.length;
+    }
+    if (body.scene !== undefined) {
+      const idx = updated.scenes.findIndex(s => s.sceneNumber === body.scene.sceneNumber);
+      if (idx >= 0) updated.scenes[idx] = body.scene;
+      else updated.scenes.push(body.scene);
+    }
+    if (body.character !== undefined) {
+      const idx = updated.characters.findIndex(c => c.characterId === body.character.characterId);
+      if (idx >= 0) updated.characters[idx] = body.character;
+      else updated.characters.push(body.character);
+    }
+    if (body.location !== undefined) {
+      const idx = updated.locations.findIndex(l => l.locationId === body.location.locationId);
+      if (idx >= 0) updated.locations[idx] = body.location;
+      else updated.locations.push(body.location);
     }
 
-    // Validate and save
-    const yaml = serializeToYaml(updated);
-    const result = safeParseFromYaml(yaml);
-    if (!result.success) return NextResponse.json({ error: '修改后校验失败', details: result.error }, { status: 400 });
+    // Normalize pipeline-legacy dirty data (e.g. "late night" → "late-night") before validation
+    const normalized = normalizeScreenplay(updated);
+    const result = ScreenplaySchema.safeParse(normalized);
+    if (!result.success) {
+      const issues = result.error.issues.map(i => ({ path: i.path, message: i.message }));
+      console.error('[PATCH /result] Zod validation failed after normalization:', issues);
+      return NextResponse.json({ error: '修改后校验失败', details: issues }, { status: 400 });
+    }
 
     jobStore.update(jobId, j => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: result.data } }));
     return NextResponse.json({ success: true, message: '更新成功' });

@@ -9,7 +9,12 @@ export async function GET(request: NextRequest) {
   const chars = searchParams.get('chars');
 
   let target = text;
-  if (!target && chars) { const n = parseInt(chars, 10); if (isNaN(n) || n <= 0) return NextResponse.json({ error: '无效字数' }, { status: 400 }); target = '字'.repeat(n); }
+  if (!target && chars) {
+    const n = parseInt(chars, 10);
+    if (isNaN(n) || n < 0) return NextResponse.json({ error: '无效字数' }, { status: 400 });
+    if (n === 0) return NextResponse.json({ estimatedTokens: 0, estimatedInputTokens: 0, estimatedOutputTokens: 0, estimatedCalls: { phase1: 0, phase2: 0, phase3: 0 }, estimatedCostCNY: 0 });
+    target = '字'.repeat(n);
+  }
   if (!target) return NextResponse.json({ error: '提供 text 或 chars 参数' }, { status: 400 });
 
   const tokens = await ctx.countTokens(target);

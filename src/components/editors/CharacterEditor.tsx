@@ -6,9 +6,10 @@ import type { Character } from '@/lib/schema/screenplay.schema';
 interface Props {
   character: Character;
   onSave: (c: Character) => Promise<void>;
+  onDelete?: (characterId: string) => Promise<void>;
 }
 
-export function CharacterEditor({ character, onSave }: Props) {
+export function CharacterEditor({ character, onSave, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Character>(character);
@@ -55,7 +56,16 @@ export function CharacterEditor({ character, onSave }: Props) {
           )}
           {character.isMajor && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">主角</span>}
         </div>
-        <div>
+        <div className="flex gap-1 items-center">
+          {onDelete && (
+            <button
+              onClick={async () => { if (confirm(`确定删除角色「${character.name}」？`)) await onDelete(character.characterId); }}
+              className="text-xs text-red-500 border border-red-200 rounded px-2 py-1 hover:bg-red-50"
+              title="删除角色"
+            >
+              删除
+            </button>
+          )}
           {!editing ? (
             <button onClick={() => setEditing(true)} className="text-xs border rounded px-2 py-1 hover:bg-gray-50">编辑</button>
           ) : (

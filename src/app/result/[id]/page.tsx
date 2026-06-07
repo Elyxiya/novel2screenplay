@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { Screenplay, Scene, Character, Location } from '@/lib/schema/screenplay.schema';
 import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
@@ -13,6 +13,7 @@ type SceneViewMode = 'editor' | 'compare';
 
 export default function ResultPage() {
   const params = useParams();
+  const router = useRouter();
   const jobId = params.id as string;
 
   const [screenplay, setScreenplay] = useState<Screenplay | null>(null);
@@ -141,11 +142,14 @@ export default function ResultPage() {
     <div className="space-y-4 max-w-7xl mx-auto p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
-          <p className="text-sm text-gray-500">
-            {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
-          </p>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push('/')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回首页</button>
+          <div>
+            <h2 className="text-2xl font-bold">{sp.metadata.title}</h2>
+            <p className="text-sm text-gray-500">
+              {sp.metadata.totalScenes} 场景 · {sp.metadata.totalCharacters} 角色 · {sp.metadata.totalLocations} 地点
+            </p>
+          </div>
         </div>
         <button onClick={downloadYaml} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
           下载 YAML

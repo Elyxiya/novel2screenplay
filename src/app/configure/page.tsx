@@ -53,6 +53,9 @@ export default function ConfigurePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={() => router.push('/')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回上传</button>
+      </div>
       <div><h2 className="text-2xl font-bold">转换配置</h2><p className="text-gray-500 mt-1">{data.title}（约 {charCount.toLocaleString()} 字）</p></div>
 
       <div className="bg-white rounded-xl border p-6 space-y-4">

@@ -45,8 +45,10 @@ export default function ConvertPage() {
   }, []);
 
   const cancel = async () => {
-    if (!jobId) return;
-    await fetch(`/api/pipeline/cancel/${jobId}`, { method: 'POST' });
+    const jid = typeof window !== 'undefined' ? sessionStorage.getItem('jobId') : null;
+    if (jid) await fetch(`/api/pipeline/cancel/${jid}`, { method: 'POST' });
+    sessionStorage.removeItem('jobId');
+    sessionStorage.removeItem('novelData');
     router.push('/');
   };
 
@@ -55,6 +57,9 @@ export default function ConvertPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={() => router.push('/configure')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回配置</button>
+      </div>
       <h2 className="text-2xl font-bold">转换进度</h2>
 
       <div className="bg-white rounded-xl border p-6 space-y-6">
@@ -90,8 +95,11 @@ export default function ConvertPage() {
         {/* Actions */}
         <div className="flex gap-3">
           <button onClick={cancel} className="px-6 py-2.5 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 text-sm">取消转换</button>
-          {status === 'failed' && jobId && (
-            <button onClick={async () => { await fetch(`/api/pipeline/resume/${jobId}`, { method: 'POST' }); }} className="px-6 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 text-sm">恢复任务</button>
+          {status === 'failed' && (
+            <button onClick={async () => {
+              const jid = typeof window !== 'undefined' ? sessionStorage.getItem('jobId') : null;
+              if (jid) await fetch(`/api/pipeline/resume/${jid}`, { method: 'POST' });
+            }} className="px-6 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 text-sm">恢复任务</button>
           )}
         </div>
       </div>

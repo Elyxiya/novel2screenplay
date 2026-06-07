@@ -3,7 +3,6 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { serializeToYaml, parseFromYaml, safeParseFromYaml } from '../../../src/lib/schema/yaml-serializer';
 import { validateScreenplay, autoFixScreenplay } from '../../../src/lib/schema/validator';
-import type { Screenplay } from '../../../src/lib/schema/screenplay.schema';
 
 function loadFixture(): string {
   return readFileSync(join(__dirname, '../../fixtures/sample-screenplay.yaml'), 'utf-8');

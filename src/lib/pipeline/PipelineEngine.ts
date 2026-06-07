@@ -31,6 +31,7 @@ export class PipelineEngine {
     author?: string;
     modelId?: string;
     temperature?: number;
+    selectedChapters?: number[];
   }): Promise<string> {
     // Parse novel text into chapters
     const parseResult = parseNovel(input.novelText, input.title);
@@ -39,7 +40,16 @@ export class PipelineEngine {
       throw new Error('未检测到有效章节内容');
     }
 
-    const chapterTexts = parseResult.chapters.map((c) => c.text);
+    // All chapters (for result page original text display)
+    const allChapterTexts = parseResult.chapters.map((c) => c.text);
+    // Filtered to selected chapters (for pipeline phases)
+    const chapterTexts = input.selectedChapters
+      ? input.selectedChapters.map(i => allChapterTexts[i]).filter(Boolean)
+      : allChapterTexts;
+    // Chapters objects filtered to selected (for Phase1/Phase2)
+    const selectedChapterObjs = input.selectedChapters
+      ? input.selectedChapters.map(i => parseResult.chapters[i]).filter(Boolean)
+      : parseResult.chapters;
 
     // Get LLM provider
     const provider = input.modelId
@@ -52,17 +62,17 @@ export class PipelineEngine {
       );
     }
 
-    // Create job
+    // Create job — store ALL chapters (for result page original text)
     const jobId = jobStore.create({
       novelText: input.novelText,
-      chapterTexts,
+      chapterTexts: allChapterTexts,
       modelId: provider.modelId,
-      selectedChapters: parseResult.chapters.map((c) => c.index),
+      selectedChapters: input.selectedChapters ?? parseResult.chapters.map((c) => c.index),
       temperature: input.temperature ?? 0.7,
     });
 
     // Start pipeline asynchronously (don't await — let it run in background)
-    this.runPipeline(jobId, provider, parseResult, input).catch((err) => {
+    this.runPipeline(jobId, provider, selectedChapterObjs, input).catch((err) => {
       jobStore.update(jobId, (job) => ({
         ...job,
         status: 'failed',
@@ -108,7 +118,6 @@ export class PipelineEngine {
 
       // TODO: Re-run Phase 3 for failed scenes only, then Phase 4
       // For V1, just re-run the full pipeline
-      const parseResult = parseNovel(job.novelText);
       const provider = llmRegistry.getDefault();
       if (!provider) throw new Error('未配置 LLM Provider');
 
@@ -146,7 +155,7 @@ export class PipelineEngine {
       // Re-run Phase 4
       const phase4 = new Phase4Merger();
       const { screenplay, fixes } = await phase4.merge(
-        { title: parseResult.title, author: '', sourceNovel: parseResult.title },
+        { title: '剧本', author: '', sourceNovel: '剧本' },
         phase1Output,
         phase2Output,
         allOutputs,
@@ -201,14 +210,14 @@ export class PipelineEngine {
 
   /**
    * Internal: run the full 4-phase pipeline.
+   * @param chapters  Only the chapters selected for conversion (filtered by selectedChapters).
    */
   private async runPipeline(
     jobId: string,
     provider: LLMProvider,
-    parseResult: ReturnType<typeof parseNovel>,
+    chapters: Array<{ index: number; title: string; text: string }>,
     input: { title?: string; author?: string },
   ): Promise<void> {
-    const { chapters } = parseResult;
 
     console.log(`[${jobId}] === PIPELINE STARTED ===`);
     console.log(`[${jobId}] provider=${provider.name}(${provider.modelId}), chapters=${chapters.length}`);
@@ -311,9 +320,9 @@ export class PipelineEngine {
     const phase4 = new Phase4Merger();
     const { screenplay, fixes } = await phase4.merge(
       {
-        title: input.title || parseResult.title,
+        title: input.title || (chapters.length > 0 ? chapters[0].title : '未命名'),
         author: input.author || '',
-        sourceNovel: parseResult.title,
+        sourceNovel: input.title || (chapters.length > 0 ? chapters[0].title : '未命名'),
       },
       phase1Output,
       phase2Output,

@@ -253,7 +253,6 @@ export class PipelineEngine {
     const phase2Output = await phase2.segment(
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
       phase1Output,
-      chapters.map((c) => c.text),
     );
 
     console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);

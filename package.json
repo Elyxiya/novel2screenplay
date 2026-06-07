@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "novel2screenplay",
   "version": "0.1.0",
   "private": true,
@@ -27,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "eslint-config-prettier": "^10.1.8",
     "jsdom": "^29.1.1",
     "msw": "^2.14.6",
     "prettier": "^3.8.3",
@@ -35,3 +36,4 @@
     "vitest": "^4.1.8"
   }
 }
+

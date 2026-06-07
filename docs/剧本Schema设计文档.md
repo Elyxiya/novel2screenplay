@@ -1,4 +1,4 @@
-﻿# 剧本 YAML Schema 设计文档
+# 剧本 YAML Schema 设计文档
 
 ## 概述
 

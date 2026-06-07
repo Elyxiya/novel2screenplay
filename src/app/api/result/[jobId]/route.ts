@@ -11,7 +11,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ job
 
   const screenplay = job.pipelineState.phase4Output;
   if (!screenplay) return NextResponse.json({ error: '剧本数据不存在' }, { status: 404 });
-  return NextResponse.json({ screenplay, yaml: serializeToYaml(screenplay), analytics: screenplay.analytics, metadata: screenplay.metadata });
+  return NextResponse.json({
+    screenplay,
+    yaml: serializeToYaml(screenplay),
+    analytics: screenplay.analytics,
+    metadata: screenplay.metadata,
+    chapterTexts: job.chapterTexts,
+  });
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {

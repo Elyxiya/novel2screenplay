@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "novel2screenplay",
   "version": "0.1.0",
   "private": true,
@@ -36,4 +36,3 @@
     "vitest": "^4.1.8"
   }
 }
-

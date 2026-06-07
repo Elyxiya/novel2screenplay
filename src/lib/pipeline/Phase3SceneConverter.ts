@@ -150,6 +150,37 @@ class Semaphore {
   async run<T>(fn: () => Promise<T>): Promise<T> { await this.acquire(); try { return await fn(); } finally { this.release(); } }
 }
 
+// ── timeOfDay normalization ──
+
+const VALID_TIME_OF_DAY = new Set(['dawn', 'morning', 'afternoon', 'dusk', 'night', 'late-night', 'unknown']);
+
+const TIME_OF_DAY_FALLBACKS: Record<string, string> = {
+  day: 'afternoon',
+  daytime: 'afternoon',
+  日: 'afternoon',
+  白天: 'afternoon',
+  中午: 'afternoon',
+  noon: 'afternoon',
+  早晨: 'morning',
+  早上: 'morning',
+  上午: 'morning',
+  清晨: 'dawn',
+  黎明: 'dawn',
+  黄昏: 'dusk',
+  傍晚: 'dusk',
+  晚上: 'night',
+  夜晚: 'night',
+  深夜: 'late-night',
+  midnight: 'late-night',
+};
+
+function normalizeTimeOfDay(value: unknown): string {
+  const normalized = String(value ?? '').toLowerCase().trim();
+  if (VALID_TIME_OF_DAY.has(normalized)) return normalized;
+  if (TIME_OF_DAY_FALLBACKS[normalized]) return TIME_OF_DAY_FALLBACKS[normalized];
+  return 'unknown';
+}
+
 // ── Phase 3 Converter ──
 
 export class Phase3SceneConverter {
@@ -246,7 +277,7 @@ export class Phase3SceneConverter {
         return {
           sceneNumber: scene.sceneIndex,
           slugline: scene.draftSlugline,
-          timeOfDay: String(parsed.timeOfDay || 'unknown'),
+          timeOfDay: normalizeTimeOfDay(parsed.timeOfDay),
           locationId: `loc_${String(scene.chapterIndex + 1).padStart(2, '0')}`,
           characterIds: (scene.keyCharacterNames || []).map(n => charIdMap.get(n) || n),
           content,

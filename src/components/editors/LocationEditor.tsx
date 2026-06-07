@@ -12,9 +12,10 @@ const TYPE_LABELS: Record<string, string> = {
 interface Props {
   location: Location;
   onSave: (l: Location) => Promise<void>;
+  onDelete?: (locationId: string) => Promise<void>;
 }
 
-export function LocationEditor({ location, onSave }: Props) {
+export function LocationEditor({ location, onSave, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Location>(location);
@@ -56,7 +57,16 @@ export function LocationEditor({ location, onSave }: Props) {
             {TYPE_LABELS[location.type] || location.type}
           </span>
         </div>
-        <div>
+        <div className="flex gap-1 items-center">
+          {onDelete && (
+            <button
+              onClick={async () => { if (confirm(`确定删除地点「${location.name}」？`)) await onDelete(location.locationId); }}
+              className="text-xs text-red-500 border border-red-200 rounded px-2 py-1 hover:bg-red-50"
+              title="删除地点"
+            >
+              删除
+            </button>
+          )}
           {!editing ? (
             <button onClick={() => setEditing(true)} className="text-xs border rounded px-2 py-1 hover:bg-gray-50">编辑</button>
           ) : (

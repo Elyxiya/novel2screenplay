@@ -34,7 +34,6 @@ export class Phase2Segmenter {
   async segment(
     chapters: Array<{ index: number; title: string; text: string }>,
     analysis: Phase1Output,
-    chapterTexts: string[] = [],
   ): Promise<Phase2Output> {
     const allScenes: SceneBoundary[] = [];
     const rawResponses: string[] = [];
@@ -86,9 +85,8 @@ export class Phase2Segmenter {
         };
         const scenes = Array.isArray(parsed) ? parsed : (parsed.scenes || []);
 
-        // Build cumulative offsets for this chapter within the full novel text
-        // Use absolute offsets (cumulative across all chapters) for Phase 3 extraction
-        const chapterOffset = chapter.index === 0 ? 0 : chapterTexts.slice(0, chapter.index).reduce((sum, t) => sum + t.length, 0);
+        // Calculate paragraph offsets within this chapter (relative to chapter start).
+        // These offsets are chapter-local; Phase 3 extracts text from each chapter independently.
         const charOffsets = this.calculateCharOffsets(chapter.text);
 
         console.log(`[Phase2]  章节 #${chapter.index}: 检测到 ${scenes.length} 个场景`);
@@ -102,8 +100,9 @@ export class Phase2Segmenter {
             chapterIndex: chapter.index,
             startParagraph: s.startParagraph ?? 0,
             endParagraph: s.endParagraph ?? 0,
-            originalStartOffset: chapterOffset + charOffsets[startIdx2],
-            originalEndOffset: chapterOffset + (charOffsets[endIdx2] ?? chapter.text.length),
+            // Chapter-local offsets — used by Phase 3 to slice from the correct chapter
+            originalStartOffset: charOffsets[startIdx2] ?? 0,
+            originalEndOffset: charOffsets[endIdx2] ?? chapter.text.length,
             draftSlugline: s.draftSlugline || `${chapter.title} - 场景 ${i + 1}`,
             keyCharacterNames: s.keyCharacterNames || [],
             summary: s.summary || '',
@@ -111,7 +110,6 @@ export class Phase2Segmenter {
         }
       } catch (err) {
         console.log(`[Phase2]  章节 #${chapter.index} LLM 调用失败: ${(err as Error).message}, 使用 fallback`);
-        // Fallback: split by empty lines
         rawResponses.push('Fallback: empty line split');
         const fallbackScenes = await this.fallbackSplit(chapter);
         for (const fs of fallbackScenes) {
@@ -121,13 +119,13 @@ export class Phase2Segmenter {
     }
     console.log(`[Phase2] 所有章节处理完成, 共 ${allScenes.length} 个场景`);
 
-    // Post-processing pipeline:
-    // 1. Remove zero-width scenes
-    // 2. Merge adjacent short scenes with same time+location
-    // 3. Resolve overlapping boundaries (non-overlapping coverage)
+    // Post-processing: run within each chapter independently to avoid cross-chapter offset collision.
+    // Each chapter's offsets start from 0, so we must NOT run resolveOverlappingBoundaries
+    // on the global flat list. Instead, group by chapter and resolve per-chapter.
     let scenes = allScenes.filter(s => s.originalEndOffset > s.originalStartOffset);
     scenes = this.mergeAdjacentScenes(scenes);
-    scenes = this.resolveOverlappingBoundaries(scenes);
+    scenes = this.resolveOverlappingPerChapter(scenes);
+    console.log(`[Phase2] 场景后处理完成, 最终 ${scenes.length} 个场景`);
     return { scenes, rawResponses };
   }
 
@@ -139,7 +137,6 @@ export class Phase2Segmenter {
     text: string;
   }): Promise<SceneBoundary[]> {
     const scenes: SceneBoundary[] = [];
-    // Use same paragraph split as Phase 3's splitByParagraphs
     const sections = chapter.text.split(/\n\s*\n/).filter(s => s.trim().length > 0);
 
     let globalSceneIndex = 0;
@@ -149,10 +146,8 @@ export class Phase2Segmenter {
       const section = sections[i];
       if (section.trim().length === 0) continue;
 
-      // Check if too long ( >1500 tokens)
       const tokenCount = await this.ctxManager.countTokens(section);
       if (tokenCount > 1500) {
-        // Split by sentence boundaries
         const sentences = section.split(/(?<=[。！？\n])/);
         for (const sentence of sentences) {
           if (sentence.trim().length === 0) continue;
@@ -183,7 +178,7 @@ export class Phase2Segmenter {
           summary: section.slice(0, 50) + '...',
         });
         globalSceneIndex++;
-        charOffset += section.length + 2; // +2 for \n\n
+        charOffset += section.length + 2;
       }
     }
 
@@ -192,7 +187,6 @@ export class Phase2Segmenter {
 
   /**
    * Merge adjacent scenes only if they are very short (< 800 chars).
-   * This prevents merging distinct events that happen at the same location/time.
    */
   private mergeAdjacentScenes(scenes: SceneBoundary[]): SceneBoundary[] {
     if (scenes.length <= 1) return scenes;
@@ -207,7 +201,6 @@ export class Phase2Segmenter {
       const lastLen = last.originalEndOffset - last.originalStartOffset;
       const currentLen = current.originalEndOffset - current.originalStartOffset;
 
-      // Only merge if BOTH scenes are short AND share location+time
       const lastLocation = last.draftSlugline.split(' - ')[0] || '';
       const currentLocation = current.draftSlugline.split(' - ')[0] || '';
       const lastTime = last.draftSlugline.split(' - ')[1] || '';
@@ -236,57 +229,63 @@ export class Phase2Segmenter {
   }
 
   /**
-   * Resolve overlapping scene boundaries by partitioning text into non-overlapping ranges.
-   * Each scene gets exclusive coverage of its character range.
-   * If scenes overlap, the later one takes precedence for the overlapping region.
+   * Resolve overlapping scene boundaries WITHIN EACH CHAPTER independently.
+   *
+   * CRITICAL: Offsets are chapter-local (each chapter starts at 0).
+   * We must NOT run the global resolve on all scenes — that would incorrectly
+   * treat chapter-0's offsets (e.g. 0–2000) as overlapping with chapter-1's
+   * offsets (also 0–3000), destroying all scenes after chapter 0.
+   *
+   * By resolving per-chapter, we only fix overlaps WITHIN a chapter, not across chapters.
    */
-  private resolveOverlappingBoundaries(scenes: SceneBoundary[]): SceneBoundary[] {
-    if (scenes.length <= 1) return scenes;
-
-    // Sort by start offset
-    const sorted = [...scenes].sort(
-      (a, b) => a.originalStartOffset - b.originalStartOffset,
-    );
+  private resolveOverlappingPerChapter(scenes: SceneBoundary[]): SceneBoundary[] {
+    const byChapter = new Map<number, SceneBoundary[]>();
+    for (const scene of scenes) {
+      const list = byChapter.get(scene.chapterIndex) ?? [];
+      list.push(scene);
+      byChapter.set(scene.chapterIndex, list);
+    }
 
     const resolved: SceneBoundary[] = [];
-    let currentEnd = 0;
+    let globalIndex = 0;
 
-    for (const scene of sorted) {
-      const start = scene.originalStartOffset;
-      const end = scene.originalEndOffset;
+    for (const [, chapterScenes] of [...byChapter.entries()].sort((a, b) => a[0] - b[0])) {
+      const sorted = [...chapterScenes].sort(
+        (a, b) => a.originalStartOffset - b.originalStartOffset,
+      );
 
-      if (start < currentEnd) {
-        // Overlap detected — truncate this scene to start from where the previous one ended
-        if (end > currentEnd) {
-          resolved.push({
-            ...scene,
-            originalStartOffset: currentEnd,
-          });
+      let currentEnd = 0;
+      for (const scene of sorted) {
+        const start = scene.originalStartOffset;
+        const end = scene.originalEndOffset;
+
+        if (start < currentEnd) {
+          // Overlap detected — truncate this scene to start from where the previous one ended
+          if (end > currentEnd) {
+            resolved.push({ ...scene, sceneIndex: ++globalIndex });
+            currentEnd = end;
+          }
+          // If end <= currentEnd, scene is fully covered — skip
+        } else {
+          resolved.push({ ...scene, sceneIndex: ++globalIndex });
           currentEnd = end;
         }
-        // If end <= currentEnd, the scene is completely covered by previous ones — skip it
-      } else {
-        // No overlap — add as-is
-        resolved.push(scene);
-        currentEnd = end;
       }
     }
 
-    return resolved.map((s, i) => ({ ...s, sceneIndex: i + 1 }));
+    return resolved;
   }
 
   /**
    * Calculate paragraph offsets for the text.
-   * A "paragraph" = a block of text separated by blank lines (consistent with Phase 3 splitByParagraphs).
    */
   private calculateCharOffsets(text: string): number[] {
     const offsets: number[] = [0];
-    // Split on double newlines (consistent with splitByParagraphs in Phase 3)
     const parts = text.split(/\n\s*\n/);
     let offset = 0;
     for (const part of parts) {
       offsets.push(offset + part.length);
-      offset += part.length + 2; // +2 for \n\n separator
+      offset += part.length + 2;
     }
     return offsets;
   }

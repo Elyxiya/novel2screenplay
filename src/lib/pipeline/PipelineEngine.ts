@@ -8,8 +8,6 @@ import { Phase2Segmenter } from './Phase2Segmenter';
 import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
 import type { StoredJob } from '../store/job-store';
-import type { Screenplay } from '../schema/screenplay.schema';
-import { serializeToYaml } from '../schema/yaml-serializer';
 
 /**
  * PipelineEngine orchestrates the 4-phase LLM conversion pipeline.
@@ -154,8 +152,6 @@ export class PipelineEngine {
         allOutputs,
       );
 
-      const yaml = serializeToYaml(screenplay);
-
       jobStore.update(jobId, (j) => ({
         ...j,
         status: 'completed' as const,
@@ -214,7 +210,11 @@ export class PipelineEngine {
   ): Promise<void> {
     const { chapters } = parseResult;
 
+    console.log(`[${jobId}] === PIPELINE STARTED ===`);
+    console.log(`[${jobId}] provider=${provider.name}(${provider.modelId}), chapters=${chapters.length}`);
+
     // ── Phase 1: Analyze ──
+    console.log(`[${jobId}] Phase 1: 开始分析角色与地点 (${chapters.length} 章, ${chapters.reduce((s,c) => s + c.text.length, 0)} 字)`);
     jobStore.update(jobId, (job) => ({
       ...job,
       status: 'analyzing' as const,
@@ -228,6 +228,7 @@ export class PipelineEngine {
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
     );
 
+    console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
     jobStore.update(jobId, (job) => ({
       ...job,
       progress: 25,
@@ -239,6 +240,7 @@ export class PipelineEngine {
     }));
 
     // ── Phase 2: Segment ──
+    console.log(`[${jobId}] Phase 2: 开始场景切割...`);
     jobStore.update(jobId, (job) => ({
       ...job,
       status: 'segmenting' as const,
@@ -251,8 +253,10 @@ export class PipelineEngine {
     const phase2Output = await phase2.segment(
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
       phase1Output,
+      chapters.map((c) => c.text),
     );
 
+    console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);
     jobStore.update(jobId, (job) => ({
       ...job,
       progress: 45,
@@ -264,6 +268,7 @@ export class PipelineEngine {
     }));
 
     // ── Phase 3: Convert Scenes (Parallel) ──
+    console.log(`[${jobId}] Phase 3: 开始并行转换 ${phase2Output.scenes.length} 个场景...`);
     jobStore.update(jobId, (job) => ({
       ...job,
       status: 'converting' as const,
@@ -282,17 +287,20 @@ export class PipelineEngine {
       jobId,
     );
 
+    const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;
+    console.log(`[${jobId}] Phase 3 完成: ${successCount}/${phase3Outputs.length} 场景成功`);
     jobStore.update(jobId, (job) => ({
       ...job,
       progress: 75,
       pipelineState: { ...job.pipelineState, phase3Output: phase3Outputs },
       logs: [
         ...job.logs,
-        { timestamp: Date.now(), level: 'info' as const, message: `Phase 3 完成: 成功转换 ${phase3Outputs.filter((o) => o.confidence > 0.5).length}/${phase3Outputs.length} 个场景` },
+        { timestamp: Date.now(), level: 'info' as const, message: `Phase 3 完成: 成功转换 ${successCount}/${phase3Outputs.length} 个场景` },
       ],
     }));
 
     // ── Phase 4: Merge & Validate ──
+    console.log(`[${jobId}] Phase 4: 开始合并校验...`);
     jobStore.update(jobId, (job) => ({
       ...job,
       status: 'merging' as const,
@@ -313,9 +321,7 @@ export class PipelineEngine {
       phase3Outputs,
     );
 
-    // Serialize to YAML
-    const yaml = serializeToYaml(screenplay);
-
+    console.log(`[${jobId}] ✅ 转换完成! fixes=${fixes?.length ?? 0}`);
     jobStore.update(jobId, (job) => ({
       ...job,
       status: 'completed' as const,
@@ -329,5 +335,6 @@ export class PipelineEngine {
         { timestamp: Date.now(), level: 'info' as const, message: `📊 对白 ${screenplay.analytics?.dialoguePercentage ?? '?'}% | 动作 ${screenplay.analytics?.actionPercentage ?? '?'}% | ${screenplay.metadata.totalScenes} 场景` },
       ],
     }));
+    console.log(`[${jobId}] === PIPELINE COMPLETE ===`);
   }
 }

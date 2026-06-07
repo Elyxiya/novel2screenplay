@@ -54,5 +54,5 @@ export interface LLMProvider {
   supportsJSONMode(): boolean;
 
   /** Estimate token count for a string */
-  estimateTokens(text: string): number;
+  estimateTokens(text: string): Promise<number>;
 }

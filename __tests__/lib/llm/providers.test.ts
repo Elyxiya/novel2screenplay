@@ -46,9 +46,9 @@ describe('DeepSeekProvider', () => {
     expect(provider.supportsJSONMode()).toBe(true);
   });
 
-  it('should estimate tokens for Chinese text', () => {
+  it('should estimate tokens for Chinese text', async () => {
     const text = '你好，世界';
-    const tokens = provider.estimateTokens(text);
+    const tokens = await provider.estimateTokens(text);
     expect(tokens).toBeGreaterThan(0);
   });
 

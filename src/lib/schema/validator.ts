@@ -23,9 +23,7 @@ export function validateScreenplay(data: unknown): ValidationResult {
   if (!parsed.success) {
     return {
       valid: false,
-      errors: parsed.error.errors.map(
-        (e) => `${e.path.join('.')}: ${e.message}`,
-      ),
+      errors: [parsed.error.message],
       warnings: [],
     };
   }
@@ -95,6 +93,11 @@ export function autoFixScreenplay(screenplay: Screenplay): {
 
   const locationIds = new Set(fixed.locations.map((l) => l.locationId));
   const characterIds = new Set(fixed.characters.map((c) => c.characterId));
+  // Track canonical names to prevent creating duplicate stubs for generic roles
+  const canonicalNameToId = new Map<string, string>();
+  for (const c of fixed.characters) {
+    canonicalNameToId.set(c.name, c.characterId);
+  }
   let nextCharId = fixed.characters.length + 1;
   let nextLocId = fixed.locations.length + 1;
 
@@ -117,19 +120,27 @@ export function autoFixScreenplay(screenplay: Screenplay): {
     const updatedCharIds: string[] = [];
     for (const charId of scene.characterIds) {
       if (!characterIds.has(charId)) {
-        const newCharId = `char_${String(nextCharId).padStart(2, '0')}`;
-        fixed.characters.push({
-          characterId: newCharId,
-          name: `未知角色 (${charId})`,
-          aliases: [],
-          personalityTags: [],
-          description: '由校验器自动创建的占位角色',
-          isMajor: false,
-        });
-        characterIds.add(newCharId);
-        fixes.push(`场景 #${scene.sceneNumber}: 创建缺失角色 ${newCharId}`);
+        const canonicalName = `未知角色 (${charId})`;
+        let newCharId: string;
+        if (canonicalNameToId.has(canonicalName)) {
+          // Reuse existing stub for the same original name
+          newCharId = canonicalNameToId.get(canonicalName)!;
+        } else {
+          newCharId = `char_${String(nextCharId).padStart(2, '0')}`;
+          fixed.characters.push({
+            characterId: newCharId,
+            name: canonicalName,
+            aliases: [],
+            personalityTags: [],
+            description: '由校验器自动创建的占位角色',
+            isMajor: false,
+          });
+          canonicalNameToId.set(canonicalName, newCharId);
+          characterIds.add(newCharId);
+          fixes.push(`场景 #${scene.sceneNumber}: 创建缺失角色 ${newCharId}`);
+          nextCharId++;
+        }
         updatedCharIds.push(newCharId);
-        nextCharId++;
       } else {
         updatedCharIds.push(charId);
       }
@@ -139,19 +150,27 @@ export function autoFixScreenplay(screenplay: Screenplay): {
     // Fix missing characters in dialogue blocks
     for (const block of scene.content) {
       if (block.type === 'dialogue' && !characterIds.has(block.characterId)) {
-        const newCharId = `char_${String(nextCharId).padStart(2, '0')}`;
-        fixed.characters.push({
-          characterId: newCharId,
-          name: `未知角色 (${block.characterId})`,
-          aliases: [],
-          personalityTags: [],
-          description: '由校验器自动创建的占位角色',
-          isMajor: false,
-        });
-        characterIds.add(newCharId);
+        const canonicalName = `未知角色 (${block.characterId})`;
+        let newCharId: string;
+        if (canonicalNameToId.has(canonicalName)) {
+          newCharId = canonicalNameToId.get(canonicalName)!;
+        } else {
+          newCharId = `char_${String(nextCharId).padStart(2, '0')}`;
+          fixed.characters.push({
+            characterId: newCharId,
+            name: canonicalName,
+            aliases: [],
+            personalityTags: [],
+            description: '由校验器自动创建的占位角色',
+            isMajor: false,
+          });
+          canonicalNameToId.set(canonicalName, newCharId);
+          characterIds.add(newCharId);
+          block.characterId = newCharId;
+          fixes.push(`场景 #${scene.sceneNumber}: 对白中创建缺失角色 ${newCharId}`);
+          nextCharId++;
+        }
         block.characterId = newCharId;
-        fixes.push(`场景 #${scene.sceneNumber}: 对白中创建缺失角色 ${newCharId}`);
-        nextCharId++;
       }
     }
   }

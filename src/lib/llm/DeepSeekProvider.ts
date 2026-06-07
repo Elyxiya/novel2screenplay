@@ -7,15 +7,21 @@ import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from
  */
 export class DeepSeekProvider extends BaseProvider {
   readonly name = 'DeepSeek';
-  readonly modelId = 'deepseek-chat';
-  readonly description = 'DeepSeek-V3 Chat (OpenAI-compatible)';
+  readonly modelId: string;
+  readonly description: string;
   readonly contextWindow = 65536;
   protected readonly baseUrl = 'https://api.deepseek.com/v1';
   protected readonly apiKey: string;
 
-  constructor(apiKey: string) {
+  /**
+   * @param apiKey - DeepSeek API key
+   * @param modelId - Model ID (default from env DEEPSEEK_MODEL_ID or 'deepseek-chat')
+   */
+  constructor(apiKey: string, modelId?: string) {
     super();
     this.apiKey = apiKey;
+    this.modelId = modelId || process.env.DEEPSEEK_MODEL_ID || 'deepseek-chat';
+    this.description = `DeepSeek (${this.modelId})`;
   }
 
   async chat(messages: LLMMessage[], options?: LLMChatOptions): Promise<LLMChatResponse> {

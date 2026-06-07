@@ -1,5 +1,4 @@
 import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
-import { getEncoding } from 'tiktoken';
 
 /**
  * Abstract base class for HTTP-based LLM providers.
@@ -13,16 +12,21 @@ export abstract class BaseProvider implements LLMProvider {
   protected abstract readonly baseUrl: string;
   protected abstract readonly apiKey: string;
 
+  abstract chat(messages: LLMMessage[], options?: LLMChatOptions): Promise<LLMChatResponse>;
+  abstract chatStream(messages: LLMMessage[], options?: LLMChatOptions): AsyncGenerator<LLMStreamChunk>;
+
   supportsJSONMode(): boolean {
     return true;
   }
 
-  estimateTokens(text: string): number {
+  async estimateTokens(text: string): Promise<number> {
     try {
-      const encoding = getEncoding('cl100k_base');
-      return encoding.encode(text).length;
+      const { get_encoding } = await import('tiktoken') as typeof import('tiktoken');
+      const encoding = get_encoding('cl100k_base');
+      const count = encoding.encode(text).length;
+      encoding.free();
+      return count;
     } catch {
-      // Fallback: ~1.3 tokens per Chinese character
       return Math.ceil(text.length * 1.3);
     }
   }
@@ -39,6 +43,7 @@ export abstract class BaseProvider implements LLMProvider {
     retries = 2,
   ): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
+    const modelName = (body as Record<string, unknown>)?.model ?? 'unknown';
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       // Create a timeout controller for this attempt
@@ -50,6 +55,7 @@ export abstract class BaseProvider implements LLMProvider {
         ? combineAbortSignals(signal, timeoutController.signal)
         : timeoutController.signal;
 
+      const t0 = Date.now();
       try {
         const response = await fetch(url, {
           method: 'POST',
@@ -60,28 +66,35 @@ export abstract class BaseProvider implements LLMProvider {
           body: JSON.stringify(body),
           signal: combinedSignal,
         });
+        const elapsed = Date.now() - t0;
 
         if (response.status === 429 && attempt < retries) {
-          // Rate limited: backoff and retry
+          console.log(`[LLM] ${modelName} 429 限流 (${elapsed}ms, attempt ${attempt + 1}/${retries + 1}), 等待后重试`);
           const backoffMs = attempt === 0 ? 1000 : 3000;
           await delay(backoffMs);
           continue;
         }
 
         if (!response.ok && attempt < retries) {
+          const bodyText = await response.text().catch(() => '');
+          console.log(`[LLM] ${modelName} HTTP ${response.status} (${elapsed}ms, attempt ${attempt + 1}/${retries + 1}), 等待后重试: ${bodyText.slice(0, 200)}`);
           const backoffMs = attempt === 0 ? 1000 : 3000;
           await delay(backoffMs);
           continue;
         }
 
+        console.log(`[LLM] ${modelName} ${response.status} (${elapsed}ms, attempt ${attempt + 1}/${retries + 1})`);
         return response;
       } catch (error) {
         clearTimeout(timeoutId);
+        const elapsed = Date.now() - t0;
         if (attempt < retries) {
+          console.log(`[LLM] ${modelName} 请求失败 (${elapsed}ms, attempt ${attempt + 1}/${retries + 1}): ${(error as Error).message}，等待后重试`);
           const backoffMs = attempt === 0 ? 1000 : 3000;
           await delay(backoffMs);
           continue;
         }
+        console.log(`[LLM] ${modelName} 请求失败 (${elapsed}ms, attempt ${attempt + 1}/${retries + 1}): ${(error as Error).message}，已耗尽重试次数`);
         throw error;
       } finally {
         clearTimeout(timeoutId);
@@ -94,7 +107,7 @@ export abstract class BaseProvider implements LLMProvider {
   /** Shared streaming fetch */
   protected async *streamFetch(
     path: string,
-    body: unknown,
+    body: Record<string, unknown>,
     signal?: AbortSignal,
   ): AsyncGenerator<LLMStreamChunk> {
     const url = `${this.baseUrl}${path}`;

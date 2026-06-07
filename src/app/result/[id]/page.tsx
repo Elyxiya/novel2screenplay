@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import type { Screenplay, Scene, Character, Location } from '@/lib/schema/screenplay.schema';
 import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
 import { LocationEditor } from '@/components/editors/LocationEditor';
+import { SceneCompare } from '@/components/compare/SceneCompare';
 
 type Tab = 'scenes' | 'characters' | 'locations' | 'yaml';
+type SceneViewMode = 'editor' | 'compare';
 
 export default function ResultPage() {
   const params = useParams();
@@ -21,6 +23,8 @@ export default function ResultPage() {
   const [activeScene, setActiveScene] = useState(0);
   const [editingYaml, setEditingYaml] = useState(false);
   const [savingYaml, setSavingYaml] = useState(false);
+  const [chapterTexts, setChapterTexts] = useState<string[]>([]);
+  const [sceneViewMode, setSceneViewMode] = useState<SceneViewMode>('editor');
 
   const fetchScreenplay = useCallback(async () => {
     const res = await fetch(`/api/result/${jobId}`);
@@ -29,6 +33,7 @@ export default function ResultPage() {
       setScreenplay(data.screenplay);
       setYaml(data.yaml);
       setEditYaml(data.yaml);
+      if (data.chapterTexts) setChapterTexts(data.chapterTexts);
     }
     setLoading(false);
   }, [jobId]);
@@ -106,10 +111,29 @@ export default function ResultPage() {
     a.click();
   };
 
+  const currentSceneOriginalText = useMemo(() => {
+    if (!screenplay || !chapterTexts.length) return '';
+    const scene = screenplay.scenes[activeScene];
+    if (!scene) return '';
+    if (scene.sourceChapterRange) {
+      const [start, end] = scene.sourceChapterRange;
+      return chapterTexts.slice(start, end + 1).join('\n\n─── 章节分隔 ───\n\n');
+    }
+    const allRefs = scene.content.flatMap(b => b.sourceRefs ?? []);
+    const chapterIndices = [...new Set(allRefs.map(r => r.chapterIndex))].sort((a, b) => a - b);
+    if (!chapterIndices.length) return '';
+    return chapterIndices
+      .map(ci => chapterTexts[ci] ?? '')
+      .filter(Boolean)
+      .join('\n\n─── 章节分隔 ───\n\n');
+  }, [screenplay, activeScene, chapterTexts]);
+
   if (loading) return <div className="text-center py-20 text-gray-400">加载中...</div>;
   if (!screenplay) return <div className="text-center py-20 text-gray-400">未找到剧本数据</div>;
 
   const sp = screenplay;
+  const currentScene = sp.scenes[activeScene];
+
   const a = sp.analytics;
   const chars = new Map(sp.characters.map(c => [c.characterId, c.name]));
 
@@ -184,15 +208,48 @@ export default function ResultPage() {
             ))}
           </div>
 
-          {/* Scene editor */}
-          <div className="flex-1 bg-white rounded-xl border overflow-hidden">
-              <SceneEditor
-                scene={sp.scenes[activeScene]}
-                locations={sp.locations}
-                characters={sp.characters}
-                onChange={() => {}}
-                onSave={saveScene}
-              />
+          {/* Scene detail panel */}
+          <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
+            {/* View mode toggle */}
+            <div className="shrink-0 px-4 pt-3 pb-2 border-b border-gray-100 flex justify-end">
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {([
+                  { key: 'editor', label: '编辑' },
+                  { key: 'compare', label: '原文对照' },
+                ] as const).map(m => (
+                  <button
+                    key={m.key}
+                    onClick={() => setSceneViewMode(m.key)}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      sceneViewMode === m.key
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {sceneViewMode === 'editor' ? (
+                <SceneEditor
+                  scene={currentScene}
+                  locations={sp.locations}
+                  characters={sp.characters}
+                  onChange={() => {}}
+                  onSave={saveScene}
+                />
+              ) : (
+                <SceneCompare
+                  scene={currentScene}
+                  originalText={currentSceneOriginalText}
+                  characters={sp.characters}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

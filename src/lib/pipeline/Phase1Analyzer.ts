@@ -3,6 +3,24 @@ import { SYSTEM_PROMPT as ANALYZE_PROMPT } from '../llm/prompts/analyze';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
 
+/** Shape of the JSON response expected from Phase 1 LLM */
+interface Phase1LLMResponse {
+  characters?: Array<{
+    name: string;
+    aliases?: string[];
+    personalityTags?: string[];
+    description?: string;
+    isMajor?: boolean;
+    sourceChapterIndex?: number;
+  }>;
+  locations?: Array<{
+    name: string;
+    type?: 'interior' | 'exterior' | 'abstract';
+    description?: string;
+  }>;
+  timelineHints?: Array<unknown>;
+}
+
 /** Raw character extracted by Phase 1 */
 export interface RawCharacter {
   name: string;
@@ -51,7 +69,10 @@ export class Phase1Analyzer {
       .map((c) => `[${c.title}]\n${c.text}`)
       .join('\n\n');
 
+    console.log(`[Phase1] 原文长度: ${fullText.length} 字, ${chapters.length} 章`);
     const truncatedText = await this.ctxManager.truncateToTokens(fullText, MAX_ANALYSIS_TOKENS);
+    const isTruncated = truncatedText !== fullText;
+    console.log(`[Phase1] 截断后: ${truncatedText.length} 字${isTruncated ? ' (已截断)' : ''}`);
 
     const messages: LLMMessage[] = [
       { role: 'system', content: ANALYZE_PROMPT },
@@ -66,15 +87,20 @@ export class Phase1Analyzer {
     // Retry up to 3 times for JSON parse failures
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
+        console.log(`[Phase1] 调用 LLM (attempt ${attempt + 1}/3)...`);
+        const t0 = Date.now();
         const response = await this.provider.chat(messages, {
           responseFormat: 'json_object',
           temperature: 0.3,
           maxTokens: 4096,
         });
+        const t1 = Date.now();
+        console.log(`[Phase1] LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
 
-        const parsed = safeJsonParse(response.content) as any;
+        const parsed = safeJsonParse(response.content) as Phase1LLMResponse;
+        console.log(`[Phase1] 解析结果: ${parsed.characters?.length ?? 0} 角色, ${parsed.locations?.length ?? 0} 地点`);
         return {
-          characters: (parsed.characters || []).map((c: RawCharacter, i: number) => ({
+          characters: (parsed.characters || []).map((c: RawCharacter) => ({
             ...c,
             isMajor: c.isMajor ?? true,
             sourceChapterIndex: c.sourceChapterIndex ?? 0,
@@ -88,12 +114,14 @@ export class Phase1Analyzer {
         };
       } catch (err) {
         lastError = err as Error;
+        console.log(`[Phase1] 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
         // Wait before retry
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
 
     // All retries exhausted: return empty result
+    console.log(`[Phase1] 所有重试均失败: ${lastError?.message}`);
     return {
       characters: [],
       locations: [],

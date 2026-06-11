@@ -8,6 +8,7 @@ export * from './types';
 export * from './state-machine';
 export * from './memory';
 export * from './tool-types';
+export * from './llm';
 export {
   AgentCore,
   AgentError,

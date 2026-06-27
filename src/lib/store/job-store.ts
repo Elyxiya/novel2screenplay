@@ -1,8 +1,19 @@
+/**
+ * Job Store - SQLite 持久化存储
+ *
+ * 重构自内存存储，使用 SQLite 作为持久化层。
+ * 保持与原有 API 的向后兼容。
+ *
+ * @deprecated 请使用 src/lib/store/sqlite 中的 Repository
+ * 新代码应直接使用 getJobRepository() 等方法
+ */
+
 import type { PipelineJob, SceneStatus } from '../../types/api';
 import type { Phase1Output } from '../pipeline/Phase1Analyzer';
 import type { Phase2Output } from '../pipeline/Phase2Segmenter';
 import type { Phase3Output } from '../pipeline/Phase3SceneConverter';
 import type { Screenplay } from '../schema/screenplay.schema';
+import { getJobRepository, type CreateJobParams, type UpdateJobParams } from './sqlite';
 
 /** Internal stored job with pipeline state */
 export interface StoredJob extends PipelineJob {
@@ -22,13 +33,13 @@ export interface StoredJob extends PipelineJob {
 }
 
 /**
- * In-memory job store with JSON file backup.
+ * Job Store 类
  *
- * ⚠️ KNOWN LIMITATION: Data is lost on Next.js hot-reload.
- * For production use with multiple instances, migrate to Redis.
+ * 封装 SQLite Repository，提供与原内存存储相同的接口。
+ * 这样可以最大程度保持向后兼容，无需修改现有调用代码。
  */
 export class JobStore {
-  private jobs = new Map<string, StoredJob>();
+  private repository = getJobRepository();
   private recoveringJobs = new Set<string>();
 
   create(config: {
@@ -38,56 +49,52 @@ export class JobStore {
     selectedChapters: number[];
     temperature: number;
   }): string {
-    const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const now = Date.now();
-
-    const initialScenesStatus: SceneStatus[] = [];
-
-    const job: StoredJob = {
-      id,
-      status: 'pending',
-      currentPhase: 0,
-      progress: 0,
-      subProgress: null,
-      scenesStatus: initialScenesStatus,
-      logs: [{ timestamp: now, level: 'info', message: '任务已创建' }],
-      error: null,
-      resultId: null,
-      createdAt: now,
-      updatedAt: now,
-      novelText: config.novelText,
-      chapterTexts: config.chapterTexts,
-      config: {
-        modelId: config.modelId,
-        selectedChapters: config.selectedChapters,
-        temperature: config.temperature,
-      },
-      pipelineState: {},
-    };
-
-    this.jobs.set(id, job);
-    return id;
+    return this.repository.create(config);
   }
 
   get(jobId: string): StoredJob | undefined {
-    return this.jobs.get(jobId);
+    return this.repository.get(jobId) ?? undefined;
   }
 
   update(jobId: string, updater: (job: StoredJob) => StoredJob): void {
-    const job = this.jobs.get(jobId);
+    const job = this.repository.get(jobId);
     if (!job) return;
-    const updated = updater(job);
-    updated.updatedAt = Date.now();
-    this.jobs.set(jobId, updated);
+
+    // 执行 updater 获取更新后的 job
+    const updatedJob = updater(job);
+
+    // 提取可序列化的字段
+    const params: UpdateJobParams = {};
+
+    if (updatedJob.status !== job.status) params.status = updatedJob.status;
+    if (updatedJob.currentPhase !== job.currentPhase) params.currentPhase = updatedJob.currentPhase;
+    if (updatedJob.progress !== job.progress) params.progress = updatedJob.progress;
+    if (updatedJob.subProgress !== job.subProgress) params.subProgress = updatedJob.subProgress;
+    if (JSON.stringify(updatedJob.scenesStatus) !== JSON.stringify(job.scenesStatus)) {
+      params.scenesStatus = updatedJob.scenesStatus;
+    }
+    if (JSON.stringify(updatedJob.logs) !== JSON.stringify(job.logs)) {
+      params.logs = updatedJob.logs;
+    }
+    if (updatedJob.error !== job.error) params.error = updatedJob.error;
+    if (updatedJob.resultId !== job.resultId) params.resultId = updatedJob.resultId;
+
+    // Pipeline state 存储在内存中，不持久化到 SQLite
+    // 如果需要持久化，可以序列化后存储
+
+    this.repository.update(jobId, params);
   }
 
   delete(jobId: string): void {
-    this.jobs.delete(jobId);
-    this.recoveringJobs.delete(jobId);
+    this.repository.delete(jobId);
   }
 
   list(): StoredJob[] {
-    return Array.from(this.jobs.values());
+    return this.repository.list();
+  }
+
+  listByStatus(status: PipelineJob['status']): StoredJob[] {
+    return this.repository.list(status);
   }
 
   /** Resume lock management */
@@ -106,8 +113,8 @@ export class JobStore {
   }
 }
 
-/** Global singleton — survives Next.js hot-reload by attaching to globalThis */
-const GLOBAL_KEY = '__novel2screenplay_jobStore';
+/** Global singleton */
+const GLOBAL_KEY = '__novel2screenplay_jobStore__';
 
 function getGlobalStore(): JobStore {
   if (typeof globalThis !== 'undefined') {

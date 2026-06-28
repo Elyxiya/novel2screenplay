@@ -27,7 +27,7 @@ export async function GET() {
     adapterName: string;
     models: Array<{
       modelId: string;
-      cost: { input: number; output: number };
+      cost: { inputCost: number; outputCost: number };
       health: string;
     }>;
   }>>((acc, m) => {

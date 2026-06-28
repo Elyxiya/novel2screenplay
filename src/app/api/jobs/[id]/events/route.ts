@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
+import type { PipelineJob } from '@/lib/jobs/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   });
 }
 
-function formatSSEMessage(job: ReturnType<typeof getJobQueue> extends { get: (id: string) => infer T } ? T : never): string {
+function formatSSEMessage(job: PipelineJob): string {
   const data = JSON.stringify({
     id: job.id,
     status: job.status,

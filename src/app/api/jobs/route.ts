@@ -9,7 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
-import { createPipelineJob, type PipelineJobInput } from '@/lib/jobs';
+import { createPipelineJob } from '@/lib/jobs/types';
+import type { JobStatus, PipelineJobInput } from '@/lib/jobs/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const queue = getJobQueue();
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status') as PipelineJobInput['options'] extends { status: infer S } ? S : undefined;
+  const statusParam = searchParams.get('status');
+  const status = statusParam as JobStatus | null;
 
-  const jobs = queue.list(status as any);
+  const jobs = queue.list(status ?? undefined);
   const stats = queue.getStats();
 
   return NextResponse.json({

@@ -49,7 +49,7 @@ export class PipelineEngine {
     selectedChapters?: number[];
   }): Promise<string> {
     // Parse novel text into chapters
-    const parseResult = parseNovel(input.novelText, input.title);
+    const parseResult = parseNovel(input.novelText);
 
     if (parseResult.chapters.length === 0) {
       throw new Error('未检测到有效章节内容');
@@ -145,7 +145,7 @@ export class PipelineEngine {
       jobStore.update(jobId, (j) => ({
         ...j,
         status: 'converting' as const,
-        currentPhase: 3,
+        currentPhase: 3 as StoredJob['currentPhase'],
         logs: [...j.logs, { timestamp: Date.now(), level: 'info' as const, message: `开始恢复 ${failedScenes.length} 个失败场景` }],
       }));
 
@@ -209,7 +209,7 @@ export class PipelineEngine {
     jobStore.update(jobId, (j) => ({
       ...j,
       status: 'pending' as const,
-      currentPhase: 0,
+      currentPhase: 0 as StoredJob['currentPhase'],
       progress: 0,
       subProgress: null,
       scenesStatus: [],
@@ -218,7 +218,7 @@ export class PipelineEngine {
         ...j.logs,
         { timestamp: Date.now(), level: 'info' as const, message: '用户取消了转换' },
       ],
-      error: null,
+      error: undefined,
     }));
   }
 
@@ -249,7 +249,7 @@ export class PipelineEngine {
       const updated = {
         ...job,
         status: 'analyzing' as const,
-        currentPhase: 1,
+        currentPhase: 1 as StoredJob['currentPhase'],
         progress: 10,
         logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: 'Phase 1: 开始分析角色与地点...' }],
       };
@@ -285,7 +285,7 @@ export class PipelineEngine {
       const updated = {
         ...job,
         status: 'segmenting' as const,
-        currentPhase: 2,
+        currentPhase: 2 as StoredJob['currentPhase'],
         progress: 30,
         logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: 'Phase 2: 开始场景切割...' }],
       };
@@ -322,7 +322,7 @@ export class PipelineEngine {
       const updated = {
         ...job,
         status: 'converting' as const,
-        currentPhase: 3,
+        currentPhase: 3 as StoredJob['currentPhase'],
         progress: 50,
         logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: `Phase 3: 开始并行转换 ${phase2Output.scenes.length} 个场景...` }],
       };

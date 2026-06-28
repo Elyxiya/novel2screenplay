@@ -35,7 +35,7 @@ export interface CreateJobParams {
 }
 
 export interface UpdateJobParams {
-  status?: PipelineJob['status'];
+  status?: string;
   currentPhase?: number;
   progress?: number;
   subProgress?: number | null;
@@ -207,14 +207,17 @@ class JobRepositoryImpl implements JobRepository {
 
     return {
       id: row.id,
+      type: 'conversion',
       status: row.status as PipelineJob['status'],
-      currentPhase: row.current_phase,
+      retryCount: 0,
+      maxRetries: 3,
+      currentPhase: row.current_phase ?? undefined,
       progress: row.progress,
-      subProgress: row.sub_progress,
+      subProgress: row.sub_progress ?? undefined,
       scenesStatus: row.scenes_status ? JSON.parse(row.scenes_status) : [],
       logs: JSON.parse(row.logs),
-      error: row.error,
-      resultId: row.result_id,
+      error: row.error ?? undefined,
+      resultId: row.result_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       novelText: row.novel_text,

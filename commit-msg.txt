@@ -1,0 +1,4 @@
+﻿feat: integrate UI components into pages
+
+- Replace model selector with ModelSelector component in configure page
+- Add QuickStats component to homepage

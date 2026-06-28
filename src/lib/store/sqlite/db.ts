@@ -11,7 +11,7 @@ import path from 'path';
 import fs from 'fs';
 
 // 数据库文件路径配置
-const DB_DIR = process.env.DB_DIR || path.join(process.cwd(), 'data');
+const DB_DIR = process.env.DB_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
 const DB_FILE = process.env.DB_FILE || 'novel2screenplay.db';
 
 let db: Database.Database | null = null;
@@ -59,7 +59,7 @@ function createDatabase(): Database.Database {
 
 function initializeSchema(database: Database.Database): void {
   // 读取并执行 schema.sql
-  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schemaPath = path.join(/* turbopackIgnore: true */ process.cwd(), 'src/lib/store/sqlite', 'schema.sql');
   if (fs.existsSync(schemaPath)) {
     const schema = fs.readFileSync(schemaPath, 'utf-8');
     database.exec(schema);

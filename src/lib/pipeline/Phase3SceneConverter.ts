@@ -351,11 +351,15 @@ export class Phase3SceneConverter {
       };
 
       // Update progress
-      jobStore.update(jobId, j => ({
-        ...j, subProgress: { totalScenes: scenes.length, completedScenes: (j.subProgress?.completedScenes ?? 0) + 1 },
-        scenesStatus: (j.scenesStatus || []).map(s => s.sceneIndex === scene.sceneIndex ? { ...s, status: 'completed' as const } : s),
-        logs: [...j.logs, { timestamp: Date.now(), level: 'info' as const, message: `场景 #${scene.sceneIndex} 完成（${merged.content.length} 条，置信度 ${merged.confidence}）` }],
-      }));
+      jobStore.update(jobId, j => {
+        const prevSubProgress = j.subProgress as { totalScenes: number; completedScenes: number } | undefined;
+        return {
+          ...j, 
+          subProgress: { totalScenes: scenes.length, completedScenes: (prevSubProgress?.completedScenes ?? 0) + 1 },
+          scenesStatus: (j.scenesStatus || []).map(s => s.sceneIndex === scene.sceneIndex ? { ...s, status: 'completed' as const } : s),
+          logs: [...j.logs, { timestamp: Date.now(), level: 'info' as const, message: `场景 #${scene.sceneIndex} 完成（${merged.content.length} 条，置信度 ${merged.confidence}）` }],
+        };
+      });
 
       return merged;
     }));

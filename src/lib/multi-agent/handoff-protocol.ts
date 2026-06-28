@@ -71,6 +71,7 @@ export interface HandoffRequest {
   fromRole: AgentRole;
   fromInstanceId: string;
   toRole: AgentRole;
+  toInstanceId?: string;
   reason: string;
   payload: HandoffPayload;
   options?: HandoffOptions;

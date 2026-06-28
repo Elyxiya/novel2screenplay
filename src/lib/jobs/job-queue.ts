@@ -43,6 +43,18 @@ export interface JobQueue {
   /** 监听器 */
   on(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void;
   off(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void;
+  /** 获取队列统计 */
+  getStats(): {
+    total: number;
+    pending: number;
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+    cancelled: number;
+    concurrency: number;
+    maxConcurrency: number;
+  };
 }
 
 /**

@@ -345,7 +345,7 @@ export class MultiAgentOrchestrator {
   private emitSSE(taskId: string, eventType: string, data: unknown): void {
     const sseManager = getSSEClientManager();
     sseManager.sendToJob(taskId, {
-      type: eventType,
+      type: eventType as 'progress' | 'log' | 'phase' | 'complete' | 'heartbeat',
       data,
       timestamp: Date.now(),
     });

@@ -5,9 +5,9 @@
  * 内部使用 PipelineEngine 执行 4 阶段转换。
  */
 
-import { PipelineEngine } from '../pipeline/PipelineEngine';
+import { PipelineEngine } from './PipelineEngine';
 import { initializeProviders } from '../llm/registry';
-import type { PipelineJob } from './types';
+import type { PipelineJob, PipelineJobOutput } from '../jobs/types';
 
 export interface ExecuteOptions {
   signal?: AbortSignal;
@@ -16,7 +16,7 @@ export interface ExecuteOptions {
 
 export interface ExecuteResult {
   success: boolean;
-  output?: unknown;
+  output?: PipelineJobOutput;
   error?: string;
 }
 

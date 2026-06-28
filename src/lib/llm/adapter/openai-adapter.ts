@@ -8,9 +8,8 @@ import type {
   LLMAdapter,
   LLMAdapterConfig,
   LLMAdapterHealth,
-  LLMStreamChunk,
 } from './types';
-import type { LLMMessage, LLMChatOptions, LLMChatResponse } from '../types';
+import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from '../types';
 import { BaseProvider } from '../BaseProvider';
 import {
   createBaseAdapterConfig,
@@ -31,7 +30,7 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
  * OpenAI LLM Adapter
  */
 export class OpenAIAdapter extends BaseProvider implements LLMAdapter {
-  readonly config: LLMAdapterConfig;
+  config: LLMAdapterConfig;
   health: LLMAdapterHealth;
   private requestCount = 0;
   private errorCount = 0;

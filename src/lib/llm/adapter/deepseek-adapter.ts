@@ -8,10 +8,8 @@ import type {
   LLMAdapter,
   LLMAdapterConfig,
   LLMAdapterHealth,
-  LLMChatResponse,
-  LLMStreamChunk,
 } from './types';
-import type { LLMMessage, LLMChatOptions } from '../types';
+import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from '../types';
 import { BaseProvider } from '../BaseProvider';
 import {
   createBaseAdapterConfig,
@@ -31,7 +29,7 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
  * DeepSeek LLM Adapter
  */
 export class DeepSeekAdapter extends BaseProvider implements LLMAdapter {
-  readonly config: LLMAdapterConfig;
+  config: LLMAdapterConfig;
   health: LLMAdapterHealth;
   private requestCount = 0;
   private errorCount = 0;

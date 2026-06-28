@@ -43,11 +43,12 @@ class HandoffManager implements HandoffProtocol {
     const handoffId = `handoff_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
     // 查找可用的目标 Agent
-    let targetInstanceId = request.toRole;
-    if (!request.toInstanceId) {
+    let targetInstanceId: string;
+    if (request.toInstanceId) {
+      targetInstanceId = request.toInstanceId;
+    } else {
       const available = registry.getAvailableByRole(request.toRole);
       if (available.length === 0) {
-        // 尝试查找任何该角色的实例
         const allOfRole = registry.getByRole(request.toRole);
         if (allOfRole.length > 0) {
           targetInstanceId = allOfRole[0].instanceId;
@@ -164,8 +165,8 @@ class HandoffManager implements HandoffProtocol {
     handoff.status = 'cancelled';
     handoff.completedAt = Date.now();
 
-    // 如果交接正在进行，释放目标 Agent
-    if (handoff.toInstanceId && handoff.status === 'in_progress') {
+    // 释放目标 Agent
+    if (handoff.toInstanceId) {
       const registry = getAgentRegistry();
       registry.markIdle(handoff.toInstanceId);
     }

@@ -25,7 +25,7 @@ export function safeParseFromYaml(
       return { success: true, data: result.data };
     }
     const issues: ZodIssue[] = result.error.issues.map(iss => ({
-      path: iss.path,
+      path: iss.path.map(p => String(p)),
       message: iss.message,
     }));
     return { success: false, error: result.error.message, issues };
@@ -36,14 +36,11 @@ export function safeParseFromYaml(
 
 /**
  * Serialize a validated Screenplay object to a YAML string.
- * blockScalarAsString ensures long strings use readable block scalar style.
  */
 export function serializeToYaml(screenplay: Screenplay): string {
   return YAML.stringify(screenplay, {
     indent: 2,
     lineWidth: 0,
-    blockScalarAsString: true,
     nullStr: '',
-    sortMapEntries: false,
   });
 }

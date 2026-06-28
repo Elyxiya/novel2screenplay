@@ -1,0 +1,26 @@
+## Summary
+
+- **AgentLLMProvider**: Wraps `LLMProvider`, accumulates tool results, parses OpenAI function-calling responses (`tool_calls` format), exposes `addToolResults()` for the agent loop.
+- **tool-registry**: Converts `AgentTool` definitions to OpenAI `tools[]` format with full JSON Schema support (enum, min/max, defaults, required).
+- **message-converter**: Bidirectional conversion between `AgentMessage` (with `tool` role) and `LLMMessage` (OpenAI-compatible); parses `tool_calls` from LLM response.
+- **PromptEngine**: Builds system prompts with tool descriptions, calling protocol, and JSON output instructions; extracts tool_calls from content when model does not use native function-calling.
+
+## Test plan
+
+- [x] 30 unit tests covering all adapter modules (tool-registry, message-converter, PromptEngine)
+- [x] `npx vitest run` passes
+
+## Files changed
+
+```
+src/lib/agent/llm/types.ts
+src/lib/agent/llm/tool-registry.ts
+src/lib/agent/llm/message-converter.ts
+src/lib/agent/llm/AgentLLMProvider.ts
+src/lib/agent/llm/PromptEngine.ts
+src/lib/agent/llm/index.ts
+src/lib/agent/llm/*.test.ts
+src/lib/agent/index.ts (added llm barrel export)
+```
+
+Closes #2

@@ -16,7 +16,24 @@ import type { Screenplay } from '../schema/screenplay.schema';
 import { getJobRepository, type CreateJobParams, type UpdateJobParams } from './sqlite';
 
 /** Internal stored job with pipeline state */
-export interface StoredJob extends PipelineJob {
+export interface StoredJob {
+  id: string;
+  type: string;
+  status: string;
+  currentPhase?: number;
+  progress: number;
+  subProgress?: unknown;
+  error?: string;
+  retryCount: number;
+  maxRetries: number;
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+  updatedAt?: number;
+  scenesStatus: SceneStatus[];
+  logs: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
+  resultId?: string;
+  metadata?: Record<string, unknown>;
   novelText: string;
   chapterTexts: string[];
   config: {
@@ -69,7 +86,7 @@ export class JobStore {
     if (updatedJob.status !== job.status) params.status = updatedJob.status;
     if (updatedJob.currentPhase !== job.currentPhase) params.currentPhase = updatedJob.currentPhase;
     if (updatedJob.progress !== job.progress) params.progress = updatedJob.progress;
-    if (updatedJob.subProgress !== job.subProgress) params.subProgress = updatedJob.subProgress;
+    if (updatedJob.subProgress !== job.subProgress) params.subProgress = updatedJob.subProgress as number | null | undefined;
     if (JSON.stringify(updatedJob.scenesStatus) !== JSON.stringify(job.scenesStatus)) {
       params.scenesStatus = updatedJob.scenesStatus;
     }

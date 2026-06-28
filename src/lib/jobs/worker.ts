@@ -193,7 +193,7 @@ export class PipelineWorker {
       });
 
       job.status = 'completed';
-      job.output = result;
+      job.output = result.output;
       job.completedAt = Date.now();
       job.progress = 100;
 

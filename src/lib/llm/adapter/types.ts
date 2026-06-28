@@ -5,7 +5,7 @@
  * 支持多模型路由、负载均衡、故障转移。
  */
 
-import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse } from './types';
+import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse } from '../types';
 
 /**
  * LLM Adapter 配置
@@ -48,7 +48,7 @@ export interface LLMAdapterHealth {
  */
 export interface LLMAdapter {
   /** 配置信息 */
-  readonly config: LLMAdapterConfig;
+  config: LLMAdapterConfig;
   /** 健康状态 */
   health: LLMAdapterHealth;
 

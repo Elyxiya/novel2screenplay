@@ -156,15 +156,10 @@ export default function ConvertPage() {
     });
 
     // 处理 error 事件
-    eventSource.addEventListener('error', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        console.error('[ConvertPage] 收到 error:', data.data.error);
-        setError(data.data.error);
-        setStatus('failed');
-      } catch {
-        // 可能是 SSE 协议错误
-      }
+    eventSource.addEventListener('error', () => {
+      console.error('[ConvertPage] SSE 连接错误');
+      // 切换到轮询模式
+      startPolling(jobId);
     });
   }, [router]);
 

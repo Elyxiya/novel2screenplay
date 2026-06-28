@@ -9,11 +9,11 @@
  */
 
 // 单 Agent 框架
-export * from './agent/types';
-export * from './agent/state-machine';
-export * from './agent/memory';
-export * from './agent/tool-types';
-export * from './agent/llm';
+export * from './types';
+export * from './state-machine';
+export * from './memory';
+export * from './tool-types';
+export * from './llm';
 export {
   AgentCore,
   AgentError,
@@ -21,13 +21,4 @@ export {
   type LLMProvider,
   type LLMResponse,
   type ToolExecutor,
-} from './agent/AgentCore';
-
-// 多 Agent 框架
-export * from './multi-agent/roles';
-export * from './multi-agent/agent-config';
-export * from './multi-agent/registry';
-export * from './multi-agent/handoff-protocol';
-export * from './multi-agent/handoff-manager';
-export * from './multi-agent/review-gate';
-export * from './multi-agent/orchestrator';
+} from './AgentCore';

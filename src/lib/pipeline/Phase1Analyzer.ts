@@ -17,6 +17,7 @@ interface Phase1LLMResponse {
     name: string;
     type?: 'interior' | 'exterior' | 'abstract';
     description?: string;
+    sourceChapterIndex?: number;
   }>;
   timelineHints?: Array<unknown>;
 }
@@ -100,16 +101,21 @@ export class Phase1Analyzer {
         const parsed = safeJsonParse(response.content) as Phase1LLMResponse;
         console.log(`[Phase1] 解析结果: ${parsed.characters?.length ?? 0} 角色, ${parsed.locations?.length ?? 0} 地点`);
         return {
-          characters: (parsed.characters || []).map((c: RawCharacter) => ({
-            ...c,
+          characters: (parsed.characters || []).map((c) => ({
+            name: c.name,
+            aliases: c.aliases ?? [],
+            personalityTags: c.personalityTags ?? [],
+            description: c.description ?? '',
             isMajor: c.isMajor ?? true,
             sourceChapterIndex: c.sourceChapterIndex ?? 0,
           })),
-          locations: (parsed.locations || []).map((l: RawLocation) => ({
-            ...l,
-            type: l.type ?? 'interior',
+          locations: (parsed.locations || []).map((l) => ({
+            name: l.name ?? '',
+            description: l.description ?? '',
+            type: (l.type ?? 'interior') as 'interior' | 'exterior' | 'abstract',
+            sourceChapterIndex: l.sourceChapterIndex ?? 0,
           })),
-          timelineHints: parsed.timelineHints || [],
+          timelineHints: (parsed.timelineHints || []) as TimelineHint[],
           rawResponse: response.content,
         };
       } catch (err) {

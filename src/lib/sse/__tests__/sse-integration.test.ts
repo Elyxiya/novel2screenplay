@@ -4,7 +4,7 @@
  * 测试 SSE 客户端管理器和流推送功能。
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getSSEClientManager } from '../sse-client-manager';
 
 describe('SSE Client Manager', () => {
@@ -22,8 +22,8 @@ describe('SSE Client Manager', () => {
   describe('client registration', () => {
     it('should register a new client', () => {
       const mockController = {
-        enqueue: jest.fn(),
-        close: jest.fn(),
+        enqueue: vi.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       const result = manager.addClient('job_123', mockController);
@@ -34,12 +34,12 @@ describe('SSE Client Manager', () => {
 
     it('should register multiple clients for same job', () => {
       const mockController1 = {
-        enqueue: jest.fn(),
-        close: jest.fn(),
+        enqueue: vi.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController2 = {
-        enqueue: jest.fn(),
-        close: jest.fn(),
+        enqueue: vi.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       manager.addClient('job_123', mockController1);
@@ -52,16 +52,16 @@ describe('SSE Client Manager', () => {
 
   describe('sendToJob', () => {
     it('should send event to all clients of a job', () => {
-      const enqueue1 = jest.fn();
-      const enqueue2 = jest.fn();
+      const enqueue1 = vi.fn();
+      const enqueue2 = vi.fn();
 
       const mockController1 = {
         enqueue: enqueue1,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController2 = {
         enqueue: enqueue2,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       manager.addClient('job_123', mockController1);
@@ -78,16 +78,16 @@ describe('SSE Client Manager', () => {
     });
 
     it('should not send to clients of different jobs', () => {
-      const enqueue1 = jest.fn();
-      const enqueue2 = jest.fn();
+      const enqueue1 = vi.fn();
+      const enqueue2 = vi.fn();
 
       const mockController1 = {
         enqueue: enqueue1,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController2 = {
         enqueue: enqueue2,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       manager.addClient('job_123', mockController1);
@@ -107,8 +107,8 @@ describe('SSE Client Manager', () => {
   describe('client cleanup', () => {
     it('should remove client on cleanup', () => {
       const mockController = {
-        enqueue: jest.fn(),
-        close: jest.fn(),
+        enqueue: vi.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       const { clientId, cleanup } = manager.addClient('job_123', mockController);
@@ -121,8 +121,8 @@ describe('SSE Client Manager', () => {
     it('should handle cleanup for non-existent client', () => {
       expect(() => {
         const { cleanup } = manager.addClient('job_123', {
-          enqueue: jest.fn(),
-          close: jest.fn(),
+          enqueue: vi.fn(),
+          close: vi.fn(),
         } as unknown as ReadableStreamDefaultController<Uint8Array>);
         cleanup();
         cleanup(); // 调用两次应该不会报错
@@ -132,21 +132,21 @@ describe('SSE Client Manager', () => {
 
   describe('broadcast', () => {
     it('should broadcast to all clients', () => {
-      const enqueue1 = jest.fn();
-      const enqueue2 = jest.fn();
-      const enqueue3 = jest.fn();
+      const enqueue1 = vi.fn();
+      const enqueue2 = vi.fn();
+      const enqueue3 = vi.fn();
 
       const mockController1 = {
         enqueue: enqueue1,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController2 = {
         enqueue: enqueue2,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController3 = {
         enqueue: enqueue3,
-        close: jest.fn(),
+        close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
       manager.addClient('job_123', mockController1);
@@ -167,15 +167,15 @@ describe('SSE Client Manager', () => {
 
   describe('closeAll', () => {
     it('should close all clients', () => {
-      const close1 = jest.fn();
-      const close2 = jest.fn();
+      const close1 = vi.fn();
+      const close2 = vi.fn();
 
       const mockController1 = {
-        enqueue: jest.fn(),
+        enqueue: vi.fn(),
         close: close1,
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
       const mockController2 = {
-        enqueue: jest.fn(),
+        enqueue: vi.fn(),
         close: close2,
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 

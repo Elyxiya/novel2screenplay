@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PipelineEngine } from '../../../src/lib/pipeline/PipelineEngine';
+import { jobStore } from '../../../src/lib/store/job-store';
 
 // Mock dependencies
 vi.mock('../../../src/lib/llm/registry', () => ({
@@ -58,6 +59,13 @@ describe('PipelineEngine', () => {
 
   describe('startJob', () => {
     it('should throw error when novelText is empty', async () => {
+      const { parseNovel } = await import('../../../src/lib/novel/parser');
+      vi.mocked(parseNovel).mockReturnValueOnce({
+        title: '',
+        chapters: [],
+        warnings: ['未检测到章节'],
+      });
+
       await expect(
         engine.startJob({ novelText: '' })
       ).rejects.toThrow('未检测到有效章节内容');
@@ -89,21 +97,46 @@ describe('PipelineEngine', () => {
 
   describe('getJobStatus', () => {
     it('should return undefined for non-existent job', () => {
-      const { jobStore } = require('../../../src/lib/store/job-store');
       vi.mocked(jobStore.get).mockReturnValueOnce(undefined);
 
       const status = engine.getJobStatus('non-existent');
       expect(status).toBeUndefined();
     });
+
+    it('should return job for existing job', () => {
+      const mockJob = {
+        id: 'test-job-id',
+        status: 'running',
+        progress: 50,
+      };
+      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as any);
+
+      const status = engine.getJobStatus('test-job-id');
+      expect(status).toBeDefined();
+      expect(status?.id).toBe('test-job-id');
+    });
   });
 
   describe('cancelJob', () => {
     it('should handle non-existent job gracefully', () => {
-      const { jobStore } = require('../../../src/lib/store/job-store');
       vi.mocked(jobStore.get).mockReturnValueOnce(undefined);
 
       // Should not throw
-      engine.cancelJob('non-existent');
+      expect(() => engine.cancelJob('non-existent')).not.toThrow();
+    });
+
+    it('should update job status to pending on cancel', () => {
+      const mockJob = {
+        id: 'test-job-id',
+        status: 'running',
+        progress: 50,
+        logs: [],
+      };
+      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as any);
+
+      engine.cancelJob('test-job-id');
+
+      expect(jobStore.update).toHaveBeenCalled();
     });
   });
 });

@@ -6,8 +6,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { jobStore } from '../job-store';
-import { getDatabase, closeDatabase } from '../sqlite/db';
-import type { PipelineJob } from '../../types/api';
+import { getDatabase, closeDatabase, healthCheck } from '../sqlite';
 
 describe('SQLite JobStore Integration', () => {
   beforeAll(() => {
@@ -20,9 +19,9 @@ describe('SQLite JobStore Integration', () => {
   });
 
   beforeEach(() => {
-    // 清理测试数据
+    // 清理测试数据 - SQLite LIKE 需要用单引号
     const db = getDatabase();
-    db.exec('DELETE FROM jobs WHERE id LIKE "test_%"');
+    db.exec("DELETE FROM jobs WHERE id LIKE 'test_%'");
   });
 
   describe('create', () => {
@@ -154,7 +153,6 @@ describe('SQLite JobStore Integration', () => {
 
 describe('Database Health Check', () => {
   it('should pass health check', () => {
-    const { healthCheck } = require('../sqlite/db');
     expect(healthCheck()).toBe(true);
   });
 });

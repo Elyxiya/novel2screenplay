@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore } from '@/lib/store/history-store';
+import { QuickStats } from '@/components/JobListPanel';
 
 interface Chapter {
   index: number; title: string; paragraphCount: number; text: string;
@@ -160,6 +161,9 @@ export default function UploadPage() {
           上传 YAML
         </button>
       </div>
+
+      {/* Quick stats */}
+      <QuickStats />
 
       {tab === 'novel' ? (
         <>

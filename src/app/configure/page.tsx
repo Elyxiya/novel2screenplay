@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { ModelSelector } from '@/components/ModelSelector';
 
 interface Chapter {
   index: number;
@@ -171,9 +172,7 @@ export default function ConfigurePage() {
       {/* Model & cost */}
       <div className="bg-white rounded-xl border p-6 space-y-4">
         <h3 className="font-semibold">LLM 模型</h3>
-        <select value={model} onChange={e => setModel(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm">
-          {models.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <ModelSelector value={model} onChange={setModel} />
 
         <h3 className="font-semibold">预估费用</h3>
         <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 min-h-[42px] flex items-center">

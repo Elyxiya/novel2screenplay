@@ -41,8 +41,8 @@ export interface JobQueue {
   /** 任务数 */
   size(): number;
   /** 监听器 */
-  on(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel', listener: JobListener): void;
-  off(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel', listener: JobListener): void;
+  on(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void;
+  off(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void;
 }
 
 /**
@@ -126,6 +126,9 @@ export class PipelineJobQueue implements JobQueue {
 
     this.jobs.set(job.id, job);
 
+    // 触发 update 事件（始终触发，用于 SSE 推送）
+    this.emit('update', job);
+
     if (job.status === 'completed') {
       this.emit('complete', job);
       console.log(`[Queue] Job ${job.id} completed`);
@@ -175,18 +178,18 @@ export class PipelineJobQueue implements JobQueue {
     return this.jobs.size;
   }
 
-  on(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel', listener: JobListener): void {
+  on(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(listener);
   }
 
-  off(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel', listener: JobListener): void {
+  off(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', listener: JobListener): void {
     this.listeners.get(event)?.delete(listener);
   }
 
-  private emit(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel', job: PipelineJob): void {
+  private emit(event: 'enqueue' | 'dequeue' | 'complete' | 'fail' | 'cancel' | 'update', job: PipelineJob): void {
     this.listeners.get(event)?.forEach((listener) => {
       try {
         listener(job);

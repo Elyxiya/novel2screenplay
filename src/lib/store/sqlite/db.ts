@@ -53,8 +53,41 @@ function createDatabase(): Database.Database {
 
   // 初始化 schema
   initializeSchema(database);
+  // 兼容旧库：补齐缺失的列（幂等迁移）
+  migrateJobColumns(database);
 
   return database;
+}
+
+/**
+ * 兼容旧数据库文件：为 jobs 表补齐缺失的列。
+ * schema.sql 面向新库；已存在的旧库通过 ALTER TABLE 幂等补齐。
+ */
+function migrateJobColumns(database: Database.Database): void {
+  try {
+    const columns = (
+      database.prepare('PRAGMA table_info(jobs)').all() as Array<{ name: string }>
+    ).map((c) => c.name);
+
+    const missingColumns: Array<{ name: string; ddl: string }> = [];
+    if (!columns.includes('started_at')) {
+      missingColumns.push({ name: 'started_at', ddl: 'started_at INTEGER' });
+    }
+    if (!columns.includes('completed_at')) {
+      missingColumns.push({ name: 'completed_at', ddl: 'completed_at INTEGER' });
+    }
+    if (!columns.includes('pipeline_state')) {
+      missingColumns.push({ name: 'pipeline_state', ddl: 'pipeline_state TEXT' });
+    }
+
+    for (const col of missingColumns) {
+      database.exec(`ALTER TABLE jobs ADD COLUMN ${col.ddl}`);
+      console.log(`[DB] Migrated: added column jobs.${col.name}`);
+    }
+  } catch (err) {
+    // jobs 表不存在时静默（首次建表会走 schema.sql 完整结构）
+    console.log(`[DB] Column migration skipped: ${err instanceof Error ? err.message : err}`);
+  }
 }
 
 function initializeSchema(database: Database.Database): void {
@@ -79,9 +112,12 @@ function initializeSchema(database: Database.Database): void {
         result_id TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
+        started_at INTEGER,
+        completed_at INTEGER,
         novel_text TEXT NOT NULL,
         chapter_texts TEXT NOT NULL,
-        config TEXT NOT NULL
+        config TEXT NOT NULL,
+        pipeline_state TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);

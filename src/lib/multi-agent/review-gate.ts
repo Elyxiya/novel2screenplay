@@ -5,7 +5,6 @@
  * 在关键阶段进行质量评估，决定是否通过或需要返工。
  */
 
-import type { AgentRole } from './roles';
 import type { QualityAssessment } from './handoff-protocol';
 
 export type GateDecision = 'pass' | 'fail' | 'review' | 'skip';
@@ -155,30 +154,49 @@ export const DEFAULT_GATE_CONFIGS: Record<string, GateConfig> = {
 
 /**
  * 评估质量
+ *
+ * 若提供 validator，则调用它获取真实 LLM 质量评估；
+ * 否则使用基于内容的启发式评估（仅用于无 LLM 时的降级路径）。
  */
-export function evaluateQuality(
+export async function evaluateQuality(
   content: string,
   config: GateConfig,
   validator?: (context: GateContext) => Promise<QualityAssessment>,
-): QualityAssessment {
-  // 如果提供了自定义验证器，使用它
+): Promise<QualityAssessment> {
+  // 如果提供了自定义验证器，使用它（真实 LLM 评估）
   if (validator) {
-    // 将在实际实现中调用
-    throw new Error('Custom validator not implemented');
+    try {
+      const assessment = await validator({
+        taskId: 'task',
+        phase: config.phase,
+        content,
+        metadata: {},
+      });
+      return assessment;
+    } catch (err) {
+      console.error(`[ReviewGate] validator 评估失败，使用启发式降级:`, err);
+    }
   }
 
-  // 默认评估逻辑（简化版）
+  // 默认评估逻辑（启发式降级）
+  const textLength = content.trim().length;
+  const hasSceneMarker = /^(场景|scene|INT\.|EXT\.)/im.test(content);
+  const hasDialogue = /["“”「」]/.test(content);
+
+  const format = textLength > 0 ? (hasSceneMarker ? 85 : 70) : 0;
+  const consistency = textLength > 0 ? 80 : 0;
+  const coherence = textLength > 0 ? (hasDialogue ? 80 : 65) : 0;
+  const drama = textLength > 100 ? 75 : 50;
+
   const assessment: QualityAssessment = {
-    score: 80, // 默认分数
-    passed: true,
-    dimensions: {
-      format: 85,
-      consistency: 80,
-      coherence: 75,
-      drama: 80,
-    },
-    issues: [],
-    suggestions: [],
+    score: Math.round((format + consistency + coherence + drama) / 4),
+    passed: textLength > 0,
+    dimensions: { format, consistency, coherence, drama },
+    issues: textLength === 0 ? ['输出内容为空'] : [],
+    suggestions:
+      !hasSceneMarker && textLength > 0
+        ? ['建议添加场景标题标记（INT./EXT.）']
+        : [],
   };
 
   return assessment;

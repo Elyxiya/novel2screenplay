@@ -6,7 +6,6 @@ const makeTool = (overrides: Partial<AgentTool> = {}): AgentTool => ({
   name: 'test_tool',
   description: 'A test tool',
   inputSchema: {},
-  execute: async () => 'ok',
   ...overrides,
 });
 

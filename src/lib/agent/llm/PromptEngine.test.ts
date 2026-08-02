@@ -13,7 +13,6 @@ const makeTool = (overrides: Partial<AgentTool> = {}): AgentTool => ({
     city: { type: 'string', description: 'City name', required: true },
     unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
   },
-  execute: async () => 'ok',
   ...overrides,
 });
 

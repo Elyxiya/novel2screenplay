@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PipelineEngine } from '../../../src/lib/pipeline/PipelineEngine';
-import { jobStore } from '../../../src/lib/store/job-store';
+import { jobStore, type StoredJob } from '../../../src/lib/store/job-store';
 
 // Mock dependencies
 vi.mock('../../../src/lib/llm/registry', () => ({
@@ -109,7 +109,7 @@ describe('PipelineEngine', () => {
         status: 'running',
         progress: 50,
       };
-      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as any);
+      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as unknown as Job);
 
       const status = engine.getJobStatus('test-job-id');
       expect(status).toBeDefined();
@@ -132,7 +132,7 @@ describe('PipelineEngine', () => {
         progress: 50,
         logs: [],
       };
-      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as any);
+      vi.mocked(jobStore.get).mockReturnValueOnce(mockJob as unknown as StoredJob);
 
       engine.cancelJob('test-job-id');
 

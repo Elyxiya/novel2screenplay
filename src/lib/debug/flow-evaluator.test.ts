@@ -232,4 +232,31 @@ describe('evaluateFlow', () => {
     const result = evaluateFlow(job);
     expect(result.issues.some((i) => i.phase === 'segment' && i.message.includes('密度过低'))).toBe(true);
   });
+
+  it('无 usage 数据 → efficiency 中性分、stats.usage 为 null', () => {
+    const result = evaluateFlow(completeJob());
+    expect(result.stats.usage).toBeNull();
+    expect(result.overall.dimensions.efficiency).toBe(60);
+    expect(result.phases.efficiency.status).toBe('empty');
+  });
+
+  it('usage 高效（每字 ≤1.5 token）→ efficiency 满分', () => {
+    const job = completeJob();
+    job.metadata = { usage: { promptTokens: 1000, completionTokens: 200, inputChars: 1200, calls: 3 } };
+    const result = evaluateFlow(job);
+    expect(result.stats.usage).not.toBeNull();
+    expect(result.stats.usage!.tokensPerChar).toBe(1);
+    expect(result.overall.dimensions.efficiency).toBe(100);
+    expect(result.phases.efficiency.status).toBe('ok');
+  });
+
+  it('usage 低效（每字 >5 token）→ efficiency 减分 + issue', () => {
+    const job = completeJob();
+    job.metadata = { usage: { promptTokens: 60000, completionTokens: 4000, inputChars: 10000, calls: 10 } };
+    const result = evaluateFlow(job);
+    expect(result.stats.usage!.tokensPerChar).toBe(6.4);
+    expect(result.overall.dimensions.efficiency).toBe(30);
+    expect(result.phases.efficiency.status).toBe('error');
+    expect(result.issues.some((i) => i.message.includes('token 效率低'))).toBe(true);
+  });
 });

@@ -17,6 +17,7 @@ const PHASE_LABELS: Record<string, { name: string; desc: string }> = {
   segment: { name: 'Phase 2 · 切分', desc: '章节 → 场景边界' },
   convert: { name: 'Phase 3 · 转换', desc: '场景 → 剧本（并行）' },
   merge: { name: 'Phase 4 · 合并', desc: '合并校验 + YAML' },
+  efficiency: { name: 'Token 效率', desc: '上下文裁剪 / 成本控制' },
 };
 
 function fmtDuration(ms?: number): string {
@@ -193,6 +194,7 @@ export function FlowDebugClient() {
                   ['consistency', '引用一致', dims.consistency],
                   ['coherence', '叙事连贯', dims.coherence],
                   ['drama', '戏剧张力', dims.drama],
+                  ['efficiency', 'Token 效率', dims.efficiency],
                 ] as const
               ).map(([key, label, value]) => (
                 <div key={key}>
@@ -218,13 +220,14 @@ export function FlowDebugClient() {
 
           {/* 流水线视图 */}
           <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 12px' }}>流水线各阶段</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
             {(
               [
                 ['analyze', eval_.phases.analyze],
                 ['segment', eval_.phases.segment],
                 ['convert', eval_.phases.convert],
                 ['merge', eval_.phases.merge],
+                ['efficiency', eval_.phases.efficiency],
               ] as const
             ).map(([key, phase]) => {
               const label = PHASE_LABELS[key];
@@ -278,6 +281,13 @@ export function FlowDebugClient() {
                     return timings.length ? fmtDuration(timings.reduce((a, b) => a + b.durationMs, 0)) : '未知';
                   })()}
                 </b></div>
+                {eval_.stats.usage && (
+                  <>
+                    <div><span style={{ color: '#71717A' }}>LLM 调用</span> <b>{eval_.stats.usage.calls} 次</b></div>
+                    <div><span style={{ color: '#71717A' }}>Token 用量</span> <b>{eval_.stats.usage.totalTokens.toLocaleString()}（入 {eval_.stats.usage.promptTokens.toLocaleString()} / 出 {eval_.stats.usage.completionTokens.toLocaleString()}）</b></div>
+                    <div><span style={{ color: '#71717A' }}>每字 Token</span> <b>{eval_.stats.usage.tokensPerChar ?? '未知'}</b></div>
+                  </>
+                )}
               </div>
             </div>
 

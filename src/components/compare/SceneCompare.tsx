@@ -93,15 +93,14 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
               <div className="space-y-4">
                 {blockExceprts.map(({ blockIndex, type, excerpts }) => {
                   if (excerpts.length === 0) {
+                    const block = scene.content[blockIndex];
                     return (
                       <div key={blockIndex} className={`p-3 rounded-lg text-sm ${
                         type === 'action' ? 'bg-gray-50 border border-gray-200' : 'bg-blue-50 border border-blue-100'
                       }`}>
                         <p className="text-gray-400 italic text-xs mb-1">#block-{blockIndex + 1} — 无对应原文引用</p>
                         <p className="text-gray-600 italic">
-                          {type === 'action'
-                            ? scene.content[blockIndex].description
-                            : scene.content[blockIndex].line}
+                          {'description' in block ? block.description : block.line}
                         </p>
                       </div>
                     );

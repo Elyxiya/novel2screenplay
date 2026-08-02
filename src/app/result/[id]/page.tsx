@@ -28,6 +28,7 @@ export default function ResultPage() {
   const [chapterTexts, setChapterTexts] = useState<string[]>([]);
   const [sceneViewMode, setSceneViewMode] = useState<SceneViewMode>('editor');
 
+  // 事件处理器中刷新数据用（含 setState，不直接在 effect 中调用）
   const fetchScreenplay = useCallback(async () => {
     const res = await fetch(`/api/result/${jobId}`);
     const data = await res.json();
@@ -45,7 +46,29 @@ export default function ResultPage() {
     setLoading(false);
   }, [jobId]);
 
-  useEffect(() => { fetchScreenplay(); }, [fetchScreenplay]);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/result/${jobId}`);
+      const data = await res.json();
+      if (cancelled) return;
+      if (res.status === 404) {
+        historyStore.remove(jobId);
+        setLoading(false);
+        return;
+      }
+      if (data.screenplay) {
+        setScreenplay(data.screenplay);
+        setYaml(data.yaml);
+        setEditYaml(data.yaml);
+        if (data.chapterTexts) setChapterTexts(data.chapterTexts);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId]);
 
   const saveYaml = async () => {
     setSavingYaml(true);

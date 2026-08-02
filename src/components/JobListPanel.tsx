@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProgressBar } from './ProgressTracker';
 
@@ -31,45 +31,49 @@ export function JobListPanel({ className = '', onSelect }: JobListPanelProps) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'completed' | 'failed'>('all');
 
-  const fetchJobs = useCallback(async () => {
-    try {
-      const res = await fetch('/api/jobs');
-      const data = await res.json();
-
-      // 转换为 HistoryItem 格式
-      const items: HistoryItem[] = (data.jobs || []).map((job: {
-        id: string;
-        output?: { yamlContent?: string };
-        input?: { novelText?: string };
-        createdAt: number;
-        status: string;
-      }) => ({
-        id: job.id,
-        jobId: job.id,
-        title: job.output?.yamlContent
-          ? extractTitle(job.output.yamlContent) || '剧本'
-          : '剧本',
-        sourceNovel: job.input?.novelText?.slice(0, 100),
-        totalScenes: 0,
-        totalCharacters: 0,
-        totalLocations: 0,
-        createdAt: job.createdAt,
-      }));
-
-      setJobs(items);
-    } catch (error) {
-      console.error('Failed to fetch jobs:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchJobs();
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/jobs');
+        const data = await res.json();
+        if (cancelled) return;
+
+        // 转换为 HistoryItem 格式
+        const items: HistoryItem[] = (data.jobs || []).map((job: {
+          id: string;
+          output?: { yamlContent?: string };
+          input?: { novelText?: string };
+          createdAt: number;
+          status: string;
+        }) => ({
+          id: job.id,
+          jobId: job.id,
+          title: job.output?.yamlContent
+            ? extractTitle(job.output.yamlContent) || '剧本'
+            : '剧本',
+          sourceNovel: job.input?.novelText?.slice(0, 100),
+          totalScenes: 0,
+          totalCharacters: 0,
+          totalLocations: 0,
+          createdAt: job.createdAt,
+        }));
+
+        setJobs(items);
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
     // 每 10 秒刷新
-    const interval = setInterval(fetchJobs, 10000);
-    return () => clearInterval(interval);
-  }, [fetchJobs]);
+    const interval = setInterval(load, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   const filteredJobs = jobs.filter((job) => {
     if (filter === 'all') return true;

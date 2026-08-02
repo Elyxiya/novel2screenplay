@@ -55,69 +55,14 @@ export function ProgressTracker({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // 缓存最新 connectSSE，供重连回调引用（避免 useCallback 递归自引用触发 immutability 规则）
+  const connectSSERef = useRef<() => void>(() => {});
 
   const addLog = useCallback((level: LogEntry['level'], message: string) => {
     setLogs((prev) => [...prev.slice(-49), { timestamp: Date.now(), level, message }]);
   }, []);
 
-  // SSE 连接
-  const connectSSE = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    addLog('info', `连接 SSE...`);
-    const eventSource = new EventSource(`/api/jobs/${jobId}/events`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onopen = () => {
-      setConnected(true);
-      reconnectAttempts.current = 0;
-      addLog('info', `SSE 连接已建立`);
-    };
-
-    eventSource.onerror = () => {
-      setConnected(false);
-      eventSource.close();
-
-      if (reconnectAttempts.current < 5) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
-        addLog('warn', `SSE 连接断开，${delay}ms 后重连...`);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          reconnectAttempts.current++;
-          connectSSE();
-        }, delay);
-      } else {
-        addLog('error', `SSE 重连失败，切换到轮询模式`);
-        startPolling();
-      }
-    };
-
-    // 处理消息
-    eventSource.addEventListener('message', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setProgress(data);
-
-        if (data.subProgress) {
-          addLog('info', data.subProgress);
-        }
-
-        if (data.status === 'completed') {
-          addLog('info', `任务完成！`);
-          eventSource.close();
-          onComplete?.(data);
-        } else if (data.status === 'failed') {
-          addLog('error', `任务失败: ${data.error}`);
-          onError?.(data.error || 'Unknown error');
-        }
-      } catch {
-        // 忽略解析错误
-      }
-    });
-  }, [jobId, addLog, onComplete, onError]);
-
-  // 轮询降级
+  // 轮询降级（在 connectSSE 之前声明，供其引用）
   const startPolling = useCallback(() => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
@@ -147,6 +92,68 @@ export function ProgressTracker({
       }
     }, 1500);
   }, [jobId, addLog, onComplete, onError]);
+
+  // SSE 连接
+  const connectSSE = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    addLog('info', `连接 SSE...`);
+    const eventSource = new EventSource(`/api/jobs/${jobId}/events`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      setConnected(true);
+      reconnectAttempts.current = 0;
+      addLog('info', `SSE 连接已建立`);
+    };
+
+    eventSource.onerror = () => {
+      setConnected(false);
+      eventSource.close();
+
+      if (reconnectAttempts.current < 5) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
+        addLog('warn', `SSE 连接断开，${delay}ms 后重连...`);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectAttempts.current++;
+          connectSSERef.current();
+        }, delay);
+      } else {
+        addLog('error', `SSE 重连失败，切换到轮询模式`);
+        startPolling();
+      }
+    };
+
+    // 处理消息
+    eventSource.addEventListener('message', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setProgress(data);
+
+        if (data.subProgress) {
+          addLog('info', data.subProgress);
+        }
+
+        if (data.status === 'completed') {
+          addLog('info', `任务完成！`);
+          eventSource.close();
+          onComplete?.(data);
+        } else if (data.status === 'failed') {
+          addLog('error', `任务失败: ${data.error}`);
+          onError?.(data.error || 'Unknown error');
+        }
+      } catch {
+        // 忽略解析错误
+      }
+    });
+  }, [jobId, addLog, onComplete, onError, startPolling]);
+
+  // 同步最新 connectSSE 到 ref，供重连回调调用
+  useEffect(() => {
+    connectSSERef.current = connectSSE;
+  }, [connectSSE]);
 
   useEffect(() => {
     // 初始获取

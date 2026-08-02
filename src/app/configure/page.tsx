@@ -13,19 +13,35 @@ interface Chapter {
 
 export default function ConfigurePage() {
   const router = useRouter();
-  const initialized = useRef(false);
-  const [data, setData] = useState<{ novelText: string; title: string; chapters: Chapter[] } | null>(null);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  // 惰性初始化：首次渲染即从 sessionStorage 恢复小说数据（替代 effect 内 setState）
+  const [data] = useState<{ novelText: string; title: string; chapters: Chapter[] } | null>(() => {
+    try {
+      const raw = sessionStorage.getItem('novelData');
+      return raw ? (JSON.parse(raw) as { novelText: string; title: string; chapters: Chapter[] }) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [selected, setSelected] = useState<Set<number>>(() => {
+    if (!data) return new Set<number>();
+    return new Set(data.chapters.map((_: unknown, i: number) => i));
+  });
   const [model, setModel] = useState('deepseek-chat');
-  const [models, setModels] = useState<string[]>(['deepseek-chat', 'gpt-4o']);
+  const [, setModels] = useState<string[]>(['deepseek-chat', 'gpt-4o']);
   const [cost, setCost] = useState('');
   const [costLoading, setCostLoading] = useState(false);
   const costTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const fetchModels = useCallback((_d: { novelText: string; title: string; chapters: Chapter[] }, setter: (m: string[]) => void) => {
+    fetch('/api/models').then(r => r.json()).then(r => {
+      if (r.models?.length) setter(r.models.map((m: { id: string }) => m.id));
+    }).catch(() => {});
+  }, []);
+
   const fetchCost = useCallback((chars: number) => {
     if (costTimerRef.current) clearTimeout(costTimerRef.current);
-    setCostLoading(true);
     costTimerRef.current = setTimeout(async () => {
+      setCostLoading(true);
       try {
         const r = await fetch(`/api/cost-estimate?chars=${chars}`);
         const d = await r.json();
@@ -39,36 +55,17 @@ export default function ConfigurePage() {
   }, []);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    const raw = sessionStorage.getItem('novelData');
-    if (!raw) { router.push('/'); return; }
-    try {
-      const d = JSON.parse(raw);
-      setData(d);
-
-      const chapters: Chapter[] = d.chapters ?? [];
-      const allIndices = new Set(chapters.map((_: unknown, i: number) => i));
-      setSelected(allIndices);
-
-      fetchModels(d, setModels);
-      fetchCost(d.novelText.length);
-    } catch {
+    if (!data) {
       router.push('/');
+      return;
     }
+    fetchModels(data, setModels);
+    fetchCost(data.novelText.length);
 
     return () => {
       if (costTimerRef.current) clearTimeout(costTimerRef.current);
     };
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  }, [router, fetchCost]);
-
-  const fetchModels = (_d: { novelText: string; title: string; chapters: Chapter[] }, setter: (m: string[]) => void) => {
-    fetch('/api/models').then(r => r.json()).then(r => {
-      if (r.models?.length) setter(r.models.map((m: { id: string }) => m.id));
-    }).catch(() => {});
-  };
+  }, [data, router, fetchModels, fetchCost]);
 
   const toggleChapter = (i: number) => {
     const next = new Set(selected);

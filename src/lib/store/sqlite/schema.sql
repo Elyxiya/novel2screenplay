@@ -14,13 +14,18 @@ CREATE TABLE IF NOT EXISTS jobs (
   result_id TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  started_at INTEGER,
+  completed_at INTEGER,
 
   -- Pipeline 相关字段
   novel_text TEXT NOT NULL,
   chapter_texts TEXT NOT NULL, -- JSON array
 
   -- Config
-  config TEXT NOT NULL -- JSON: {modelId, selectedChapters, temperature}
+  config TEXT NOT NULL, -- JSON: {modelId, selectedChapters, temperature}
+
+  -- Pipeline State (JSON 序列化)
+  pipeline_state TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);

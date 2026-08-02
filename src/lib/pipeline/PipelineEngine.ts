@@ -243,7 +243,18 @@ export class PipelineEngine {
     console.log(`[${jobId}] === PIPELINE STARTED ===`);
     console.log(`[${jobId}] provider=${provider.name}(${provider.modelId}), chapters=${chapters.length}`);
 
+    // 阶段耗时统计（供调试评测使用）
+    const phaseTimings: Record<string, { durationMs: number }> = {};
+    const recordTiming = (phase: string, startedAt: number): void => {
+      phaseTimings[phase] = { durationMs: Date.now() - startedAt };
+    };
+    const withTiming = (job: StoredJob): Record<string, unknown> => ({
+      ...(job.metadata ?? {}),
+      phaseTimings: { ...phaseTimings },
+    });
+
     // ── Phase 1: Analyze ──
+    const t1 = Date.now();
     console.log(`[${jobId}] Phase 1: 开始分析角色与地点 (${chapters.length} 章, ${chapters.reduce((s,c) => s + c.text.length, 0)} 字)`);
     jobStore.update(jobId, (job) => {
       const updated = {
@@ -264,10 +275,12 @@ export class PipelineEngine {
     );
 
     console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
+    recordTiming('analyze', t1);
     jobStore.update(jobId, (job) => {
       const updated = {
         ...job,
         progress: 25,
+        metadata: withTiming(job),
         pipelineState: { ...job.pipelineState, phase1Output },
         logs: [
           ...job.logs,
@@ -280,6 +293,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 2: Segment ──
+    const t2 = Date.now();
     console.log(`[${jobId}] Phase 2: 开始场景切割...`);
     jobStore.update(jobId, (job) => {
       const updated = {
@@ -301,10 +315,12 @@ export class PipelineEngine {
     );
 
     console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);
+    recordTiming('segment', t2);
     jobStore.update(jobId, (job) => {
       const updated = {
         ...job,
         progress: 45,
+        metadata: withTiming(job),
         pipelineState: { ...job.pipelineState, phase2Output },
         logs: [
           ...job.logs,
@@ -317,6 +333,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 3: Convert Scenes (Parallel) ──
+    const t3 = Date.now();
     console.log(`[${jobId}] Phase 3: 开始并行转换 ${phase2Output.scenes.length} 个场景...`);
     jobStore.update(jobId, (job) => {
       const updated = {
@@ -343,10 +360,12 @@ export class PipelineEngine {
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;
     console.log(`[${jobId}] Phase 3 完成: ${successCount}/${phase3Outputs.length} 场景成功`);
+    recordTiming('convert', t3);
     jobStore.update(jobId, (job) => {
       const updated = {
         ...job,
         progress: 75,
+        metadata: withTiming(job),
         pipelineState: { ...job.pipelineState, phase3Output: phase3Outputs },
         logs: [
           ...job.logs,
@@ -359,6 +378,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 4: Merge & Validate ──
+    const t4 = Date.now();
     console.log(`[${jobId}] Phase 4: 开始合并校验...`);
     jobStore.update(jobId, (job) => {
       const updated = {
@@ -386,12 +406,14 @@ export class PipelineEngine {
     );
 
     console.log(`[${jobId}] ✅ 转换完成! fixes=${fixes?.length ?? 0}`);
+    recordTiming('merge', t4);
     jobStore.update(jobId, (job) => {
       const updated = {
         ...job,
         status: 'completed' as const,
         currentPhase: 4,
         progress: 100,
+        metadata: withTiming(job),
         pipelineState: { ...job.pipelineState, phase4Output: screenplay },
         resultId: screenplay.metadata.title,
         logs: [

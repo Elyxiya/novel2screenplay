@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore, type HistoryEntry } from '@/lib/store/history-store';
 
@@ -17,12 +17,8 @@ function formatDate(ts: number): string {
 
 export default function HistoryPage() {
   const router = useRouter();
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [entries, setEntries] = useState<HistoryEntry[]>(() => historyStore.list());
   const [confirmClear, setConfirmClear] = useState(false);
-
-  useEffect(() => {
-    setEntries(historyStore.list());
-  }, []);
 
   const remove = (jobId: string) => {
     historyStore.remove(jobId);

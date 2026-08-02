@@ -21,9 +21,12 @@ export interface JobRow {
   result_id: string | null;
   created_at: number;
   updated_at: number;
+  started_at: number | null;
+  completed_at: number | null;
   novel_text: string;
   chapter_texts: string;
   config: string;
+  pipeline_state: string | null;
 }
 
 export interface CreateJobParams {
@@ -44,6 +47,8 @@ export interface UpdateJobParams {
   error?: string | null;
   resultId?: string | null;
   pipelineState?: Partial<StoredJob['pipelineState']>;
+  startedAt?: number;
+  completedAt?: number;
 }
 
 export interface JobRepository {
@@ -68,11 +73,13 @@ class JobRepositoryImpl implements JobRepository {
       INSERT INTO jobs (
         id, status, current_phase, progress, sub_progress,
         scenes_status, logs, error, result_id,
-        created_at, updated_at, novel_text, chapter_texts, config
+        created_at, updated_at, started_at, completed_at,
+        novel_text, chapter_texts, config, pipeline_state
       ) VALUES (
         @id, @status, @currentPhase, @progress, @subProgress,
         @scenesStatus, @logs, @error, @resultId,
-        @createdAt, @updatedAt, @novelText, @chapterTexts, @config
+        @createdAt, @updatedAt, @startedAt, @completedAt,
+        @novelText, @chapterTexts, @config, @pipelineState
       )
     `);
 
@@ -88,6 +95,8 @@ class JobRepositoryImpl implements JobRepository {
       resultId: null,
       createdAt: now,
       updatedAt: now,
+      startedAt: null,
+      completedAt: null,
       novelText: params.novelText,
       chapterTexts: JSON.stringify(params.chapterTexts),
       config: JSON.stringify({
@@ -95,6 +104,7 @@ class JobRepositoryImpl implements JobRepository {
         selectedChapters: params.selectedChapters,
         temperature: params.temperature,
       }),
+      pipelineState: null,
     });
 
     return id;
@@ -152,6 +162,19 @@ class JobRepositoryImpl implements JobRepository {
       updates.push('result_id = @resultId');
       values.resultId = params.resultId;
     }
+    if (params.startedAt !== undefined) {
+      updates.push('started_at = @startedAt');
+      values.startedAt = params.startedAt;
+    }
+    if (params.completedAt !== undefined) {
+      updates.push('completed_at = @completedAt');
+      values.completedAt = params.completedAt;
+    }
+    if (params.pipelineState !== undefined) {
+      updates.push('pipeline_state = @pipelineState');
+      // 序列化 pipelineState 为 JSON 字符串
+      values.pipelineState = JSON.stringify(params.pipelineState);
+    }
 
     if (updates.length === 0) return;
 
@@ -204,6 +227,7 @@ class JobRepositoryImpl implements JobRepository {
   private rowToStoredJob(row: JobRow): StoredJob {
     const config = JSON.parse(row.config);
     const chapterTexts = JSON.parse(row.chapter_texts);
+    const pipelineState = row.pipeline_state ? JSON.parse(row.pipeline_state) : {};
 
     return {
       id: row.id,
@@ -220,6 +244,8 @@ class JobRepositoryImpl implements JobRepository {
       resultId: row.result_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      startedAt: row.started_at ?? undefined,
+      completedAt: row.completed_at ?? undefined,
       novelText: row.novel_text,
       chapterTexts,
       config: {
@@ -227,7 +253,7 @@ class JobRepositoryImpl implements JobRepository {
         selectedChapters: config.selectedChapters,
         temperature: config.temperature,
       },
-      pipelineState: {},
+      pipelineState: pipelineState || {},
     };
   }
 }

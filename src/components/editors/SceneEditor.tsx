@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Scene, Character } from '@/lib/schema/screenplay.schema';
 import type { Location } from '@/lib/schema/screenplay.schema';
 
@@ -26,11 +26,13 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Scene>(scene);
-
-  useEffect(() => {
+  // 渲染期间同步 props 变化：切换场景时重置草稿与编辑状态（替代 set-state-in-effect 模式）
+  const [prevSceneNumber, setPrevSceneNumber] = useState(scene.sceneNumber);
+  if (scene.sceneNumber !== prevSceneNumber) {
+    setPrevSceneNumber(scene.sceneNumber);
     setDraft(scene);
     setEditing(false);
-  }, [scene.sceneNumber]);
+  }
 
   const cancel = () => {
     setDraft(scene);

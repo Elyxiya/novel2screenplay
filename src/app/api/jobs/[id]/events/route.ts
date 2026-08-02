@@ -76,12 +76,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       };
 
-      queue.on('update' as any, handleProgress);
+      queue.on('update', handleProgress);
 
       // 处理客户端断开连接
       request.signal.addEventListener('abort', () => {
         isClosed = true;
-        queue.off('update' as any, handleProgress);
+        queue.off('update', handleProgress);
       });
     },
   });

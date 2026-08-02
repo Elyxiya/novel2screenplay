@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     let data = YAML.parse(body.yaml);
     data = normalize(data);
 
-    let sp = ScreenplaySchema.safeParse(data);
+    const sp = ScreenplaySchema.safeParse(data);
     if (!sp.success) {
       return NextResponse.json({
         error: 'YAML 格式错误或不符合剧本 schema',

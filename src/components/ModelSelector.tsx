@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ModelInfo {
   modelId: string;
@@ -30,30 +30,33 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
-  // 获取模型列表
-  const fetchModels = useCallback(async () => {
-    try {
-      const res = await fetch('/api/models');
-      const data = await res.json();
-      if (data.adapters) {
-        setAdapters(data.adapters);
-      }
-      if (data.budget) {
-        setBudget(data.budget);
-      }
-    } catch (error) {
-      console.error('Failed to fetch models:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchModels();
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.adapters) {
+          setAdapters(data.adapters);
+        }
+        if (data.budget) {
+          setBudget(data.budget);
+        }
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
     // 每 30 秒刷新一次
-    const interval = setInterval(fetchModels, 30000);
-    return () => clearInterval(interval);
-  }, [fetchModels]);
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   // 获取当前模型的健康状态
   const getHealthStatus = (modelId: string) => {

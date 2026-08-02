@@ -34,39 +34,42 @@ export default function ConvertPage() {
   const reconnectAttempts = useRef(0);
 
   const connectSSE = useCallback((jobId: string) => {
-    // 关闭现有连接
+    // 清理现有连接
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
     }
 
     console.log(`[ConvertPage] 连接 SSE: ${jobId}`);
 
     const eventSource = new EventSource(`/api/pipeline/stream/${jobId}`);
     eventSourceRef.current = eventSource;
+    reconnectAttempts.current = 0;
 
     eventSource.onopen = () => {
       console.log(`[ConvertPage] SSE 连接已建立`);
-      reconnectAttempts.current = 0;
       setError(null);
     };
 
     eventSource.onerror = () => {
-      console.log(`[ConvertPage] SSE 连接错误`);
-      eventSource.close();
-
-      // 自动重连逻辑
-      if (reconnectAttempts.current < 5) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
-        console.log(`[ConvertPage] ${delay}ms 后重连...`);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          reconnectAttempts.current++;
-          connectSSE(jobId);
-        }, delay);
-      } else {
-        setError('SSE 连接断开，切换到轮询模式');
-        // 降级到轮询
-        startPolling(jobId);
-      }
+      // 等待 onclose 后再决定是否重连
+      setTimeout(() => {
+        if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
+          if (reconnectAttempts.current < 5) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
+            console.log(`[ConvertPage] ${delay}ms 后重连 (${reconnectAttempts.current + 1}/5)...`);
+            reconnectTimeoutRef.current = setTimeout(() => {
+              reconnectAttempts.current++;
+              connectSSE(jobId);
+            }, delay);
+          } else {
+            setError('连接断开，切换到轮询模式');
+            startPolling(jobId);
+          }
+        }
+      }, 100);
     };
 
     // 处理 init 事件
@@ -84,7 +87,7 @@ export default function ConvertPage() {
       } catch (err) {
         console.error('[ConvertPage] 解析 init 失败:', err);
       }
-    });
+    }, { once: true }); // 只处理一次
 
     // 处理 progress 事件
     eventSource.addEventListener('progress', (e) => {
@@ -156,10 +159,9 @@ export default function ConvertPage() {
     });
 
     // 处理 error 事件
-    eventSource.addEventListener('error', () => {
-      console.error('[ConvertPage] SSE 连接错误');
-      // 切换到轮询模式
-      startPolling(jobId);
+    eventSource.addEventListener('error', (e: MessageEvent) => {
+      console.error('[ConvertPage] SSE 任务错误:', e.data);
+      // 不在这里切换到轮询，等待连接关闭
     });
   }, [router]);
 

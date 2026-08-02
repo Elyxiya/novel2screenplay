@@ -95,9 +95,11 @@ export class JobStore {
     }
     if (updatedJob.error !== job.error) params.error = updatedJob.error;
     if (updatedJob.resultId !== job.resultId) params.resultId = updatedJob.resultId;
-
-    // Pipeline state 存储在内存中，不持久化到 SQLite
-    // 如果需要持久化，可以序列化后存储
+    if (JSON.stringify(updatedJob.pipelineState) !== JSON.stringify(job.pipelineState)) {
+      params.pipelineState = updatedJob.pipelineState;
+    }
+    if (updatedJob.startedAt !== job.startedAt) params.startedAt = updatedJob.startedAt;
+    if (updatedJob.completedAt !== job.completedAt) params.completedAt = updatedJob.completedAt;
 
     this.repository.update(jobId, params);
   }

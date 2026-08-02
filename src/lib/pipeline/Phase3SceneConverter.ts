@@ -1,5 +1,5 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
-import { SYSTEM_PROMPT as CONVERT_PROMPT, buildCharContext, buildLocContext } from '../llm/prompts/convert-scene';
+import { SYSTEM_PROMPT as CONVERT_PROMPT } from '../llm/prompts/convert-scene';
 import { ContextManager } from './ContextManager';
 import type { SceneBoundary } from './Phase2Segmenter';
 import type { RawCharacter, RawLocation } from './Phase1Analyzer';
@@ -220,13 +220,13 @@ export class Phase3SceneConverter {
   /** Convert one text chunk into a Phase3Output (with retry) */
   private async convertText(
     label: string, partText: string, scene: SceneBoundary,
-    shortCharContext: string, shortLocContext: string,
+    charContext: string, locContext: string,
     charIdMap: Map<string, string>, jobStore: JobStore, jobId: string,
     abortSignal?: AbortSignal,
   ): Promise<Phase3Output> {
     const messages: LLMMessage[] = [
       { role: 'system', content: CONVERT_PROMPT },
-      { role: 'user', content: [`角色: ${shortCharContext}`, `地点: ${shortLocContext}`, `标题: ${scene.draftSlugline}`, `摘要: ${scene.summary}`, '', partText].join('\n') },
+      { role: 'user', content: [`角色: ${charContext}`, `地点: ${locContext}`, `标题: ${scene.draftSlugline}`, `摘要: ${scene.summary}`, '', partText].join('\n') },
     ];
 
     let lastError: Error | null = null;
@@ -239,6 +239,7 @@ export class Phase3SceneConverter {
         });
         const t1 = Date.now();
         console.log(`[Phase3]  ${label} LLM 返回 (${t1-t0}ms), 输出: ${response.content.length} 字符, usage: ${response.usage ? `输入${response.usage.promptTokens}+输出${response.usage.completionTokens}` : 'N/A'}`);
+        this.recordUsage(jobStore, jobId, response.usage || {}, partText.length);
 
         const parsed = safeJsonParse(response.content) as Record<string, unknown>;
         console.log(`[Phase3]  ${label} 解析结果: keys=[${Object.keys(parsed).join(',')}], error=${parsed.error ?? '无'}, confidence=${parsed.confidence}, hasContent=${'content' in parsed}`);
@@ -302,14 +303,70 @@ export class Phase3SceneConverter {
     return this.degradedScene(scene, `转换失败: ${lastError?.message}`);
   }
 
+  /**
+   * Build scene-scoped character/location context.
+   * Characters are filtered by the scene's keyCharacterNames (name + alias
+   * match); locations by the scene's chapterIndex. Falls back to the full
+   * list when filtering yields nothing, so context is never empty.
+   */
+  private buildSceneContext(
+    scene: SceneBoundary,
+    characters: RawCharacter[],
+    locations: RawLocation[],
+    charIdMap: Map<string, string>,
+  ): { chars: string; locs: string; charKept: number; charTotal: number; locKept: number; locTotal: number } {
+    const byName = new Map<string, RawCharacter>();
+    for (const c of characters) {
+      byName.set(c.name, c);
+      c.aliases.forEach(a => byName.set(a, c));
+    }
+    const keptNames = new Set<string>();
+    for (const n of scene.keyCharacterNames || []) {
+      const c = byName.get(n);
+      if (c) keptNames.add(c.name);
+    }
+    const keptChars = characters.filter(c => keptNames.has(c.name));
+    const charsForCtx = keptChars.length > 0 ? keptChars : characters;
+
+    const keptLocs = locations.filter(l => l.sourceChapterIndex === scene.chapterIndex);
+    const locsForCtx = keptLocs.length > 0 ? keptLocs : locations;
+
+    const chars = charsForCtx
+      .map(c => `${charIdMap.get(c.name)}=${c.name}(${c.description?.slice(0, 20) || ''})`)
+      .join(', ');
+    const locs = locsForCtx
+      .map(l => `loc_${String(l.sourceChapterIndex + 1).padStart(2, '0')}=${l.name}(${l.type})`)
+      .join(', ');
+
+    return {
+      chars, locs,
+      charKept: keptChars.length, charTotal: characters.length,
+      locKept: keptLocs.length, locTotal: locations.length,
+    };
+  }
+
+  /** Accumulate LLM usage into job metadata for token-efficiency evaluation. */
+  private recordUsage(jobStore: JobStore, jobId: string, usage: { promptTokens?: number; completionTokens?: number }, inputChars: number): void {
+    if (!usage.promptTokens && !usage.completionTokens) return;
+    jobStore.update(jobId, j => {
+      const meta = (j.metadata || {}) as Record<string, unknown>;
+      const prev = (meta.usage || {}) as { promptTokens?: number; completionTokens?: number; inputChars?: number; calls?: number };
+      meta.usage = {
+        promptTokens: (prev.promptTokens || 0) + (usage.promptTokens || 0),
+        completionTokens: (prev.completionTokens || 0) + (usage.completionTokens || 0),
+        inputChars: (prev.inputChars || 0) + inputChars,
+        calls: (prev.calls || 0) + 1,
+      };
+      return { ...j, metadata: meta };
+    });
+  }
+
   async convertScenes(
     scenes: SceneBoundary[], characters: RawCharacter[], locations: RawLocation[],
     chapterTexts: string[], jobStore: JobStore, jobId: string,
     abortSignal?: AbortSignal,
   ): Promise<Phase3Output[]> {
     const charIdMap = this.buildCharIdMap(characters);
-    const shortCharContext = buildCharContext(characters);
-    const shortLocContext = buildLocContext(locations);
     console.log(`[Phase3] 开始转换 ${scenes.length} 个场景, semaphore=3, rateLimit=50/min`);
 
     // Initialize job progress
@@ -322,6 +379,13 @@ export class Phase3SceneConverter {
     const tasks = scenes.map((scene) => async () => this.semaphore.run(async () => {
       if (abortSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
       await this.rateLimiter.wait(abortSignal);
+
+      // Scene-scoped context: filter characters by keyCharacterNames,
+      // locations by chapterIndex (falls back to full lists when empty).
+      const sceneCtx = this.buildSceneContext(scene, characters, locations, charIdMap);
+      if (sceneCtx.charKept < sceneCtx.charTotal || sceneCtx.locKept < sceneCtx.locTotal) {
+        console.log(`[Phase3]  场景 #${scene.sceneIndex} 上下文裁剪: 角色 ${sceneCtx.charKept}/${sceneCtx.charTotal}, 地点 ${sceneCtx.locKept}/${sceneCtx.locTotal}`);
+      }
 
       const chapterText = chapterTexts[scene.chapterIndex] || '';
       const sceneText = chapterText.slice(scene.originalStartOffset, scene.originalEndOffset);
@@ -339,7 +403,7 @@ export class Phase3SceneConverter {
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, shortCharContext, shortLocContext, charIdMap, jobStore, jobId, abortSignal);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal);
         convResults.push(result);
       }
 

@@ -27,6 +27,12 @@ import {
 } from './review-gate';
 import { getSSEClientManager } from '../sse/index';
 import type { SSEEvent } from '../sse/index';
+import {
+  getAgentDebugLogger,
+  createLoggingLLMProvider,
+  createLoggingToolExecutor,
+} from '../agent/debug';
+import type { AgentEventHandler } from '../agent/AgentCore';
 
 export interface OrchestratorTask {
   id: string;
@@ -110,6 +116,8 @@ const DEFAULT_PHASES: Array<Omit<OrchestratorPhase, 'id' | 'status' | 'retryCoun
 export class MultiAgentOrchestrator {
   private tasks = new Map<string, OrchestratorTask>();
   private config: OrchestratorConfig;
+  /** 每个 phase 的调试日志包装 provider（key: taskId:phaseId） */
+  private phaseProviders = new Map<string, LLMProvider>();
 
   constructor(config?: Partial<OrchestratorConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -299,10 +307,19 @@ export class MultiAgentOrchestrator {
     phase: OrchestratorPhase,
     instruction?: string,
   ): Promise<unknown> {
-    const provider = this.config.provider ?? llmRegistry.getDefault();
+    const provider = this.getPhaseProvider(task, phase);
     if (!provider) {
       throw new Error('未配置 LLM Provider，请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY');
     }
+
+    // 调试日志：开启会话（幂等）
+    const debugLogger = getAgentDebugLogger();
+    debugLogger.beginSession(task.id, {
+      phase: phase.name,
+      role: phase.role,
+      jobId: task.jobId,
+      modelId: provider.modelId,
+    });
 
     const agentLLM = new AgentLLMProvider(provider);
     const llmAdapter = createAgentCoreAdapter(agentLLM);
@@ -313,7 +330,11 @@ export class MultiAgentOrchestrator {
       const { initializeBuiltinTools } = await import('../tools/builtin-tools');
       initializeBuiltinTools();
     }
-    const toolExecutor = createToolExecutor();
+    const toolExecutor = createLoggingToolExecutor(createToolExecutor(), debugLogger, {
+      taskId: task.id,
+      phase: phase.name,
+      role: phase.role,
+    });
     const tools = toolRegistry.toAgentTools();
 
     const phaseDescription = instruction
@@ -334,34 +355,64 @@ export class MultiAgentOrchestrator {
 
     const agent = new AgentCore(agentConfig, llmAdapter, toolExecutor);
 
-    // 构造任务输入：前面阶段输出摘要 + 用户指令
-    const context = this.buildAgentContext(task, phase);
-    const runPrompt = [
-      phaseDescription,
-      context.length > 0 ? `\n\n任务上下文:\n${context}` : '',
-      `\n\n需要执行的工作: ${phase.description}`,
-      `\n可用工具: ${tools.map((t) => t.name).join(', ')}`,
-    ].join('');
+    // 订阅 Agent 事件 → 调试日志
+    const unsubscribe = agent.on(toDebugEventHandler(task.id, phase));
+    try {
+      // 构造任务输入：前面阶段输出摘要 + 用户指令
+      const context = this.buildAgentContext(task, phase);
+      const runPrompt = [
+        phaseDescription,
+        context.length > 0 ? `\n\n任务上下文:\n${context}` : '',
+        `\n\n需要执行的工作: ${phase.description}`,
+        `\n可用工具: ${tools.map((t) => t.name).join(', ')}`,
+      ].join('');
 
-    this.emit('log', {
+      this.emit('log', {
+        taskId: task.id,
+        level: 'debug',
+        message: `[Agent:${phase.role}] 开始执行 ${phase.name}`,
+      });
+
+      const result = await agent.run(runPrompt);
+
+      this.emit('log', {
+        taskId: task.id,
+        level: 'debug',
+        message: `[Agent:${phase.role}] ${phase.name} 完成`,
+      });
+
+      // 返回结构化结果
+      return {
+        agentResult: result,
+        completedAt: Date.now(),
+      };
+    } finally {
+      unsubscribe();
+    }
+  }
+
+  /**
+   * 获取（并缓存）带调试日志包装的 phase provider。
+   * 同一 phase 的 Agent 执行与质量关卡评估复用同一包装，日志归入同一会话。
+   */
+  private getPhaseProvider(
+    task: OrchestratorTask,
+    phase: OrchestratorPhase,
+  ): LLMProvider | undefined {
+    const key = `${task.id}:${phase.id}`;
+    const cached = this.phaseProviders.get(key);
+    if (cached) return cached;
+
+    const raw = this.config.provider ?? llmRegistry.getDefault();
+    if (!raw) return undefined;
+
+    const wrapped = createLoggingLLMProvider(raw, getAgentDebugLogger(), {
       taskId: task.id,
-      level: 'debug',
-      message: `[Agent:${phase.role}] 开始执行 ${phase.name}`,
+      phase: phase.name,
+      role: phase.role,
     });
-
-    const result = await agent.run(runPrompt);
-
-    this.emit('log', {
-      taskId: task.id,
-      level: 'debug',
-      message: `[Agent:${phase.role}] ${phase.name} 完成`,
-    });
-
-    // 返回结构化结果
-    return {
-      agentResult: result,
-      completedAt: Date.now(),
-    };
+    this.phaseProviders.set(key, wrapped);
+    return wrapped;
   }
 
   /**
@@ -372,7 +423,7 @@ export class MultiAgentOrchestrator {
     phase: OrchestratorPhase,
     output: unknown,
   ): Promise<{ decision: GateDecision; reason: string }> {
-    const provider = this.config.provider ?? llmRegistry.getDefault();
+    const provider = this.getPhaseProvider(task, phase);
     const gateConfig = this.getGateConfig(phase.name);
 
     // 把 Agent 输出转换为评估文本
@@ -497,6 +548,52 @@ function toSSEEventType(event: string): SSEEvent['type'] {
     default:
       return 'progress';
   }
+}
+
+/**
+ * 将 AgentCore 事件转换为调试日志条目处理器。
+ */
+function toDebugEventHandler(taskId: string, phase: OrchestratorPhase): AgentEventHandler {
+  const logger = getAgentDebugLogger();
+  return (event) => {
+    const base = {
+      taskId,
+      phase: phase.name,
+      role: phase.role,
+    };
+    switch (event.type) {
+      case 'state_change':
+        logger.append(taskId, {
+          type: 'state_change',
+          level: 'debug',
+          data: { ...base, from: event.from, to: event.to },
+        });
+        break;
+      case 'step_complete':
+        logger.append(taskId, {
+          type: 'task_event',
+          level: 'debug',
+          data: {
+            ...base,
+            event: 'step_complete',
+            stepIndex: event.step.index,
+            action: event.step.action,
+            observation: event.step.observation,
+          },
+        });
+        break;
+      case 'task_start':
+      case 'task_complete':
+      case 'task_error':
+      case 'token_warning':
+        logger.append(taskId, {
+          type: 'task_event',
+          level: event.type === 'task_error' ? 'error' : 'info',
+          data: { ...base, event: event.type, ...event },
+        });
+        break;
+    }
+  };
 }
 
 const gateConfigMap: Record<string, keyof typeof DEFAULT_GATE_CONFIGS> = {

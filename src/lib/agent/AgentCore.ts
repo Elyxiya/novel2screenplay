@@ -46,6 +46,9 @@ import {
 
 export type { AgentCoreEvents };
 
+/** Handler for all Agent events. */
+export type AgentEventHandler = (event: AgentCoreEvents) => void;
+
 // ── LLM Provider Interface ──────────────────────────────────────────────────────
 
 /**
@@ -111,6 +114,7 @@ export class AgentCore {
   private currentTask: AgentTask | null = null;
   private stepIndex = 0;
   private abortController: AbortController | null = null;
+  private listeners = new Set<AgentEventHandler>();
 
   constructor(
     private config: AgentConfig,
@@ -275,6 +279,24 @@ export class AgentCore {
     return this.memory;
   }
 
+  // ── Event Subscription ──────────────────────────────────────────────────
+
+  /**
+   * Subscribes to all Agent events (state_change, task_start, step_complete, ...).
+   * Returns an unsubscribe function.
+   */
+  on(handler: AgentEventHandler): () => void {
+    this.listeners.add(handler);
+    return () => {
+      this.listeners.delete(handler);
+    };
+  }
+
+  /** Removes a previously subscribed event handler. */
+  off(handler: AgentEventHandler): void {
+    this.listeners.delete(handler);
+  }
+
   // ── Private Helpers ────────────────────────────────────────────────────────
 
   private transition(to: AgentState): void {
@@ -409,6 +431,14 @@ export class AgentCore {
   }
 
   private emit(event: AgentCoreEvents): void {
+    // 分发给订阅者（调试日志、外部监听等）
+    for (const handler of this.listeners) {
+      try {
+        handler(event);
+      } catch (err) {
+        console.error('[Agent] 事件处理器异常:', err);
+      }
+    }
     if (!this.config.verbose) return;
     const label = `[Agent] ${event.type}`;
     const payload = { ...event };

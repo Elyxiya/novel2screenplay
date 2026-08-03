@@ -136,3 +136,22 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 -- Schema 版本记录：认证功能
 INSERT OR IGNORE INTO schema_version (version, applied_at, description)
 VALUES (2, strftime('%s', 'now') * 1000, 'Add auth: users & sessions, user_id on jobs/novels');
+
+-- Dramas 表：短剧分镜（剧本 → 分镜转换结果，溯源 source_job_id → jobs.id）
+CREATE TABLE IF NOT EXISTS dramas (
+  id TEXT PRIMARY KEY,
+  source_job_id TEXT NOT NULL, -- 溯源：来源剧本任务 ID（jobs.id）
+  source_novel_id TEXT, -- 溯源：来源小说资产 ID（novels.id，可为空）
+  title TEXT NOT NULL,
+  drama_yaml TEXT NOT NULL, -- 分镜 YAML 全文（novel2drama-v1）
+  created_at INTEGER NOT NULL,
+  user_id TEXT -- 归属用户（多用户数据隔离）
+);
+
+CREATE INDEX IF NOT EXISTS idx_dramas_source_job_id ON dramas(source_job_id);
+CREATE INDEX IF NOT EXISTS idx_dramas_created_at ON dramas(created_at);
+CREATE INDEX IF NOT EXISTS idx_dramas_user_id ON dramas(user_id);
+
+-- Schema 版本记录：短剧分镜
+INSERT OR IGNORE INTO schema_version (version, applied_at, description)
+VALUES (3, strftime('%s', 'now') * 1000, 'Add dramas: short-drama storyboard (screenplay -> shots)');

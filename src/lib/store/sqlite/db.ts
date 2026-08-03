@@ -232,6 +232,20 @@ function initializeSchema(database: Database.Database): void {
         applied_at INTEGER NOT NULL,
         description TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS dramas (
+        id TEXT PRIMARY KEY,
+        source_job_id TEXT NOT NULL,
+        source_novel_id TEXT,
+        title TEXT NOT NULL,
+        drama_yaml TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        user_id TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dramas_source_job_id ON dramas(source_job_id);
+      CREATE INDEX IF NOT EXISTS idx_dramas_created_at ON dramas(created_at);
+      CREATE INDEX IF NOT EXISTS idx_dramas_user_id ON dramas(user_id);
     `);
     console.log('[DB] Schema initialized (inline)');
   }

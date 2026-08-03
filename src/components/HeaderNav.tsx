@@ -13,10 +13,11 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
   const isResultPage = pathname?.startsWith('/result/');
   const isDebugPage = pathname?.startsWith('/debug');
   const isWorkbenchPage = pathname === '/workbench';
+  const isShortdramaPage = pathname?.startsWith('/shortdrama');
   const currentStep = getStepFromPath(pathname ?? '');
   // 站点导航页（首页/功能介绍/使用指南）：不显示转换步进器，改为显示站点导航
   const isLandingPage = pathname === '/' || pathname === '/features' || pathname === '/guide';
-  const showStepper = !isDebugPage && !isWorkbenchPage && !isLandingPage;
+  const showStepper = !isDebugPage && !isWorkbenchPage && !isShortdramaPage && !isLandingPage;
   const showSiteNav = !showStepper && !isDebugPage;
 
   const SITE_LINKS = [
@@ -81,8 +82,22 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
             </nav>
           )}
 
-          {/* 工作台 + 历史 */}
+          {/* 工作台 + 短剧分镜 + 历史 */}
           <div className="ml-auto flex items-center gap-2 shrink-0">
+            <Link
+              href="/shortdrama"
+              className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-300 border ${
+                pathname?.startsWith('/shortdrama')
+                  ? 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white border-transparent shadow-lg shadow-teal-300/50'
+                  : 'border-slate-300 bg-white/70 text-slate-500 hover:border-teal-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-teal-100/60'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <rect x="2" y="4" width="20" height="16" rx="3" />
+                <path d="M10 9l5 3-5 3V9z" />
+              </svg>
+              <span className="hidden sm:inline">短剧分镜</span>
+            </Link>
             <Link
               href="/workbench"
               className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-300 border ${

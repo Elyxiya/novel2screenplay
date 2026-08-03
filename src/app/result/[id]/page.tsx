@@ -43,6 +43,9 @@ export default function ResultPage() {
   const [appendMsg, setAppendMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [appendResult, setAppendResult] = useState<{ appended: number; total: number } | null>(null);
 
+  // ── 生成短剧分镜（剧本 → 分镜，第三跳）──
+  const [dramaLoading, setDramaLoading] = useState(false);
+
   // 事件处理器中刷新数据用（含 setState，不直接在 effect 中调用）
   const fetchScreenplay = useCallback(async () => {
     const res = await fetch(`/api/result/${jobId}`);
@@ -228,6 +231,28 @@ export default function ResultPage() {
     setAppendMsg(null);
     setAppendResult(null);
   };
+  // ── 生成短剧分镜：调用 /api/drama/convert 后跳转分镜页 ──
+  const convertToDrama = async () => {
+    if (!screenplay) return;
+    setDramaLoading(true);
+    try {
+      const res = await fetch('/api/drama/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.dramaId) {
+        window.location.href = `/shortdrama?id=${data.dramaId}`;
+      } else {
+        alert('生成失败: ' + (data.error ?? '未知错误'));
+      }
+    } catch {
+      alert('生成失败，请重试');
+    } finally {
+      setDramaLoading(false);
+    }
+  };
 
   const handleAppend = async () => {
     if (!novelId) return;
@@ -346,6 +371,25 @@ export default function ResultPage() {
 
             {/* 工具栏操作按钮组 */}
             <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                onClick={convertToDrama}
+                disabled={dramaLoading}
+                className="glow-btn !px-4 !py-2 text-xs disabled:opacity-60"
+                title="把当前剧本转换为短剧分镜表"
+              >
+                {dramaLoading ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <rect x="2" y="4" width="20" height="16" rx="3" />
+                    <path d="M10 9l5 3-5 3V9z" />
+                  </svg>
+                )}
+                {dramaLoading ? '生成中...' : '生成短剧分镜'}
+              </button>
               <button
                 onClick={openAppend}
                 disabled={!novelId}

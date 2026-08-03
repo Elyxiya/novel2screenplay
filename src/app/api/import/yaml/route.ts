@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import YAML from 'yaml';
 import { ScreenplaySchema } from '@/lib/schema/screenplay.schema';
 import { jobStore } from '@/lib/store/job-store';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 
 function normalizeTime(v: unknown): string {
@@ -46,6 +47,9 @@ function normalize(data: unknown): unknown {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const body = await request.json();
 
     if (!body.yaml || typeof body.yaml !== 'string') {
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
     let data = YAML.parse(body.yaml);
     data = normalize(data);
 
-    let sp = ScreenplaySchema.safeParse(data);
+    const sp = ScreenplaySchema.safeParse(data);
     if (!sp.success) {
       return NextResponse.json({
         error: 'YAML 格式错误或不符合剧本 schema',
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
       status: 'completed',
       progress: 100,
       resultId: jobId,
+      userId: user.id,
       pipelineState: { phase4Output: sp.data },
     }));
 

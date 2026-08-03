@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore, type HistoryEntry } from '@/lib/store/history-store';
 
@@ -17,12 +17,8 @@ function formatDate(ts: number): string {
 
 export default function HistoryPage() {
   const router = useRouter();
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [entries, setEntries] = useState<HistoryEntry[]>(() => historyStore.list());
   const [confirmClear, setConfirmClear] = useState(false);
-
-  useEffect(() => {
-    setEntries(historyStore.list());
-  }, []);
 
   const remove = (jobId: string) => {
     historyStore.remove(jobId);
@@ -62,7 +58,7 @@ export default function HistoryPage() {
         <div className="bg-white rounded-xl border p-12 text-center">
           <div className="text-4xl mb-3">📭</div>
           <p className="text-gray-500">暂无转换记录</p>
-          <button onClick={() => router.push('/')} className="mt-4 px-6 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+          <button onClick={() => router.push('/upload')} className="mt-4 px-6 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
             去转换一本小说
           </button>
         </div>

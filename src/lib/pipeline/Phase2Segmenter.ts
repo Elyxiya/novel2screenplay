@@ -38,14 +38,21 @@ export class Phase2Segmenter {
     const allScenes: SceneBoundary[] = [];
     const rawResponses: string[] = [];
 
-    const charsContext = analysis.characters
-      .map((c) => `${c.name}（别名: ${c.aliases.join('、') || '无'}）`)
-      .join('、');
-
     console.log(`[Phase2] 开始处理 ${chapters.length} 个章节, 已知角色: ${analysis.characters.length}`);
     for (const chapter of chapters) {
       console.log(`[Phase2]  章节 #${chapter.index}: "${chapter.title}" (${chapter.text.length} 字)`);
       const truncatedText = await this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
+
+      // Chapter-scoped character context: only characters introduced in this
+      // chapter, falling back to the full list when filtering yields nothing.
+      const chapterChars = analysis.characters.filter(c => c.sourceChapterIndex === chapter.index);
+      const charsForCtx = chapterChars.length > 0 ? chapterChars : analysis.characters;
+      if (charsForCtx.length < analysis.characters.length) {
+        console.log(`[Phase2]  章节 #${chapter.index} 角色裁剪: ${charsForCtx.length}/${analysis.characters.length}`);
+      }
+      const charsContext = charsForCtx
+        .map((c) => `${c.name}（别名: ${c.aliases.join('、') || '无'}）`)
+        .join('、');
 
       const messages: LLMMessage[] = [
         { role: 'system', content: SEGMENT_PROMPT },

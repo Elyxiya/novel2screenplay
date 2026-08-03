@@ -2,14 +2,28 @@ export const MAX_SCENE_TOKENS = 1500;
 export const MAX_ANALYSIS_TOKENS = 30000;
 export const MAX_SEGMENT_TOKENS = 8000;
 
-/** Lazy tiktoken loader — avoids Missing tiktoken_bg.wasm at import time */
+/**
+ * Lazily-loaded singleton tiktoken encoding.
+ * Loading the BPE rank table (cl100k_base, includes wasm) is expensive
+ * (50-300ms). Reusing a single instance across all token counting calls
+ * removes that per-call overhead entirely.
+ */
+let encodingPromise: Promise<import('tiktoken').Tiktoken> | null = null;
+
+async function getEncoding(): Promise<import('tiktoken').Tiktoken> {
+  if (!encodingPromise) {
+    encodingPromise = import('tiktoken').then(({ get_encoding }) =>
+      get_encoding('cl100k_base'),
+    );
+  }
+  return encodingPromise;
+}
+
+/** Token count with tiktoken; falls back to char-length estimation on failure. */
 async function countTokens(text: string): Promise<number | null> {
   try {
-    const { get_encoding } = await import('tiktoken') as typeof import('tiktoken');
-    const enc = get_encoding('cl100k_base');
-    const count = enc.encode(text).length;
-    enc.free();
-    return count;
+    const enc = await getEncoding();
+    return enc.encode(text).length;
   } catch { return null; }
 }
 

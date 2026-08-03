@@ -50,6 +50,8 @@ export interface PipelineJob {
   timeout?: number;
   /** 使用的模型 */
   modelId?: string;
+  /** 归属用户（多用户数据隔离，内存队列任务） */
+  userId?: string;
   /** Token 使用统计 */
   tokenUsage?: {
     prompt: number;
@@ -170,6 +172,7 @@ export function createPipelineJob(
     timeout?: number;
     maxRetries?: number;
     modelId?: string;
+    userId?: string;
   }
 ): PipelineJob {
   const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -186,6 +189,7 @@ export function createPipelineJob(
     createdAt: Date.now(),
     timeout: options?.timeout ?? 10 * 60 * 1000, // 默认 10 分钟
     modelId: options?.modelId,
+    userId: options?.userId,
   };
 }
 

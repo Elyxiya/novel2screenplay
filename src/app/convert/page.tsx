@@ -202,8 +202,8 @@ export default function ConvertPage() {
     const jid = typeof window !== 'undefined' ? sessionStorage.getItem('jobId') : null;
     console.log('[ConvertPage] 初始化, jobId:', jid);
     if (!jid) {
-      console.log('[ConvertPage] 无 jobId, 跳转回首页');
-      router.push('/');
+      console.log('[ConvertPage] 无 jobId, 跳转回上传页');
+      router.push('/upload');
       return;
     }
 
@@ -230,61 +230,118 @@ export default function ConvertPage() {
     if (jid) await fetch(`/api/pipeline/cancel/${jid}`, { method: 'POST' });
     sessionStorage.removeItem('jobId');
     sessionStorage.removeItem('novelData');
-    router.push('/');
+    router.push('/upload');
   };
 
   const phaseNames = ['分析角色与地点', '场景切割', '场景转换', '合并校验'];
   const phaseIcons = ['🔍', '✂️', '🎬', '✅'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-float-up">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.push('/configure')} className="text-gray-400 hover:text-gray-600 transition-colors text-sm">‹ 返回配置</button>
+        <button onClick={() => router.push('/configure')} className="glow-btn-ghost !px-3 !py-1.5 text-xs">‹ 返回配置</button>
+        <span className="tech-tag">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          第 3 步 · AI 转换中
+        </span>
       </div>
-      <h2 className="text-2xl font-bold">转换进度</h2>
+      <h2 className="text-2xl font-bold text-slate-900">转换进度</h2>
 
-      <div className="bg-white rounded-xl border p-6 space-y-6">
+      <div className="glass-card p-6 space-y-6">
         {/* Stepper */}
-        <div className="flex justify-between">
-          {phaseNames.map((name, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors shrink-0
-                ${phase > i + 1 ? 'bg-green-500 text-white' : phase === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                {phase > i + 1 ? '✓' : phaseIcons[i]}
+        <div className="relative flex justify-between">
+          {phaseNames.map((name, i) => {
+            const stepNum = i + 1;
+            const isDone = phase > stepNum || (status === 'completed' && phase === 4);
+            const isActive = phase === stepNum && !isDone;
+            return (
+              <div key={i} className="flex-1 flex items-center last:flex-none">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div
+                    className={`step-badge ${
+                      isDone
+                        ? 'step-badge-done'
+                        : isActive
+                          ? 'step-badge-active'
+                          : 'step-badge-idle'
+                    }`}
+                  >
+                    {isDone ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : phaseIcons[i]}
+                  </div>
+                  <span className={`text-xs text-center leading-tight ${isActive ? 'text-indigo-600 font-semibold' : isDone ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {name}
+                  </span>
+                </div>
+                {i < phaseNames.length - 1 && (
+                  <span className={`step-connector ${isDone ? 'step-connector-done' : ''}`} />
+                )}
               </div>
-              <span className={`text-xs text-center leading-tight ${phase === i + 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>{name}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-          <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+        <div className="w-full bg-slate-200/70 rounded-full h-2.5 overflow-hidden">
+          <div className="progress-flow h-full rounded-full" style={{ width: `${progress}%` }} />
         </div>
-        <p className="text-sm text-gray-500 text-center">
-          {PHASE_LABELS[phase] || '等待中...'}
-          {subProgress && `(${subProgress})`}
-          {error && <span className="text-red-500 ml-2">⚠️ {error}</span>}
+        <p className="text-sm text-slate-500 text-center flex items-center justify-center gap-2">
+          {status === 'completed' ? (
+            <span className="text-emerald-600 font-medium flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              转换完成，即将跳转结果页...
+            </span>
+          ) : (
+            <>
+              <svg className="w-4 h-4 animate-spin text-cyan-500" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span className="font-medium text-slate-700">{PHASE_LABELS[phase] || '等待中...'}</span>
+              {subProgress && <span className="text-cyan-600 font-mono">({subProgress})</span>}
+            </>
+          )}
+          {error && <span className="text-red-500">⚠️ {error}</span>}
         </p>
 
         {/* Logs */}
-        <div className="bg-gray-900 text-gray-100 rounded-xl p-4 h-60 overflow-y-auto font-mono text-xs space-y-1">
-          {logs.length === 0 && <p className="text-gray-500">等待任务开始...</p>}
-          {logs.map((log, i) => (
-            <div key={i} className={`${log.level === 'error' ? 'text-red-400' : log.level === 'warn' ? 'text-yellow-400' : 'text-gray-300'}`}>
-              {log.message}
-            </div>
-          ))}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-3 h-3 rounded-full bg-red-400/80" />
+            <span className="w-3 h-3 rounded-full bg-yellow-400/80" />
+            <span className="w-3 h-3 rounded-full bg-emerald-400/80" />
+            <span className="text-xs text-slate-400 ml-2 font-mono">pipeline.log</span>
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-emerald-500 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {status === 'completed' ? 'completed' : 'streaming'}
+            </span>
+          </div>
+          <div className="terminal-panel p-4 h-60 overflow-y-auto space-y-1">
+            {logs.length === 0 && <p className="text-slate-500">等待任务开始...</p>}
+            {logs.map((log, i) => (
+              <div key={i} className={`${log.level === 'error' ? 'text-red-400' : log.level === 'warn' ? 'text-yellow-400' : 'text-slate-300'}`}>
+                <span className="text-slate-600 select-none mr-2">›</span>
+                {log.message}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button onClick={cancel} className="px-6 py-2.5 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 text-sm">取消转换</button>
+          <button onClick={cancel} className="glow-btn-ghost !text-red-500 !border-red-200 hover:!border-red-400 hover:!text-red-600">取消转换</button>
           {status === 'failed' && (
             <button onClick={async () => {
               const jid = typeof window !== 'undefined' ? sessionStorage.getItem('jobId') : null;
               if (jid) await fetch(`/api/pipeline/resume/${jid}`, { method: 'POST' });
-            }} className="px-6 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 text-sm">恢复任务</button>
+            }} className="glow-btn">恢复任务</button>
           )}
         </div>
       </div>

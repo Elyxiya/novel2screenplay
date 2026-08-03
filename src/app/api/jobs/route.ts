@@ -11,17 +11,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
 import { createPipelineJob } from '@/lib/jobs/types';
 import type { JobStatus, PipelineJobInput } from '@/lib/jobs/types';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/jobs - 列出任务
+// GET /api/jobs - 列出任务（当前用户）
 export async function GET(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const queue = getJobQueue();
   const { searchParams } = new URL(request.url);
   const statusParam = searchParams.get('status');
   const status = statusParam as JobStatus | null;
 
-  const jobs = queue.list(status ?? undefined);
+  const jobs = (queue.list(status ?? undefined)).filter(j => j.userId === user.id);
   const stats = queue.getStats();
 
   return NextResponse.json({
@@ -33,6 +37,9 @@ export async function GET(request: NextRequest) {
 // POST /api/jobs - 创建任务
 export async function POST(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const body = await request.json() as PipelineJobInput & {
       priority?: 'low' | 'normal' | 'high' | 'urgent';
       timeout?: number;
@@ -43,6 +50,7 @@ export async function POST(request: NextRequest) {
       priority: body.priority,
       timeout: body.timeout,
       modelId: body.modelId,
+      userId: user.id,
     });
 
     const queue = getJobQueue();

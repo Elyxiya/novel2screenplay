@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@/lib/schema/yaml-serializer';
 import type { Screenplay } from '@/lib/schema/screenplay.schema';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 type ZodIssue = { path: (string | number)[]; message: string };
 
@@ -14,10 +14,22 @@ function extractZodIssues(error: string, issues: ZodIssue[]): string {
   }).join('\n');
 }
 
+/** 校验当前用户对任务的访问权，返回 job 或 401/403/404 响应 */
+async function authorizeJob(jobId: string): Promise<{ job: ReturnType<typeof jobStore.get> } | { response: NextResponse }> {
+  const user = await getCurrentUser();
+  if (!user) return { response: authError() };
+  const job = jobStore.get(jobId);
+  if (!job) return { response: NextResponse.json({ error: '任务不存在' }, { status: 404 }) };
+  if (job.userId && job.userId !== user.id) return { response: authError('无权访问该任务', 403) };
+  return { job };
+}
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
-  const job = jobStore.get(jobId);
-  if (!job) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  const auth = await authorizeJob(jobId);
+  if ('response' in auth) return auth.response;
+  const job = auth.job!;
+
   if (job.status !== 'completed') return NextResponse.json({ error: `任务未完成(${job.status})` }, { status: 400 });
 
   const screenplay = job.pipelineState.phase4Output;
@@ -28,13 +40,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ job
     analytics: screenplay.analytics,
     metadata: screenplay.metadata,
     chapterTexts: job.chapterTexts,
+    novelId: job.novelId ?? null,
+    modelId: job.config?.modelId ?? null,
+    title: job.config?.title ?? screenplay.metadata.title,
+    createdAt: job.createdAt,
   });
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
-  const job = jobStore.get(jobId);
-  if (!job) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  const auth = await authorizeJob(jobId);
+  if ('response' in auth) return auth.response;
+  const job = auth.job!;
 
   const screenplay = job.pipelineState.phase4Output;
   if (!screenplay) return NextResponse.json({ error: '剧本数据不存在' }, { status: 404 });

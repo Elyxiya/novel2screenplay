@@ -5,8 +5,10 @@
  * 支持故障转移和负载均衡。
  */
 
-import type { LLMAdapter, LLMAdapterHealth, AdapterSelectionStrategy } from './types';
+import type { LLMAdapter, LLMAdapterHealth } from './types';
 import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMProvider } from '../types';
+import { getDeepSeekAdapter } from './deepseek-adapter';
+import { getOpenAIAdapter } from './openai-adapter';
 
 export interface RouterStats {
   totalRequests: number;
@@ -201,9 +203,16 @@ const GLOBAL_KEY = '__novel2screenplay_model_router__';
 export function getModelRouter(): ModelRouter {
   if (typeof globalThis !== 'undefined') {
     if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
-      (globalThis as Record<string, unknown>)[GLOBAL_KEY] = new ModelRouter();
+      const router = new ModelRouter();
+      // 注册所有内置适配器（懒加载，避免循环依赖）
+      router.registerAdapter(getDeepSeekAdapter());
+      router.registerAdapter(getOpenAIAdapter());
+      (globalThis as Record<string, unknown>)[GLOBAL_KEY] = router;
     }
     return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as ModelRouter;
   }
-  return new ModelRouter();
+  const router = new ModelRouter();
+  router.registerAdapter(getDeepSeekAdapter());
+  router.registerAdapter(getOpenAIAdapter());
+  return router;
 }

@@ -18,6 +18,7 @@ export interface HistoryRow {
   location_count: number | null;
   yaml_content: string | null;
   created_at: number;
+  user_id: string | null;
 }
 
 export interface CreateHistoryParams {
@@ -29,6 +30,8 @@ export interface CreateHistoryParams {
   characterCount?: number;
   locationCount?: number;
   yamlContent?: string;
+  /** 归属用户（多用户数据隔离） */
+  userId?: string;
 }
 
 export interface History {
@@ -49,7 +52,8 @@ export interface HistoryRepository {
   get(historyId: string): History | null;
   getByJobId(jobId: string): History | null;
   listByProject(projectId: string): History[];
-  listRecent(limit?: number): History[];
+  /** 获取最近的历史记录；传入 userId 时按用户过滤（多用户隔离） */
+  listRecent(limit?: number, userId?: string): History[];
   delete(historyId: string): void;
 }
 
@@ -66,11 +70,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
       INSERT INTO history (
         id, project_id, job_id, title, author,
         scene_count, character_count, location_count,
-        yaml_content, created_at
+        yaml_content, created_at, user_id
       ) VALUES (
         @id, @projectId, @jobId, @title, @author,
         @sceneCount, @characterCount, @locationCount,
-        @yamlContent, @createdAt
+        @yamlContent, @createdAt, @userId
       )
     `);
 
@@ -85,6 +89,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       locationCount: params.locationCount ?? null,
       yamlContent: params.yamlContent ?? null,
       createdAt: now,
+      userId: params.userId ?? null,
     });
 
     return id;
@@ -127,13 +132,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   /**
-   * 获取最近的历史记录
+   * 获取最近的历史记录；传入 userId 时按用户过滤（多用户隔离）
    */
-  listRecent(limit: number = 10): History[] {
+  listRecent(limit: number = 10, userId?: string): History[] {
     const db = getDatabase();
-    const rows = db.prepare(
-      'SELECT * FROM history ORDER BY created_at DESC LIMIT ?'
-    ).all(limit) as HistoryRow[];
+    const rows = userId
+      ? db.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT ?').all(userId, limit) as HistoryRow[]
+      : db.prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT ?').all(limit) as HistoryRow[];
 
     return rows.map((row) => this.rowToHistory(row));
   }

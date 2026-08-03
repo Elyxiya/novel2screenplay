@@ -32,6 +32,7 @@ export interface FlowEvaluation {
       consistency: number;
       coherence: number;
       drama: number;
+      efficiency: number;
     };
   };
   phases: {
@@ -39,6 +40,7 @@ export interface FlowEvaluation {
     segment: PhaseEval;
     convert: PhaseEval;
     merge: PhaseEval;
+    efficiency: PhaseEval;
   };
   stats: {
     phaseTimings: Record<string, { durationMs: number }>;
@@ -47,6 +49,14 @@ export interface FlowEvaluation {
     actionPercentage: number | null;
     totalScenes: number;
     fixes: number;
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      inputChars: number;
+      calls: number;
+      tokensPerChar: number | null;
+    } | null;
   };
   issues: Array<{ level: 'warn' | 'error'; phase: string; message: string }>;
 }
@@ -54,10 +64,11 @@ export interface FlowEvaluation {
 // ── 常量（评分阈值，可调） ────────────────────────────────────────────────
 
 const SCORE = {
-  FORMAT_W: 0.3,
-  CONSISTENCY_W: 0.25,
-  COHERENCE_W: 0.25,
-  DRAMA_W: 0.2,
+  FORMAT_W: 0.25,
+  CONSISTENCY_W: 0.2,
+  COHERENCE_W: 0.2,
+  DRAMA_W: 0.15,
+  EFFICIENCY_W: 0.2,
   // 角色数合理性
   CHAR_MIN: 2,
   CHAR_MAX: 40,
@@ -70,6 +81,10 @@ const SCORE = {
   // 置信度
   CONFIDENCE_LOW: 0.5,
   CONFIDENCE_LOW_RATIO_MAX: 0.3,
+  // token 效率：每转换 1 字原文消耗的总 token 数
+  TOKENS_PER_CHAR_GOOD: 1.5,
+  TOKENS_PER_CHAR_WARN: 3,
+  TOKENS_PER_CHAR_BAD: 5,
 } as const;
 
 function clamp(n: number, min = 0, max = 100): number {
@@ -293,14 +308,84 @@ function evalMerge(
 
 // ── 整体评测 ───────────────────────────────────────────────────────────────
 
+function parseUsage(job: StoredJob): FlowEvaluation['stats']['usage'] {
+  const raw = job.metadata?.usage;
+  if (!raw || typeof raw !== 'object') return null;
+  const u = raw as Record<string, unknown>;
+  const promptTokens = typeof u.promptTokens === 'number' ? u.promptTokens : 0;
+  const completionTokens = typeof u.completionTokens === 'number' ? u.completionTokens : 0;
+  const inputChars = typeof u.inputChars === 'number' ? u.inputChars : 0;
+  const calls = typeof u.calls === 'number' ? u.calls : 0;
+  if (calls === 0) return null;
+  const totalTokens = promptTokens + completionTokens;
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    inputChars,
+    calls,
+    tokensPerChar: inputChars > 0 ? Number((totalTokens / inputChars).toFixed(2)) : null,
+  };
+}
+
+function evalEfficiency(
+  usage: FlowEvaluation['stats']['usage'],
+  issues: FlowEvaluation['issues'],
+): PhaseEval {
+  if (!usage || usage.calls === 0) {
+    return {
+      status: 'empty',
+      score: 60,
+      metrics: { 说明: '无 usage 数据' },
+    };
+  }
+
+  const tpc = usage.tokensPerChar;
+  let score = 100;
+  if (tpc === null) {
+    score = 60;
+    issues.push({ level: 'warn', phase: 'convert', message: '无输入字符数据，无法计算 token 效率' });
+  } else if (tpc > SCORE.TOKENS_PER_CHAR_BAD) {
+    score = 30;
+    issues.push({
+      level: 'warn',
+      phase: 'convert',
+      message: `token 效率低（每字 ${tpc} token），上下文裁剪未生效或输入过大`,
+    });
+  } else if (tpc > SCORE.TOKENS_PER_CHAR_WARN) {
+    score = 55;
+    issues.push({
+      level: 'warn',
+      phase: 'convert',
+      message: `token 效率一般（每字 ${tpc} token），可进一步裁剪上下文`,
+    });
+  } else if (tpc > SCORE.TOKENS_PER_CHAR_GOOD) {
+    score = 80;
+  }
+
+  return {
+    status: score >= 85 ? 'ok' : score >= 60 ? 'warn' : 'error',
+    score: clamp(score),
+    metrics: {
+      调用次数: usage.calls,
+      输入token: usage.promptTokens,
+      输出token: usage.completionTokens,
+      输入字符: usage.inputChars,
+      每字token: tpc ?? '未知',
+    },
+  };
+}
+
 export function evaluateFlow(job: StoredJob): FlowEvaluation {
   const issues: FlowEvaluation['issues'] = [];
   const chapterCount = job.chapterTexts?.length ?? 0;
 
+  const usage = parseUsage(job);
   const phaseAnalyze = evalAnalyze(job, issues);
   const phaseSegment = evalSegment(job, chapterCount, issues);
   const phaseConvert = evalConvert(job, issues);
   const phaseMerge = evalMerge(job, issues);
+  const phaseEfficiency = evalEfficiency(usage, issues);
 
   // format：产物完整性
   const hasP1 = Boolean(job.pipelineState.phase1Output);
@@ -360,7 +445,8 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
     format * SCORE.FORMAT_W +
       consistency * SCORE.CONSISTENCY_W +
       coherence * SCORE.COHERENCE_W +
-      drama * SCORE.DRAMA_W,
+      drama * SCORE.DRAMA_W +
+      phaseEfficiency.score * SCORE.EFFICIENCY_W,
   );
 
   const p3 = job.pipelineState.phase3Output ?? [];
@@ -379,6 +465,7 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
         consistency: clamp(consistency),
         coherence: clamp(coherence),
         drama: clamp(drama),
+        efficiency: phaseEfficiency.score,
       },
     },
     phases: {
@@ -386,6 +473,7 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
       segment: phaseSegment,
       convert: phaseConvert,
       merge: phaseMerge,
+      efficiency: phaseEfficiency,
     },
     stats: {
       phaseTimings: parsePhaseTimings(job),
@@ -401,6 +489,7 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
       actionPercentage: p4?.analytics?.actionPercentage ?? null,
       totalScenes: p4?.scenes?.length ?? p3.length,
       fixes: 0,
+      usage,
     },
     issues,
   };

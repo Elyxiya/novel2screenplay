@@ -13,7 +13,7 @@ import type { Phase1Output } from '../pipeline/Phase1Analyzer';
 import type { Phase2Output } from '../pipeline/Phase2Segmenter';
 import type { Phase3Output } from '../pipeline/Phase3SceneConverter';
 import type { Screenplay } from '../schema/screenplay.schema';
-import { getJobRepository, type CreateJobParams, type UpdateJobParams } from './sqlite';
+import { getJobRepository, type UpdateJobParams } from './sqlite';
 
 /** Internal stored job with pipeline state */
 export interface StoredJob {
@@ -36,10 +36,15 @@ export interface StoredJob {
   metadata?: Record<string, unknown>;
   novelText: string;
   chapterTexts: string[];
+  novelId?: string;
+  /** 归属用户（多用户数据隔离） */
+  userId?: string;
   config: {
     modelId: string;
     selectedChapters: number[];
     temperature: number;
+    title?: string;
+    author?: string;
   };
   pipelineState: {
     phase1Output?: Phase1Output;
@@ -65,6 +70,10 @@ export class JobStore {
     modelId: string;
     selectedChapters: number[];
     temperature: number;
+    novelId?: string;
+    title?: string;
+    author?: string;
+    userId?: string;
   }): string {
     return this.repository.create(config);
   }
@@ -86,7 +95,9 @@ export class JobStore {
     if (updatedJob.status !== job.status) params.status = updatedJob.status;
     if (updatedJob.currentPhase !== job.currentPhase) params.currentPhase = updatedJob.currentPhase;
     if (updatedJob.progress !== job.progress) params.progress = updatedJob.progress;
-    if (updatedJob.subProgress !== job.subProgress) params.subProgress = updatedJob.subProgress as number | null | undefined;
+    if (updatedJob.subProgress !== job.subProgress) {
+      params.subProgress = updatedJob.subProgress as { totalScenes: number; completedScenes: number } | null | undefined;
+    }
     if (JSON.stringify(updatedJob.scenesStatus) !== JSON.stringify(job.scenesStatus)) {
       params.scenesStatus = updatedJob.scenesStatus;
     }

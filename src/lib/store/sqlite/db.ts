@@ -51,10 +51,11 @@ function createDatabase(): Database.Database {
   database.pragma('journal_mode = WAL');
   database.pragma('foreign_keys = ON');
 
-  // 初始化 schema
-  initializeSchema(database);
-  // 兼容旧库：补齐缺失的列（幂等迁移）
+  // 兼容旧库：先补齐缺失列（幂等迁移），再初始化 schema（含依赖新列的索引）
+  // 顺序不能反：旧库若直接跑 schema.sql，jobs(novel_id) 索引会因缺列而崩溃
   migrateJobColumns(database);
+  migrateAuthColumns(database);
+  initializeSchema(database);
 
   return database;
 }
@@ -79,14 +80,85 @@ function migrateJobColumns(database: Database.Database): void {
     if (!columns.includes('pipeline_state')) {
       missingColumns.push({ name: 'pipeline_state', ddl: 'pipeline_state TEXT' });
     }
+    if (!columns.includes('novel_id')) {
+      missingColumns.push({ name: 'novel_id', ddl: 'novel_id TEXT' });
+    }
 
     for (const col of missingColumns) {
       database.exec(`ALTER TABLE jobs ADD COLUMN ${col.ddl}`);
       console.log(`[DB] Migrated: added column jobs.${col.name}`);
     }
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_jobs_novel_id ON jobs(novel_id)`);
+    // 幂等建 novels 表（旧库走 ALTER 补齐后需补建表）
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS novels (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        author TEXT,
+        novel_text TEXT NOT NULL,
+        chapter_texts TEXT NOT NULL,
+        converted_chapters TEXT NOT NULL DEFAULT '[]',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        last_job_id TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_novels_created_at ON novels(created_at);
+      CREATE INDEX IF NOT EXISTS idx_novels_updated_at ON novels(updated_at);
+    `);
   } catch (err) {
     // jobs 表不存在时静默（首次建表会走 schema.sql 完整结构）
     console.log(`[DB] Column migration skipped: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
+/**
+ * 认证相关迁移：为旧库的 jobs/novels 补齐 user_id 列，
+ * 并确保 users / sessions 表存在（schema.sql 已包含建表，此处幂等兜底）。
+ */
+function migrateAuthColumns(database: Database.Database): void {
+  try {
+    const addColumnIfMissing = (table: string, column: string, ddl: string): void => {
+      const columns = (
+        database.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+      ).map((c) => c.name);
+      if (!columns.includes(column)) {
+        database.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+        console.log(`[DB] Migrated: added column ${table}.${column}`);
+      }
+    };
+
+    addColumnIfMissing('jobs', 'user_id', 'user_id TEXT');
+    addColumnIfMissing('novels', 'user_id', 'user_id TEXT');
+    addColumnIfMissing('history', 'user_id', 'user_id TEXT');
+    database.exec('CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id)');
+    database.exec('CREATE INDEX IF NOT EXISTS idx_novels_user_id ON novels(user_id)');
+    database.exec('CREATE INDEX IF NOT EXISTS idx_history_user_id ON history(user_id)');
+
+    // 兜底建表（新库由 schema.sql 完成；旧库升级时补齐）
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        email TEXT UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token_hash TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        last_used_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+      CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+    `);
+  } catch (err) {
+    console.log(`[DB] Auth migration skipped: ${err instanceof Error ? err.message : err}`);
   }
 }
 
@@ -160,6 +232,20 @@ function initializeSchema(database: Database.Database): void {
         applied_at INTEGER NOT NULL,
         description TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS dramas (
+        id TEXT PRIMARY KEY,
+        source_job_id TEXT NOT NULL,
+        source_novel_id TEXT,
+        title TEXT NOT NULL,
+        drama_yaml TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        user_id TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dramas_source_job_id ON dramas(source_job_id);
+      CREATE INDEX IF NOT EXISTS idx_dramas_created_at ON dramas(created_at);
+      CREATE INDEX IF NOT EXISTS idx_dramas_user_id ON dramas(user_id);
     `);
     console.log('[DB] Schema initialized (inline)');
   }

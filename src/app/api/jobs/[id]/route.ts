@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
 import { getWorker } from '@/lib/jobs';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,9 @@ interface RouteParams {
 
 // GET /api/jobs/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const { id } = await params;
   const queue = getJobQueue();
   const job = queue.get(id);
@@ -24,14 +28,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!job) {
     return NextResponse.json({ error: '任务不存在' }, { status: 404 });
   }
+  if (job.userId !== user.id) return authError('无权访问该任务', 403);
 
   return NextResponse.json({ job });
 }
 
 // DELETE /api/jobs/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const { id } = await params;
   const queue = getJobQueue();
+  const job = queue.get(id);
+  if (!job) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  if (job.userId !== user.id) return authError('无权操作该任务', 403);
+
   const worker = getWorker();
 
   // 尝试取消队列中的任务

@@ -92,7 +92,7 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
 
   if (loading) {
     return (
-      <select className={`w-full border rounded-lg p-2.5 text-sm ${className}`} disabled>
+      <select className={`w-full border rounded-xl p-2.5 text-sm ${className}`} disabled>
         <option>加载中...</option>
       </select>
     );
@@ -109,7 +109,7 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full border rounded-lg p-2.5 text-sm pr-16"
+          className="tech-input pr-16 appearance-none cursor-pointer"
         >
           {adapters.map((adapter) => (
             <optgroup key={adapter.adapterId} label={adapter.adapterName}>
@@ -122,6 +122,11 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
           ))}
         </select>
 
+        {/* 下拉箭头 */}
+        <svg className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+
         {/* 健康状态指示器 */}
         <div className={`absolute right-3 top-1/2 -translate-y-1/2 ${color} text-xs`}>
           {icon}
@@ -131,24 +136,24 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
       {/* 展开详情 */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+        className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
         type="button"
       >
         {expanded ? '▲ 收起详情' : '▼ 查看详情'}
       </button>
 
       {expanded && (
-        <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-xs">
+        <div className="bg-white/70 backdrop-blur rounded-xl border border-slate-200/70 p-3 space-y-2 text-xs">
           {/* 当前模型信息 */}
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">模型成本</span>
-            <span className="font-mono">
+            <span className="text-slate-500">模型成本</span>
+            <span className="font-mono text-slate-700">
               ¥{cost.input.toFixed(2)} / ¥{cost.output.toFixed(2)} per 1M tokens
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">状态</span>
+            <span className="text-slate-500">状态</span>
             <span className={color}>
               {health === 'healthy' && '正常'}
               {health === 'degraded' && '性能下降'}
@@ -159,19 +164,19 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
 
           {/* 预算使用情况 */}
           {budget && (
-            <div className="pt-2 border-t">
+            <div className="pt-2 border-t border-slate-100">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-gray-600">本月预算</span>
-                <span>{(100 - budget.monthly.percentage).toFixed(1)}% 剩余</span>
+                <span className="text-slate-500">本月预算</span>
+                <span className="text-slate-700">{(100 - budget.monthly.percentage).toFixed(1)}% 剩余</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="w-full bg-slate-200 rounded-full h-1.5">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
                     budget.monthly.percentage > 80
                       ? 'bg-red-500'
                       : budget.monthly.percentage > 60
                         ? 'bg-yellow-500'
-                        : 'bg-green-500'
+                        : 'bg-emerald-500'
                   }`}
                   style={{ width: `${Math.min(budget.monthly.percentage, 100)}%` }}
                 />
@@ -180,8 +185,8 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
           )}
 
           {/* 其他可用模型 */}
-          <div className="pt-2 border-t">
-            <p className="text-gray-600 mb-1">其他模型</p>
+          <div className="pt-2 border-t border-slate-100">
+            <p className="text-slate-500 mb-1">其他模型</p>
             <div className="space-y-1">
               {adapters.flatMap((adapter) =>
                 adapter.models
@@ -193,10 +198,10 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
                       <button
                         key={model.modelId}
                         onClick={() => onChange(model.modelId)}
-                        className="w-full text-left px-2 py-1 rounded hover:bg-gray-100 flex items-center justify-between"
+                        className="w-full text-left px-2 py-1 rounded-lg hover:bg-indigo-50/60 flex items-center justify-between transition-colors"
                         type="button"
                       >
-                        <span className="truncate">{model.modelId}</span>
+                        <span className="truncate text-slate-600">{model.modelId}</span>
                         <span className={mColor}>{mIcon}</span>
                       </button>
                     );

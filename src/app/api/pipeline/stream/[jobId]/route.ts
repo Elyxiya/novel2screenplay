@@ -9,6 +9,7 @@
 import { NextRequest } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { getSSEClientManager } from '@/lib/sse/sse-client-manager';
+import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,12 +18,18 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) return new Response('Unauthorized', { status: 401 });
+
   const { jobId } = await params;
 
   // 验证 Job 是否存在
   const job = jobStore.get(jobId);
   if (!job) {
     return new Response('Job not found', { status: 404 });
+  }
+  if (job.userId && job.userId !== user.id) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   // 创建 AbortController 用于管理连接生命周期

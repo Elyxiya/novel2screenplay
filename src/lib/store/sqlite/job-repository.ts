@@ -27,6 +27,8 @@ export interface JobRow {
   chapter_texts: string;
   config: string;
   pipeline_state: string | null;
+  novel_id: string | null;
+  user_id: string | null;
 }
 
 export interface CreateJobParams {
@@ -35,13 +37,18 @@ export interface CreateJobParams {
   modelId: string;
   selectedChapters: number[];
   temperature: number;
+  novelId?: string;
+  title?: string;
+  author?: string;
+  /** 归属用户（多用户数据隔离） */
+  userId?: string;
 }
 
 export interface UpdateJobParams {
   status?: string;
   currentPhase?: number;
   progress?: number;
-  subProgress?: number | null;
+  subProgress?: { totalScenes: number; completedScenes: number } | null;
   scenesStatus?: SceneStatus[];
   logs?: Array<{ timestamp: number; level: string; message: string }>;
   error?: string | null;
@@ -56,7 +63,8 @@ export interface JobRepository {
   get(jobId: string): StoredJob | null;
   update(jobId: string, params: UpdateJobParams): void;
   delete(jobId: string): void;
-  list(status?: PipelineJob['status']): StoredJob[];
+  /** 按状态列出任务；传入 userId 时按用户过滤（多用户隔离） */
+  list(status?: PipelineJob['status'], userId?: string): StoredJob[];
   listByDateRange(startTime: number, endTime: number): StoredJob[];
 }
 
@@ -74,12 +82,12 @@ class JobRepositoryImpl implements JobRepository {
         id, status, current_phase, progress, sub_progress,
         scenes_status, logs, error, result_id,
         created_at, updated_at, started_at, completed_at,
-        novel_text, chapter_texts, config, pipeline_state
+        novel_text, chapter_texts, config, pipeline_state, novel_id, user_id
       ) VALUES (
         @id, @status, @currentPhase, @progress, @subProgress,
         @scenesStatus, @logs, @error, @resultId,
         @createdAt, @updatedAt, @startedAt, @completedAt,
-        @novelText, @chapterTexts, @config, @pipelineState
+        @novelText, @chapterTexts, @config, @pipelineState, @novelId, @userId
       )
     `);
 
@@ -103,8 +111,12 @@ class JobRepositoryImpl implements JobRepository {
         modelId: params.modelId,
         selectedChapters: params.selectedChapters,
         temperature: params.temperature,
+        title: params.title,
+        author: params.author,
       }),
       pipelineState: null,
+      novelId: params.novelId ?? null,
+      userId: params.userId ?? null,
     });
 
     return id;
@@ -144,7 +156,8 @@ class JobRepositoryImpl implements JobRepository {
     }
     if (params.subProgress !== undefined) {
       updates.push('sub_progress = @subProgress');
-      values.subProgress = params.subProgress;
+      // subProgress 是结构对象，序列化为 JSON 存储（SQLite 只能绑定原始类型）
+      values.subProgress = params.subProgress === null ? null : JSON.stringify(params.subProgress);
     }
     if (params.scenesStatus !== undefined) {
       updates.push('scenes_status = @scenesStatus');
@@ -194,14 +207,18 @@ class JobRepositoryImpl implements JobRepository {
   }
 
   /**
-   * 按状态列出任务
+   * 按状态列出任务；传入 userId 时按用户过滤（多用户隔离）
    */
-  list(status?: PipelineJob['status']): StoredJob[] {
+  list(status?: PipelineJob['status'], userId?: string): StoredJob[] {
     const db = getDatabase();
 
     let rows: JobRow[];
-    if (status) {
+    if (status && userId) {
+      rows = db.prepare('SELECT * FROM jobs WHERE status = ? AND user_id = ? ORDER BY created_at DESC').all(status, userId) as JobRow[];
+    } else if (status) {
       rows = db.prepare('SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC').all(status) as JobRow[];
+    } else if (userId) {
+      rows = db.prepare('SELECT * FROM jobs WHERE user_id = ? ORDER BY created_at DESC').all(userId) as JobRow[];
     } else {
       rows = db.prepare('SELECT * FROM jobs ORDER BY created_at DESC').all() as JobRow[];
     }
@@ -237,7 +254,11 @@ class JobRepositoryImpl implements JobRepository {
       maxRetries: 3,
       currentPhase: row.current_phase ?? undefined,
       progress: row.progress,
-      subProgress: row.sub_progress ?? undefined,
+      subProgress: row.sub_progress
+        ? typeof row.sub_progress === 'string'
+          ? JSON.parse(row.sub_progress)
+          : undefined // 旧格式数字，忽略
+        : null,
       scenesStatus: row.scenes_status ? JSON.parse(row.scenes_status) : [],
       logs: JSON.parse(row.logs),
       error: row.error ?? undefined,
@@ -248,10 +269,14 @@ class JobRepositoryImpl implements JobRepository {
       completedAt: row.completed_at ?? undefined,
       novelText: row.novel_text,
       chapterTexts,
+      novelId: row.novel_id ?? undefined,
+      userId: row.user_id ?? undefined,
       config: {
         modelId: config.modelId,
         selectedChapters: config.selectedChapters,
         temperature: config.temperature,
+        title: config.title,
+        author: config.author,
       },
       pipelineState: pipelineState || {},
     };

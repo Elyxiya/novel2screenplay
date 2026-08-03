@@ -52,3 +52,6 @@ src/lib/init.ts
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Trae 缓存
+.trae-html-share-packages/

@@ -9,6 +9,8 @@ import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
 import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
+import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
+import { serializeToYaml } from '../schema/yaml-serializer';
 
 type SSEEventType = 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat';
 
@@ -47,6 +49,8 @@ export class PipelineEngine {
     modelId?: string;
     temperature?: number;
     selectedChapters?: number[];
+    novelId?: string;
+    userId?: string;
   }): Promise<string> {
     // Parse novel text into chapters
     const parseResult = parseNovel(input.novelText);
@@ -84,6 +88,10 @@ export class PipelineEngine {
       modelId: provider.modelId,
       selectedChapters: input.selectedChapters ?? parseResult.chapters.map((c) => c.index),
       temperature: input.temperature ?? 0.7,
+      novelId: input.novelId,
+      title: input.title,
+      author: input.author,
+      userId: input.userId,
     });
 
     // Start pipeline asynchronously (don't await — let it run in background)
@@ -431,6 +439,34 @@ export class PipelineEngine {
       this.emitSSE(jobId, 'log', { message: `✅ 转换完成！共 ${fixes.length} 项自动修正`, level: 'info' });
       return updated;
     });
+
+    // ── 工作台联动：更新小说资产已转换章节 + 写入历史表 ──
+    try {
+      const finished = jobStore.get(jobId);
+      if (finished?.novelId) {
+        const novelRepo = getNovelRepository();
+        const selected = finished.config.selectedChapters ?? [];
+        const novel = novelRepo.get(finished.novelId);
+        if (novel) {
+          // 章节索引即选中列表（与 novel.chapters 的 index 对应）
+          novelRepo.markChaptersConverted(finished.novelId, selected, jobId);
+          console.log(`[${jobId}] 已更新小说资产 ${finished.novelId} 转换进度: ${novel.convertedCount}/${novel.totalChapters} -> ${selected.length} 章新增`);
+        }
+      }
+      const historyRepo = getHistoryRepository();
+      historyRepo.create({
+        jobId,
+        title: screenplay.metadata.title,
+        author: input.author,
+        sceneCount: screenplay.metadata.totalScenes,
+        characterCount: screenplay.metadata.totalCharacters,
+        locationCount: screenplay.metadata.totalLocations,
+        yamlContent: serializeToYaml(screenplay),
+        userId: finished?.userId,
+      });
+    } catch (err) {
+      console.error(`[${jobId}] 工作台数据更新失败: ${(err as Error).message}`);
+    }
     console.log(`[${jobId}] === PIPELINE COMPLETE ===`);
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import YAML from 'yaml';
@@ -114,7 +114,7 @@ function ShotCard({ shot }: { shot: Shot }) {
 
 // ── 页面 ──
 
-export default function ShortDramaPage() {
+function ShortDramaPageInner() {
   const searchParams = useSearchParams();
   const dramaId = searchParams.get('id');
 
@@ -354,5 +354,17 @@ export default function ShortDramaPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ShortDramaPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-sm text-slate-400">加载中…</div>
+      }
+    >
+      <ShortDramaPageInner />
+    </Suspense>
   );
 }

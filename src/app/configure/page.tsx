@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ModelSelector } from '@/components/ModelSelector';
 
@@ -11,7 +11,7 @@ interface Chapter {
   text: string;
 }
 
-export default function ConfigurePage() {
+function ConfigurePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const novelParam = searchParams.get('novel');
@@ -378,5 +378,17 @@ function ChapterChip({ index, title, selected, converted = false, onToggle, onRa
         </span>
       )}
     </button>
+  );
+}
+
+export default function ConfigurePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-3xl mx-auto py-12 text-center text-sm text-slate-400">加载中…</div>
+      }
+    >
+      <ConfigurePageInner />
+    </Suspense>
   );
 }

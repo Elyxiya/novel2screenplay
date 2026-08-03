@@ -55,3 +55,6 @@ src/lib/init.ts
 
 # Trae 缓存
 .trae-html-share-packages/
+
+# 临时 worktree（残留目录，避免被当作 embedded repo）
+.worktree-main/

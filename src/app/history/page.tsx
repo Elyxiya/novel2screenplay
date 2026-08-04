@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore, type HistoryEntry } from '@/lib/store/history-store';
+import { RequireAuth } from '@/components/RequireAuth';
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -32,6 +33,7 @@ export default function HistoryPage() {
   };
 
   return (
+    <RequireAuth>
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -119,5 +121,6 @@ export default function HistoryPage() {
         注：记录仅保存在本浏览器中，清除浏览器数据将导致历史丢失。完整剧本数据在服务内存中，重启服务后可通过 YAML 重新导入。
       </p>
     </div>
+    </RequireAuth>
   );
 }

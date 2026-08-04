@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore } from '@/lib/store/history-store';
 import { QuickStats } from '@/components/JobListPanel';
+import { RequireAuth } from '@/components/RequireAuth';
 
 interface Chapter {
   index: number; title: string; paragraphCount: number; text: string;
@@ -156,6 +157,7 @@ export default function UploadPage() {
   };
 
   return (
+    <RequireAuth>
     <div className="space-y-6 animate-float-up">
       {/* Hero 引导区 */}
       <div className="relative rounded-2xl overflow-hidden glass-card p-8 sm:p-10">
@@ -372,5 +374,6 @@ export default function UploadPage() {
         </>
       )}
     </div>
+    </RequireAuth>
   );
 }

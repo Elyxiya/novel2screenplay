@@ -5,32 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import YAML from 'yaml';
 import { DramaSchema, type Drama, type Shot } from '@/lib/schema/drama.schema';
+import { RequireAuth } from '@/components/RequireAuth';
+import { SHOT_TYPE_LABELS, CAMERA_MOVE_LABELS, computeDramaStats, formatDuration } from '@/lib/drama/drama-stats';
+import { exportDramaJson, exportDramaExcel } from '@/lib/drama/drama-export';
 
 // ── 展示辅助 ──
-
-const SHOT_TYPE_LABELS: Record<string, string> = {
-  'extreme-wide': '大远景',
-  wide: '远景',
-  full: '全景',
-  medium: '中景',
-  'close-up': '近景',
-  'extreme-close-up': '特写',
-  'over-shoulder': '过肩',
-  'two-shot': '双人',
-};
-
-const CAMERA_MOVE_LABELS: Record<string, string> = {
-  static: '固定',
-  pan: '横摇',
-  tilt: '纵摇',
-  'dolly-in': '推',
-  'dolly-out': '拉',
-  track: '跟移',
-  crane: '升降',
-  handheld: '手持',
-  'zoom-in': '变焦近',
-  'zoom-out': '变焦远',
-};
 
 interface DramaSummary {
   id: string;
@@ -124,9 +103,15 @@ function ShortDramaPageInner() {
   const [drama, setDrama] = useState<Drama | null>(null);
   const [yamlText, setYamlText] = useState('');
   const [showYaml, setShowYaml] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [source, setSource] = useState<{ sourceJobId: string; sourceNovelId: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // 编辑弹窗状态
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editYaml, setEditYaml] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const loadList = useCallback(async () => {
     try {
@@ -201,6 +186,57 @@ function ShortDramaPageInner() {
     URL.revokeObjectURL(url);
   };
 
+  /** 打开编辑弹窗（预填标题与 YAML） */
+  const openEditor = () => {
+    if (!drama) return;
+    setEditTitle(drama.metadata.title);
+    setEditYaml(yamlText);
+    setEditing(true);
+  };
+
+  /** 保存编辑：PATCH /api/drama/[id] */
+  const saveEdits = async () => {
+    if (!dramaId || !drama) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/drama/${dramaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: editTitle, yaml: editYaml }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? '保存失败');
+        return;
+      }
+      setEditing(false);
+      await loadDetail(dramaId);
+    } catch {
+      setError('保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /** 删除分镜：DELETE /api/drama/[id] */
+  const handleDelete = async () => {
+    if (!dramaId || !drama) return;
+    if (!window.confirm(`确定删除分镜「${drama.metadata.title}」吗？此操作不可恢复。`)) return;
+    try {
+      const res = await fetch(`/api/drama/${dramaId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? '删除失败');
+        return;
+      }
+      // 回到列表
+      window.location.href = '/shortdrama';
+    } catch {
+      setError('删除失败，请重试');
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       {/* 头部 */}
@@ -249,11 +285,23 @@ function ShortDramaPageInner() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => setShowStats(v => !v)} className="glow-btn-ghost !px-4 !py-2 text-xs">
+                  {showStats ? '收起统计' : '分镜统计'}
+                </button>
                 <button onClick={() => setShowYaml(v => !v)} className="glow-btn-ghost !px-4 !py-2 text-xs">
                   {showYaml ? '返回分镜表' : '查看 YAML'}
                 </button>
+                <button onClick={() => exportDramaJson(drama)} className="glow-btn-ghost !px-4 !py-2 text-xs">导出 JSON</button>
+                <button onClick={() => exportDramaExcel(drama)} className="glow-btn-ghost !px-4 !py-2 text-xs">导出 Excel</button>
                 <button onClick={copyYaml} className="glow-btn-ghost !px-4 !py-2 text-xs">复制 YAML</button>
-                <button onClick={downloadYaml} className="glow-btn !px-4 !py-2 text-xs">下载 YAML</button>
+                <button onClick={downloadYaml} className="glow-btn-ghost !px-4 !py-2 text-xs">下载 YAML</button>
+                <button onClick={openEditor} className="glow-btn-ghost !px-4 !py-2 text-xs">编辑</button>
+                <button
+                  onClick={handleDelete}
+                  className="!px-4 !py-2 text-xs rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  删除
+                </button>
               </div>
             </div>
 
@@ -288,6 +336,65 @@ function ShortDramaPageInner() {
               </span>
             </div>
           </div>
+
+          {/* 统计面板 */}
+          {showStats && drama && (() => {
+            const stats = computeDramaStats(drama);
+            const maxType = stats.shotTypeDist[0]?.count ?? 1;
+            const maxCam = stats.cameraDist[0]?.count ?? 1;
+            return (
+              <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                  <div className="rounded-xl bg-indigo-50/70 border border-indigo-100 py-3">
+                    <p className="text-xl font-bold text-indigo-600">{formatDuration(stats.totalDurationSec)}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">预估成片时长</p>
+                  </div>
+                  <div className="rounded-xl bg-teal-50/70 border border-teal-100 py-3">
+                    <p className="text-xl font-bold text-teal-600">{stats.dialogueShots} / {stats.mixedShots}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">纯对白 / 混合镜头</p>
+                  </div>
+                  <div className="rounded-xl bg-cyan-50/70 border border-cyan-100 py-3">
+                    <p className="text-xl font-bold text-cyan-600">{stats.dialogueChars}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">台词总字数</p>
+                  </div>
+                  <div className="rounded-xl bg-amber-50/70 border border-amber-100 py-3">
+                    <p className="text-xl font-bold text-amber-600">{stats.actionChars}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">动作总字数</p>
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-5 mt-4">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-2">景别分布（{stats.shotTypeDist.length} 种）</p>
+                    <div className="space-y-1.5">
+                      {stats.shotTypeDist.map(d => (
+                        <div key={d.type} className="flex items-center gap-2 text-xs">
+                          <span className="w-12 shrink-0 text-slate-600">{d.label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400" style={{ width: `${(d.count / maxType) * 100}%` }} />
+                          </div>
+                          <span className="w-8 text-right text-slate-400">{d.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-2">运镜分布（{stats.cameraDist.length} 种）</p>
+                    <div className="space-y-1.5">
+                      {stats.cameraDist.map(d => (
+                        <div key={d.move} className="flex items-center gap-2 text-xs">
+                          <span className="w-14 shrink-0 text-slate-600">{d.label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400" style={{ width: `${(d.count / maxCam) * 100}%` }} />
+                          </div>
+                          <span className="w-8 text-right text-slate-400">{d.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {showYaml ? (
             <pre className="bg-slate-900/95 text-slate-100 rounded-2xl p-5 text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap shadow-inner">
@@ -332,6 +439,7 @@ function ShortDramaPageInner() {
                 <Link
                   key={s.id}
                   href={`/shortdrama?id=${s.id}`}
+                  prefetch={false}
                   className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-teal-200/80 transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -353,18 +461,68 @@ function ShortDramaPageInner() {
           )}
         </>
       )}
+
+      {/* 编辑弹窗 */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-900">编辑分镜</h3>
+              <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">标题</label>
+                <input
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                  maxLength={100}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                  分镜 YAML（保存时将校验结构合法性）
+                </label>
+                <textarea
+                  value={editYaml}
+                  onChange={e => setEditYaml(e.target.value)}
+                  rows={18}
+                  spellCheck={false}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-300 resize-y"
+                />
+              </div>
+              {error && <p className="text-xs text-red-500">{error}</p>}
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
+              <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100 transition-colors">
+                取消
+              </button>
+              <button
+                onClick={saveEdits}
+                disabled={saving}
+                className="px-5 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/40 hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {saving ? '保存中…' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ShortDramaPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-sm text-slate-400">加载中…</div>
-      }
-    >
-      <ShortDramaPageInner />
-    </Suspense>
+    <RequireAuth>
+      <Suspense
+        fallback={
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-sm text-slate-400">加载中…</div>
+        }
+      >
+        <ShortDramaPageInner />
+      </Suspense>
+    </RequireAuth>
   );
 }

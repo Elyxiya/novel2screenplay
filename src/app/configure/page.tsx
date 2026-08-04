@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ModelSelector } from '@/components/ModelSelector';
+import { RequireAuth } from '@/components/RequireAuth';
 
 interface Chapter {
   index: number;
@@ -383,12 +384,14 @@ function ChapterChip({ index, title, selected, converted = false, onToggle, onRa
 
 export default function ConfigurePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-3xl mx-auto py-12 text-center text-sm text-slate-400">加载中…</div>
-      }
-    >
-      <ConfigurePageInner />
-    </Suspense>
+    <RequireAuth>
+      <Suspense
+        fallback={
+          <div className="max-w-3xl mx-auto py-12 text-center text-sm text-slate-400">加载中…</div>
+        }
+      >
+        <ConfigurePageInner />
+      </Suspense>
+    </RequireAuth>
   );
 }

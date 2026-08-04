@@ -86,6 +86,7 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-2 shrink-0">
             <Link
               href="/shortdrama"
+              prefetch={false}
               className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-300 border ${
                 pathname?.startsWith('/shortdrama')
                   ? 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white border-transparent shadow-lg shadow-teal-300/50'

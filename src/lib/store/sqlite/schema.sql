@@ -52,7 +52,15 @@ CREATE TABLE IF NOT EXISTS novels (
   last_job_id TEXT,
 
   -- 归属用户（多用户数据隔离）
-  user_id TEXT
+  user_id TEXT,
+
+  -- Writer 创作侧（kind='draft' 的小说使用；上传资产不填）
+  kind TEXT NOT NULL DEFAULT 'upload', -- 'upload' | 'draft'
+  synopsis TEXT NOT NULL DEFAULT '',
+  volumes TEXT NOT NULL DEFAULT '[]', -- JSON array of Volume
+  characters TEXT NOT NULL DEFAULT '[]', -- JSON array of CharacterCard
+  world_items TEXT NOT NULL DEFAULT '[]', -- JSON array of WorldItem
+  draft_chapters TEXT NOT NULL DEFAULT '[]' -- JSON array of Chapter（含正文）
 );
 
 CREATE INDEX IF NOT EXISTS idx_novels_created_at ON novels(created_at);

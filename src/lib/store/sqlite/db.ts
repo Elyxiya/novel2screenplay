@@ -55,6 +55,7 @@ function createDatabase(): Database.Database {
   // 顺序不能反：旧库若直接跑 schema.sql，jobs(novel_id) 索引会因缺列而崩溃
   migrateJobColumns(database);
   migrateAuthColumns(database);
+  migrateWriterColumns(database);
   initializeSchema(database);
 
   return database;
@@ -159,6 +160,47 @@ function migrateAuthColumns(database: Database.Database): void {
     `);
   } catch (err) {
     console.log(`[DB] Auth migration skipped: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
+/**
+ * Writer 模块迁移：为 novels 表补齐创作侧列（分卷/人物卡/世界观/创作章节）。
+ * 与上传资产（kind='upload'）共存于同一张表，经 kind 区分。
+ */
+function migrateWriterColumns(database: Database.Database): void {
+  try {
+    const columns = (
+      database.prepare('PRAGMA table_info(novels)').all() as Array<{ name: string }>
+    ).map((c) => c.name);
+
+    const missingColumns: Array<{ name: string; ddl: string }> = [];
+    if (!columns.includes('kind')) {
+      missingColumns.push({ name: 'kind', ddl: "kind TEXT NOT NULL DEFAULT 'upload'" });
+    }
+    if (!columns.includes('synopsis')) {
+      missingColumns.push({ name: 'synopsis', ddl: "synopsis TEXT NOT NULL DEFAULT ''" });
+    }
+    if (!columns.includes('volumes')) {
+      missingColumns.push({ name: 'volumes', ddl: "volumes TEXT NOT NULL DEFAULT '[]'" });
+    }
+    if (!columns.includes('characters')) {
+      missingColumns.push({ name: 'characters', ddl: "characters TEXT NOT NULL DEFAULT '[]'" });
+    }
+    if (!columns.includes('world_items')) {
+      missingColumns.push({ name: 'world_items', ddl: "world_items TEXT NOT NULL DEFAULT '[]'" });
+    }
+    if (!columns.includes('draft_chapters')) {
+      missingColumns.push({ name: 'draft_chapters', ddl: "draft_chapters TEXT NOT NULL DEFAULT '[]'" });
+    }
+
+    for (const col of missingColumns) {
+      database.exec(`ALTER TABLE novels ADD COLUMN ${col.ddl}`);
+      console.log(`[DB] Migrated: added column novels.${col.name}`);
+    }
+    database.exec('CREATE INDEX IF NOT EXISTS idx_novels_kind ON novels(kind)');
+  } catch (err) {
+    // novels 表不存在时静默（首次建表走 schema.sql 完整结构）
+    console.log(`[DB] Writer migration skipped: ${err instanceof Error ? err.message : err}`);
   }
 }
 

@@ -14,10 +14,11 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
   const isDebugPage = pathname?.startsWith('/debug');
   const isWorkbenchPage = pathname === '/workbench';
   const isShortdramaPage = pathname?.startsWith('/shortdrama');
+  const isWriterPage = pathname?.startsWith('/writer');
   const currentStep = getStepFromPath(pathname ?? '');
   // 站点导航页（首页/功能介绍/使用指南）：不显示转换步进器，改为显示站点导航
   const isLandingPage = pathname === '/' || pathname === '/features' || pathname === '/guide';
-  const showStepper = !isDebugPage && !isWorkbenchPage && !isShortdramaPage && !isLandingPage;
+  const showStepper = !isDebugPage && !isWorkbenchPage && !isShortdramaPage && !isWriterPage && !isLandingPage;
   const showSiteNav = !showStepper && !isDebugPage;
 
   const SITE_LINKS = [
@@ -84,6 +85,20 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
 
           {/* 工作台 + 短剧分镜 + 历史 */}
           <div className="ml-auto flex items-center gap-2 shrink-0">
+            <Link
+              href="/writer"
+              prefetch={false}
+              className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-300 border ${
+                pathname?.startsWith('/writer')
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent shadow-lg shadow-amber-300/50'
+                  : 'border-slate-300 bg-white/70 text-slate-500 hover:border-amber-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-amber-100/60'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span className="hidden sm:inline">创作台</span>
+            </Link>
             <Link
               href="/shortdrama"
               prefetch={false}

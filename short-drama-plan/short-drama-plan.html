@@ -234,7 +234,7 @@
         <h4>小说编写 writer</h4>
         <span class="route">/writer</span>
         <p>长篇小说创作台：大纲、章节、人物卡、世界观，多 Agent 写作与续写。</p>
-        <span class="status status-new">新建模块</span>
+        <span class="status status-done">MVP 已上线</span>
       </div>
       <div class="module m-screenplay">
         <div class="m-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="21" x2="8" y2="3"/><line x1="16" y1="21" x2="16" y2="3"/><line x1="2" y1="9" x2="8" y2="9"/><line x1="2" y1="15" x2="8" y2="15"/><line x1="16" y1="9" x2="22" y2="9"/><line x1="16" y1="15" x2="22" y2="15"/></svg></div>
@@ -248,7 +248,7 @@
         <h4>小说短剧 shortdrama</h4>
         <span class="route">/shortdrama</span>
         <p>剧本转短剧分镜：分镜表、运镜/时长/台词提示词、成片拆条与投放。</p>
-        <span class="status status-new">新建模块</span>
+        <span class="status status-done">MVP 已上线</span>
       </div>
     </div>
 
@@ -565,7 +565,7 @@ flowchart TB
       <table>
         <thead><tr><th>阶段</th><th>形态</th><th>技术选型</th><th>复用度</th></tr></thead>
         <tbody>
-          <tr><td>P0-P1（当前）</td><td>Web 聚合站</td><td>Next.js 16 SSR + 响应式（已有 900/600 断点设计）</td><td>—</td></tr>
+          <tr><td>P1（当前）</td><td>Web 聚合站</td><td>Next.js 16 SSR + 响应式（已有 900/600 断点设计）</td><td>—</td></tr>
           <tr><td>P2</td><td>桌面应用</td><td>Tauri 2：Rust + 系统 WebView，安装包小、性能高、可免费商用<sup><a href="#cite-5">[5]</a></sup><sup><a href="#cite-6">[6]</a></sup></td><td>Web UI 资产 100% 复用，仅加壳与本地缓存</td></tr>
           <tr><td>P3</td><td>移动端 H5/PWA</td><td>响应式布局 + PWA（manifest/service worker），可安装到桌面</td><td>同一套 UI，做触控适配</td></tr>
           <tr><td>P4+</td><td>移动原生壳（按需）</td><td>React Native + WebView 承载同一前端；仅当需要推送/相机/离线重算等原生能力时启用</td><td>前端代码继续复用</td></tr>
@@ -589,7 +589,7 @@ flowchart TB
       <div class="phase">
         <div class="p-no">P0</div>
         <div class="p-time">2–3 周</div>
-        <h4>链路补齐</h4>
+        <h4>链路补齐 <span class="status status-done">已完成</span></h4>
         <p>打通 小说→剧本→短剧 三跳闭环</p>
         <ul>
           <li>新增 novel/drama 契约与短剧分镜模型</li>
@@ -649,7 +649,7 @@ flowchart TB
       <table>
         <thead><tr><th>阶段</th><th>出口标准（可量化）</th></tr></thead>
         <tbody>
-          <tr><td>P0</td><td>小说一章 → 剧本 → 分镜表 全自动产出 ≤ 3 次点击；溯源链可在 3 个页面间往返跳转</td></tr>
+          <tr><td>P0</td><td><span class="status status-done">已完成</span> 小说一章 → 剧本 → 分镜表 全自动产出 ≤ 3 次点击；溯源链可在 3 个页面间往返跳转</td></tr>
           <tr><td>P1</td><td>三模块各自 <code>pnpm dev</code> 独立启动、互不依赖；历史数据在新路径完整可见；单测 ≥ 120 项全绿</td></tr>
           <tr><td>P2</td><td>壳站一个 URL 访问三模块；任一 zone 单独发布不影响其他 zone；跨 zone 一次登录</td></tr>
           <tr><td>P3</td><td>桌面安装包 ≤ 30MB（Tauri 空壳级）；移动端 PWA 可离线打开创作台；三端数据一致</td></tr>

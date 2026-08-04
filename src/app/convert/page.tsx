@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore } from '@/lib/store/history-store';
+import { RequireAuth } from '@/components/RequireAuth';
 
 const PHASE_LABELS = ['', '分析中', '场景切割中', '转换中', '合并校验中'];
 
@@ -237,6 +238,7 @@ export default function ConvertPage() {
   const phaseIcons = ['🔍', '✂️', '🎬', '✅'];
 
   return (
+    <RequireAuth>
     <div className="space-y-6 animate-float-up">
       <div className="flex items-center gap-3">
         <button onClick={() => router.push('/configure')} className="glow-btn-ghost !px-3 !py-1.5 text-xs">‹ 返回配置</button>
@@ -346,5 +348,6 @@ export default function ConvertPage() {
         </div>
       </div>
     </div>
+    </RequireAuth>
   );
 }

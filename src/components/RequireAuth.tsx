@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+/** 跳转到登录页并保留完整来源（pathname + search），登录后回跳 */
+function redirectToLogin() {
+  const next = window.location.pathname + window.location.search;
+  window.location.href = `/auth/login?next=${encodeURIComponent(next || '/')}`;
+}
+
 /**
  * 页面级登录保护：未登录时重定向到登录页（带 next 参数返回来源页）。
  * 包裹需要登录才能访问的页面内容。
@@ -16,12 +22,12 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           setState('ok');
         } else {
           setState('redirect');
-          window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+          redirectToLogin();
         }
       })
       .catch(() => {
         setState('redirect');
-        window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+        redirectToLogin();
       });
   }, []);
 

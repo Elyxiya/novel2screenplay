@@ -54,6 +54,8 @@ export interface DramaRepository {
   list(userId?: string): DramaSummary[];
   /** 按来源剧本任务查找已生成的分镜 */
   findBySourceJobId(sourceJobId: string, userId?: string): DramaRecord | null;
+  /** 更新分镜（标题 / 分镜 YAML），返回是否更新成功 */
+  update(dramaId: string, params: { title?: string; dramaYaml?: string }): boolean;
   delete(dramaId: string): void;
 }
 
@@ -118,6 +120,22 @@ class DramaRepositoryImpl implements DramaRepository {
       ? (db.prepare('SELECT * FROM dramas WHERE source_job_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1').all(sourceJobId, userId) as DramaRow[])
       : (db.prepare('SELECT * FROM dramas WHERE source_job_id = ? ORDER BY created_at DESC LIMIT 1').all(sourceJobId) as DramaRow[]);
     return rows.length ? this.rowToRecord(rows[0]) : null;
+  }
+
+  update(dramaId: string, params: { title?: string; dramaYaml?: string }): boolean {
+    const db = getDatabase();
+    const existing = db.prepare('SELECT id FROM dramas WHERE id = ?').get(dramaId);
+    if (!existing) return false;
+
+    if (params.title !== undefined && params.dramaYaml !== undefined) {
+      db.prepare('UPDATE dramas SET title = ?, drama_yaml = ? WHERE id = ?')
+        .run(params.title, params.dramaYaml, dramaId);
+    } else if (params.title !== undefined) {
+      db.prepare('UPDATE dramas SET title = ? WHERE id = ?').run(params.title, dramaId);
+    } else if (params.dramaYaml !== undefined) {
+      db.prepare('UPDATE dramas SET drama_yaml = ? WHERE id = ?').run(params.dramaYaml, dramaId);
+    }
+    return true;
   }
 
   delete(dramaId: string): void {

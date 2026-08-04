@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { historyStore } from '@/lib/store/history-store';
 import type { Screenplay, Scene, Character, Location } from '@/lib/schema/screenplay.schema';
@@ -9,12 +9,14 @@ import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
 import { LocationEditor } from '@/components/editors/LocationEditor';
 import { SceneCompare } from '@/components/compare/SceneCompare';
+import { RequireAuth } from '@/components/RequireAuth';
 
 type Tab = 'scenes' | 'characters' | 'locations' | 'yaml';
 type SceneViewMode = 'editor' | 'compare';
 
 export default function ResultPage() {
   const params = useParams();
+  const router = useRouter();
   const jobId = params.id as string;
 
   const [screenplay, setScreenplay] = useState<Screenplay | null>(null);
@@ -243,7 +245,7 @@ export default function ResultPage() {
       });
       const data = await res.json();
       if (res.ok && data.dramaId) {
-        window.location.href = `/shortdrama?id=${data.dramaId}`;
+        router.push(`/shortdrama?id=${data.dramaId}`);
       } else {
         alert('生成失败: ' + (data.error ?? '未知错误'));
       }
@@ -324,6 +326,7 @@ export default function ResultPage() {
   };
 
   return (
+    <RequireAuth>
     <div className="flex flex-col h-full">
       {/* ── 工具栏：标题/统计 + 操作按钮 + Tabs ── */}
       <div className="shrink-0 sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/70 shadow-sm">
@@ -786,5 +789,6 @@ export default function ResultPage() {
         </div>
       )}
     </div>
+    </RequireAuth>
   );
 }

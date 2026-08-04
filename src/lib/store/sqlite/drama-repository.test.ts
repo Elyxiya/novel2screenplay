@@ -64,6 +64,31 @@ describe('drama-repository 短剧分镜存储', () => {
     expect(listOfA.find(s => s.title === '用户A分镜')).toBeDefined();
   });
 
+  it('update 可单独更新标题或 YAML，且保留其他字段', () => {
+    // 只更新标题
+    expect(repo.update(dramaId, { title: '新标题' })).toBe(true);
+    let record = repo.get(dramaId)!;
+    expect(record.title).toBe('新标题');
+    expect(record.dramaYaml).toContain('novel2drama-v1');
+    expect(record.sourceJobId).toBe('job_test_1');
+
+    // 只更新 YAML
+    expect(repo.update(dramaId, { dramaYaml: 'formatVersion: novel2drama-v1\nshots:\n  - shotId: shot_9\n' })).toBe(true);
+    record = repo.get(dramaId)!;
+    expect(record.title).toBe('新标题');
+    expect(record.dramaYaml).toContain('shot_9');
+
+    // 同时更新
+    expect(repo.update(dramaId, { title: '标题+YAML', dramaYaml: 'formatVersion: novel2drama-v1\nshots:\n  - shotId: shot_2\n' })).toBe(true);
+    record = repo.get(dramaId)!;
+    expect(record.title).toBe('标题+YAML');
+    expect(record.dramaYaml).toContain('shot_2');
+  });
+
+  it('update 不存在的 id 返回 false', () => {
+    expect(repo.update('drama_not_exist', { title: 'x' })).toBe(false);
+  });
+
   it('delete 后 get 返回 null', () => {
     repo.delete(dramaId);
     expect(repo.get(dramaId)).toBeNull();

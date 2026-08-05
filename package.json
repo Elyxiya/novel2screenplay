@@ -2,42 +2,47 @@
   "name": "novel2screenplay",
   "version": "0.1.0",
   "private": true,
+  "description": "AI-assisted novel to screenplay conversion - monorepo (P1)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "dev": "next dev -p 3001",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "eslint src",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "dev": "npm run dev --workspace @novel/screenplay",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspace @novel/screenplay",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present"
   },
-  "dependencies": {
-    "iconv-lite": "^0.7.2",
-    "next": "^16.2.12",
-    "openai": "^6.42.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "tiktoken": "^1.0.22",
-    "xlsx": "^0.18.5",
-    "yaml": "^2.9.0",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "better-sqlite3": "^12.11.1",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.6",
-    "eslint-config-prettier": "^10.1.8",
-    "jsdom": "^29.1.1",
-    "msw": "^2.14.6",
-    "prettier": "^3.8.3",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.1.8"
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "optionalDependencies": {
+    "@rolldown/binding-darwin-arm64": "1.2.2",
+    "@rolldown/binding-darwin-x64": "1.2.2",
+    "@rolldown/binding-linux-arm64-gnu": "1.2.2",
+    "@rolldown/binding-linux-arm64-musl": "1.2.2",
+    "@rolldown/binding-linux-x64-gnu": "1.2.2",
+    "@rolldown/binding-linux-x64-musl": "1.2.2",
+    "@rolldown/binding-win32-arm64-msvc": "1.2.2",
+    "@rolldown/binding-win32-x64-msvc": "1.2.2",
+    "@tailwindcss/oxide-darwin-arm64": "4.3.3",
+    "@tailwindcss/oxide-darwin-x64": "4.3.3",
+    "@tailwindcss/oxide-linux-arm64-gnu": "4.3.3",
+    "@tailwindcss/oxide-linux-arm64-musl": "4.3.3",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.3",
+    "@tailwindcss/oxide-win32-arm64-msvc": "4.3.3",
+    "@tailwindcss/oxide-win32-x64-msvc": "4.3.3",
+    "lightningcss-darwin-arm64": "1.32.0",
+    "lightningcss-darwin-x64": "1.32.0",
+    "lightningcss-linux-arm64-gnu": "1.32.0",
+    "lightningcss-linux-arm64-musl": "1.32.0",
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "lightningcss-linux-x64-musl": "1.32.0",
+    "lightningcss-win32-arm64-msvc": "1.32.0",
+    "lightningcss-win32-x64-msvc": "1.32.0"
   }
 }

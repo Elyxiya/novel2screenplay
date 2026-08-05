@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
+    "prebuild": "npm run build -w @novel/contracts",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint src",
+    "pretypecheck": "npm run build -w @novel/contracts",
     "typecheck": "tsc --noEmit",
+    "pretest": "npm run build -w @novel/contracts",
     "test": "vitest run"
   },
   "dependencies": {

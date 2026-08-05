@@ -1,34 +1,33 @@
-# Docker 配置 (Phase 1 预留)
+# Docker 配置 (P1 预留，monorepo 版，npm workspaces)
+# 注：应用未启用 standalone 输出（见 apps/screenplay/next.config.ts 注释），运行阶段直接 next start
 FROM node:20-alpine AS base
 
-# 安装依赖阶段
+# 依赖安装
 FROM base AS deps
-WORKDIR /app
-COPY package.json package-lock.json* ./
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+COPY apps/screenplay/package.json ./apps/screenplay/
 RUN npm ci
 
-# 构建阶段
+# 构建
 FROM deps AS builder
-WORKDIR /app
+WORKDIR /workspace
 COPY . .
 RUN npm run build
 
-# 运行阶段
+# 运行
 FROM base AS runner
-WORKDIR /app
+WORKDIR /workspace/apps/screenplay
 
 ENV NODE_ENV=production
+ENV PORT=3000
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /workspace /workspace
 
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
-
-CMD ["node", "server.js"]
+CMD ["node", "node_modules/.bin/next", "start", "-p", "3000"]

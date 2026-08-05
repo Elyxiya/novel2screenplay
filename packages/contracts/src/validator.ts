@@ -1,4 +1,4 @@
-import { ScreenplaySchema, type Screenplay } from './screenplay.schema';
+import { ScreenplaySchema, type Screenplay } from './screenplay.js';
 
 export interface ValidationWarning {
   path: string;

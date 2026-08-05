@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Drama } from '../schema/drama.schema';
+import type { Drama } from '@novel/contracts/drama';
 import { computeDramaStats, formatDuration } from './drama-stats';
 
 /** 构造最小完整分镜：2 个镜头（对白+动作混合 / 纯动作） */

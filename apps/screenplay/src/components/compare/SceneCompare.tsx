@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Scene, Character } from '@/lib/schema/screenplay.schema';
+import type { Scene, Character } from '@novel/contracts/screenplay';
 
 interface SceneCompareProps {
   scene: Scene;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Screenplay } from '../schema/screenplay.schema';
+import type { Screenplay } from '@novel/contracts/screenplay';
 import { dramatize } from './dramatize';
 
 /** 构造最小完整剧本：1 个场景，1 角色、1 地点、1 对白 + 1 动作块 */

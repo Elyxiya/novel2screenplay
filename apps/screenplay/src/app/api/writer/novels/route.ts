@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import { getWriterNovelRepository } from '@/lib/store/sqlite';
 import { getCurrentUser, authError } from '@/lib/auth';
-import { CreateDraftParamsSchema } from '@/lib/schema/novel.schema';
+import { CreateDraftParamsSchema } from '@novel/contracts/novel';
 
 export const dynamic = 'force-dynamic';
 

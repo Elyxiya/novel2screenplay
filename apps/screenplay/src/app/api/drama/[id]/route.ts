@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDramaRepository } from '@/lib/store/sqlite/drama-repository';
-import { safeParseDramaFromYaml } from '@/lib/schema/drama-serializer';
+import { safeParseDramaFromYaml } from '@novel/contracts/serializers';
 import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';

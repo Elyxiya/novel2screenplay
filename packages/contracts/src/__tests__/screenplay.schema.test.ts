@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ScreenplaySchema, type Screenplay } from '../../../src/lib/schema/screenplay.schema';
+import { ScreenplaySchema, type Screenplay } from '../screenplay.js';
 
 const minimalScreenplay: Screenplay = {
   formatVersion: 'novel2screenplay-v1',

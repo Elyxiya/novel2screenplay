@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { Scene, Character } from '@/lib/schema/screenplay.schema';
-import type { Location } from '@/lib/schema/screenplay.schema';
+import type { Scene, Character } from '@novel/contracts/screenplay';
+import type { Location } from '@novel/contracts/screenplay';
 
 const TIME_OPTIONS: { value: Scene['timeOfDay']; label: string }[] = [
   { value: 'dawn', label: '黎明' },

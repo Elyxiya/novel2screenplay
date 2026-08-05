@@ -1,12 +1,13 @@
 import YAML from 'yaml';
-import { DramaSchema, type Drama } from './drama.schema';
+import { z } from 'zod';
+import { ScreenplaySchema, type Screenplay } from '../screenplay.js';
 
 /**
- * Parse a YAML string into a Drama object with validation.
+ * Parse a YAML string into a Screenplay object with validation.
  */
-export function parseDramaFromYaml(yamlStr: string): Drama {
+export function parseFromYaml(yamlStr: string): Screenplay {
   const parsed = YAML.parse(yamlStr);
-  return DramaSchema.parse(parsed);
+  return ScreenplaySchema.parse(parsed);
 }
 
 type ZodIssue = { path: (string | number)[]; message: string };
@@ -14,12 +15,12 @@ type ZodIssue = { path: (string | number)[]; message: string };
 /**
  * Parse without throwing — returns validation result.
  */
-export function safeParseDramaFromYaml(
+export function safeParseFromYaml(
   yamlStr: string,
-): { success: true; data: Drama } | { success: false; error: string; issues: ZodIssue[] } {
+): { success: true; data: Screenplay } | { success: false; error: string; issues: ZodIssue[] } {
   try {
     const parsed = YAML.parse(yamlStr);
-    const result = DramaSchema.safeParse(parsed);
+    const result = ScreenplaySchema.safeParse(parsed);
     if (result.success) {
       return { success: true, data: result.data };
     }
@@ -34,10 +35,10 @@ export function safeParseDramaFromYaml(
 }
 
 /**
- * Serialize a validated Drama object to a YAML string.
+ * Serialize a validated Screenplay object to a YAML string.
  */
-export function serializeDramaToYaml(drama: Drama): string {
-  return YAML.stringify(drama, {
+export function serializeToYaml(screenplay: Screenplay): string {
+  return YAML.stringify(screenplay, {
     indent: 2,
     lineWidth: 0,
     nullStr: '',

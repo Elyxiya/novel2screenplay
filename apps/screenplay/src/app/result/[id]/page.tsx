@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { historyStore } from '@/lib/store/history-store';
-import type { Screenplay, Scene, Character, Location } from '@/lib/schema/screenplay.schema';
+import type { Screenplay, Scene, Character, Location } from '@novel/contracts/screenplay';
 import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
 import { LocationEditor } from '@/components/editors/LocationEditor';

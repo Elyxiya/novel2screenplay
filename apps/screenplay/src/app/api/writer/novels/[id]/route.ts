@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWriterNovelRepository } from '@/lib/store/sqlite';
 import { getCurrentUser, authError } from '@/lib/auth';
-import { VolumeSchema, CharacterCardSchema, WorldItemSchema } from '@/lib/schema/novel.schema';
+import { VolumeSchema, CharacterCardSchema, WorldItemSchema } from '@novel/contracts/novel';
 import type { z } from 'zod';
 
 export const dynamic = 'force-dynamic';

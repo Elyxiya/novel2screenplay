@@ -6,7 +6,7 @@ import {
   WorldItemSchema,
   DraftNovelSchema,
   CreateDraftParamsSchema,
-} from './novel.schema';
+} from '../novel.js';
 
 describe('novel.schema', () => {
   describe('VolumeSchema', () => {

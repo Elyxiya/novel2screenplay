@@ -12,7 +12,7 @@ import type { PipelineJob, SceneStatus } from '../../types/api';
 import type { Phase1Output } from '../pipeline/Phase1Analyzer';
 import type { Phase2Output } from '../pipeline/Phase2Segmenter';
 import type { Phase3Output } from '../pipeline/Phase3SceneConverter';
-import type { Screenplay } from '../schema/screenplay.schema';
+import type { Screenplay } from '@novel/contracts/screenplay';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
 
 /** Internal stored job with pipeline state */

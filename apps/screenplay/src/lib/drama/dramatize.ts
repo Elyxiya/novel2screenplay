@@ -10,14 +10,14 @@
  * 说明：P0 先以规则引擎打通链路；LLM 增强版分镜（运镜/氛围高级生成）留待后续阶段。
  */
 
-import type { Screenplay } from '../schema/screenplay.schema';
+import type { Screenplay } from '@novel/contracts/screenplay';
 import {
   DramaSchema,
   type Drama,
   type Shot,
   type ShotType,
   type CameraMove,
-} from '../schema/drama.schema';
+} from '@novel/contracts/drama';
 
 export interface DramatizeOptions {
   title?: string;

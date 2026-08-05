@@ -3,7 +3,7 @@ import { jobStore } from '@/lib/store/job-store';
 import { getDramaRepository } from '@/lib/store/sqlite/drama-repository';
 import { getNovelRepository } from '@/lib/store/sqlite/novel-repository';
 import { dramatize } from '@/lib/drama/dramatize';
-import { serializeDramaToYaml, safeParseDramaFromYaml } from '@/lib/schema/drama-serializer';
+import { serializeDramaToYaml, safeParseDramaFromYaml } from '@novel/contracts/serializers';
 import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';

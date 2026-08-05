@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Character } from '@/lib/schema/screenplay.schema';
+import type { Character } from '@novel/contracts/screenplay';
 
 interface Props {
   character: Character;

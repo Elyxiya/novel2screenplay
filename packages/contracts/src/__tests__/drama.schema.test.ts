@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { DramaSchema, type Drama } from './drama.schema';
-import { serializeDramaToYaml, parseDramaFromYaml, safeParseDramaFromYaml } from './drama-serializer';
+import { DramaSchema, type Drama } from '../drama.js';
+import { serializeDramaToYaml, parseDramaFromYaml, safeParseDramaFromYaml } from '../serializers/drama-serializer.js';
 
 function makeDrama(): Drama {
   return {

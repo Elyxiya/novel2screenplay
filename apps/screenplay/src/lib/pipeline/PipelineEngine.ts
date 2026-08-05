@@ -10,7 +10,7 @@ import { Phase4Merger } from './Phase4Merger';
 import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
 import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
-import { serializeToYaml } from '../schema/yaml-serializer';
+import { serializeToYaml } from '@novel/contracts/serializers';
 
 type SSEEventType = 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat';
 

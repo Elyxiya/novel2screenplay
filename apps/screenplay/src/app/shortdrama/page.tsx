@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import YAML from 'yaml';
-import { DramaSchema, type Drama, type Shot } from '@/lib/schema/drama.schema';
+import { DramaSchema, type Drama, type Shot } from '@novel/contracts/drama';
 import { RequireAuth } from '@/components/RequireAuth';
 import { SHOT_TYPE_LABELS, CAMERA_MOVE_LABELS, computeDramaStats, formatDuration } from '@/lib/drama/drama-stats';
 import { exportDramaJson, exportDramaExcel } from '@/lib/drama/drama-export';

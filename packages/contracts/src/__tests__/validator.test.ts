@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { serializeToYaml, parseFromYaml, safeParseFromYaml } from '../../../src/lib/schema/yaml-serializer';
-import { validateScreenplay, autoFixScreenplay } from '../../../src/lib/schema/validator';
+import { serializeToYaml, parseFromYaml, safeParseFromYaml } from '../serializers/yaml-serializer.js';
+import { validateScreenplay, autoFixScreenplay } from '../validator.js';
 
 function loadFixture(): string {
   return readFileSync(join(__dirname, '../../fixtures/sample-screenplay.yaml'), 'utf-8');

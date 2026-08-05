@@ -1,7 +1,7 @@
 'use client';
 
 import * as XLSX from 'xlsx';
-import type { Drama } from '@/lib/schema/drama.schema';
+import type { Drama } from '@novel/contracts/drama';
 import { SHOT_TYPE_LABELS, CAMERA_MOVE_LABELS } from '@/lib/drama/drama-stats';
 
 /** 触发浏览器下载 Blob */

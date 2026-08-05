@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Location } from '@/lib/schema/screenplay.schema';
+import type { Location } from '@novel/contracts/screenplay';
 
 const TYPE_LABELS: Record<string, string> = {
   interior: '内景',

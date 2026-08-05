@@ -7,7 +7,7 @@
  */
 
 import { getDatabase } from './db';
-import type { DraftNovel, NovelVolume, NovelChapter, NovelCharacterCard, NovelWorldItem, CreateDraftParams } from '@/lib/schema/novel.schema';
+import type { DraftNovel, NovelVolume, NovelChapter, NovelCharacterCard, NovelWorldItem, CreateDraftParams } from '@novel/contracts/novel';
 
 export interface DraftSummary {
   id: string;

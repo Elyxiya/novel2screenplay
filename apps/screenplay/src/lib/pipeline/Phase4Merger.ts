@@ -1,8 +1,8 @@
 import type { Phase1Output, RawCharacter, RawLocation } from './Phase1Analyzer';
 import type { Phase2Output } from './Phase2Segmenter';
 import type { Phase3Output } from './Phase3SceneConverter';
-import type { Screenplay } from '../schema/screenplay.schema';
-import { autoFixScreenplay } from '../schema/validator';
+import type { Screenplay } from '@novel/contracts/screenplay';
+import { autoFixScreenplay } from '@novel/contracts/validator';
 
 /**
  * Simple Levenshtein distance calculator.

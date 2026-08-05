@@ -1,4 +1,4 @@
-import type { Drama, Shot } from '@/lib/schema/drama.schema';
+import type { Drama, Shot } from '@novel/contracts/drama';
 
 // ── 枚举 → 中文标签 ──
 

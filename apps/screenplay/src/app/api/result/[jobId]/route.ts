@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@novel/contracts/serializers';
 import type { Screenplay } from '@novel/contracts/screenplay';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 type ZodIssue = { path: (string | number)[]; message: string };
 

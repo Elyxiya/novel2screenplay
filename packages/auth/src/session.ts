@@ -8,7 +8,7 @@
 
 import { createHash, randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
-import { getDatabase } from '@/lib/store/sqlite';
+import { getAuthStore } from './store';
 
 export const SESSION_COOKIE = 'n2s_session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
@@ -27,7 +27,7 @@ function hashToken(token: string): string {
 /** 为用户创建会话，返回需要写入 Cookie 的明文 token */
 export function createSession(userId: string): string {
   const token = randomBytes(32).toString('base64url');
-  const db = getDatabase();
+  const db = getAuthStore().getDatabase();
   const now = Date.now();
   db.prepare(
     'INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -64,7 +64,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const db = getDatabase();
+  const db = getAuthStore().getDatabase();
   const row = db.prepare(`
     SELECT s.id AS session_id, s.expires_at, u.id AS user_id, u.username, u.email
     FROM sessions s
@@ -106,7 +106,7 @@ export async function destroySession(): Promise<void> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (token) {
-    const db = getDatabase();
+    const db = getAuthStore().getDatabase();
     db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token));
   }
   store.delete(SESSION_COOKIE);
@@ -114,7 +114,7 @@ export async function destroySession(): Promise<void> {
 
 /** 清理全部已过期会话（启动时/定时调用） */
 export function cleanupExpiredSessions(): number {
-  const db = getDatabase();
+  const db = getAuthStore().getDatabase();
   const res = db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now());
   return res.changes;
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDramaRepository } from '@/lib/store/sqlite/drama-repository';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

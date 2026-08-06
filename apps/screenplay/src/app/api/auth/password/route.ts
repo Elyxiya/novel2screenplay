@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCurrentUser, authError, hashPassword, verifyPassword } from '@/lib/auth';
+import { getCurrentUser, authError, hashPassword, verifyPassword } from '@novel/auth';
 import { getUserRepository } from '@/lib/store/sqlite';
 
 export const dynamic = 'force-dynamic';

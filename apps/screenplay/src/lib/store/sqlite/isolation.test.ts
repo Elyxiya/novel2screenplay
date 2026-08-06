@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getNovelRepository, getJobRepository, getHistoryRepository, getUserRepository } from '.';
 import { getDatabase, closeDatabase } from './db';
-import { hashPassword } from '@/lib/auth/password';
+import { hashPassword } from '@novel/auth/password';
 
 describe('多用户数据隔离', () => {
   const novelRepo = getNovelRepository();

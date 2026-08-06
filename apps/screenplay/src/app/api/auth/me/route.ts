@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentPublicUser, authError } from '@/lib/auth';
+import { getCurrentPublicUser, authError } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

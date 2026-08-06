@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getWriterNovelRepository } from '@/lib/store/sqlite';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 import { getModelRouter } from '@/lib/llm/adapter/router';
 import type { LLMMessage } from '@/lib/llm/types';
 

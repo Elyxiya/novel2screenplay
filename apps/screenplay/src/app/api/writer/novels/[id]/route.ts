@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getWriterNovelRepository } from '@/lib/store/sqlite';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 import { VolumeSchema, CharacterCardSchema, WorldItemSchema } from '@novel/contracts/novel';
 import type { z } from 'zod';
 

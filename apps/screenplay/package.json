@@ -4,18 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "prebuild": "npm run build -w @novel/contracts",
+    "prebuild": "npm run build -w @novel/contracts && npm run build -w @novel/auth",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint src",
-    "pretypecheck": "npm run build -w @novel/contracts",
+    "pretypecheck": "npm run build -w @novel/contracts && npm run build -w @novel/auth",
     "typecheck": "tsc --noEmit",
-    "pretest": "npm run build -w @novel/contracts",
+    "pretest": "npm run build -w @novel/contracts && npm run build -w @novel/auth",
     "test": "vitest run",
-    "pretest:coverage": "npm run build -w @novel/contracts",
+    "pretest:coverage": "npm run build -w @novel/contracts && npm run build -w @novel/auth",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@novel/auth": "0.1.0",
     "@novel/contracts": "0.1.0",
     "iconv-lite": "^0.7.2",
     "next": "^16.2.12",

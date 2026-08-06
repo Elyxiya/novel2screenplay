@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { hashPassword, createSession, setSessionCookie } from '@/lib/auth';
+import { hashPassword, createSession, setSessionCookie } from '@novel/auth';
 import { getUserRepository } from '@/lib/store/sqlite';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
       message: '注册成功',
       user: repo.toPublic(user),
     }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[auth/register] 注册失败:', err);
     return NextResponse.json({ error: '注册失败，请稍后重试' }, { status: 500 });
   }
 }

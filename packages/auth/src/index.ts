@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 import { getSessionUser } from './session';
-import { getUserRepository, type PublicUser } from '@/lib/store/sqlite';
+import { getAuthStore, type PublicUser } from './store';
 
 export { hashPassword, verifyPassword } from './password';
 export {
@@ -20,6 +20,7 @@ export {
   SESSION_COOKIE,
   type SessionUser,
 } from './session';
+export { configureAuth, type AuthStore, type AuthDatabase, type PublicUser } from './store';
 
 /** 获取当前登录用户（未登录返回 null） */
 export async function getCurrentUser(): Promise<Awaited<ReturnType<typeof getSessionUser>>> {
@@ -30,8 +31,7 @@ export async function getCurrentUser(): Promise<Awaited<ReturnType<typeof getSes
 export async function getCurrentPublicUser(): Promise<PublicUser | null> {
   const session = await getSessionUser();
   if (!session) return null;
-  const user = getUserRepository().getById(session.id);
-  return user ? getUserRepository().toPublic(user) : null;
+  return getAuthStore().getUserById(session.id);
 }
 
 /** 401 响应（未登录 / 无权限） */

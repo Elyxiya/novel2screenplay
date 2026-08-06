@@ -7,7 +7,7 @@ describe('password 密码哈希与校验', () => {
     const h2 = await hashPassword('my-secret-123');
     expect(h1).toContain('$');
     expect(h1).not.toBe(h2); // 随机盐
-    const [salt, hash] = h1.split('$');
+    const [salt = '', hash = ''] = h1.split('$');
     expect(salt.length).toBe(32); // 16 字节 hex
     expect(hash.length).toBe(128); // 64 字节 hex
   });

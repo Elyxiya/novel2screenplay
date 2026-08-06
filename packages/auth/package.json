@@ -1,0 +1,32 @@
+{
+  "name": "@novel/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Novel2Screenplay 共享认证层：密码哈希、HttpOnly Cookie 会话与客户端认证工具",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./password": { "types": "./dist/password.d.ts", "default": "./dist/password.js" },
+    "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    "./store": { "types": "./dist/store.d.ts", "default": "./dist/store.js" }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "next": ">=16"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "better-sqlite3": "^12.11.1",
+    "next": "^16.2.12",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PipelineEngine } from '@/lib/pipeline/PipelineEngine';
 import { initializeProviders } from '@/lib/llm/registry';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 initializeProviders();
 const engine = new PipelineEngine();

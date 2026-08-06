@@ -9,7 +9,7 @@
 import { NextRequest } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { getSSEClientManager } from '@/lib/sse/sse-client-manager';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

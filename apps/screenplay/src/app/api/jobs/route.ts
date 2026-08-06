@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
 import { createPipelineJob } from '@/lib/jobs/types';
 import type { JobStatus, PipelineJobInput } from '@/lib/jobs/types';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

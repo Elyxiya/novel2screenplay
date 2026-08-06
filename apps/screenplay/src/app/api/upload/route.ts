@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateFile, parseNovel } from '@/lib/novel/parser';
 import { getNovelRepository } from '@/lib/store/sqlite';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 import * as iconv from 'iconv-lite';
 
 export async function POST(request: NextRequest) {

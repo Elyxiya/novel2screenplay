@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNovelRepository } from '@/lib/store/sqlite';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

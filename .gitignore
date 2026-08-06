@@ -15,6 +15,7 @@ coverage/
 
 # next.js (workspace-wide)
 .next/
+.next-*/
 out/
 
 # production
@@ -63,3 +64,7 @@ data-test/
 
 # 临时 worktree（残留目录，避免被当作 embedded repo）
 .worktree-main/
+.next-prod/
+
+# PR 验证截图（仅本地材料，禁止入库）
+pr-evidence/

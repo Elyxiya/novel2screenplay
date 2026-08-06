@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
 import { getWorker } from '@/lib/jobs';
 import { getJobRepository } from '@/lib/store/sqlite';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

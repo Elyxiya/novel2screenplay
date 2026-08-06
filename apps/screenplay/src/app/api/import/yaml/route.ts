@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import YAML from 'yaml';
 import { ScreenplaySchema } from '@novel/contracts/screenplay';
 import { jobStore } from '@/lib/store/job-store';
-import { getCurrentUser, authError } from '@/lib/auth';
+import { getCurrentUser, authError } from '@novel/auth';
 
 
 function normalizeTime(v: unknown): string {

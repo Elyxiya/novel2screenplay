@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { destroySession } from '@/lib/auth';
+import { destroySession } from '@novel/auth';
 
 export const dynamic = 'force-dynamic';
 

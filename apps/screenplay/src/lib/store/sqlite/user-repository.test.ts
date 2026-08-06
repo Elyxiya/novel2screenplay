@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getUserRepository } from './user-repository';
 import { getDatabase, closeDatabase } from './db';
-import { hashPassword } from '@/lib/auth/password';
+import { hashPassword } from '@novel/auth/password';
 
 describe('user-repository 用户账户', () => {
   const repo = getUserRepository();
@@ -59,7 +59,7 @@ describe('user-repository 用户账户', () => {
   it('与 scrypt 集成：注册 → 校验密码 → 改密码 → 新密码生效', async () => {
     const hash = await hashPassword('initial-pass');
     const id = repo.create({ username: 'auth_e2e', email: 'e2e@test.dev', passwordHash: hash });
-    const { verifyPassword } = await import('@/lib/auth/password');
+    const { verifyPassword } = await import('@novel/auth/password');
     expect(await verifyPassword('initial-pass', repo.getById(id)!.passwordHash)).toBe(true);
 
     const newHash = await hashPassword('changed-pass');

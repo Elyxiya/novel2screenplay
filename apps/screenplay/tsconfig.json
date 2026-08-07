@@ -27,19 +27,19 @@
         "./src/*"
       ],
       "@novel/contracts/serializers": [
-        "../../packages/contracts/dist/serializers/index.d.ts"
+        "../../packages/contracts/dist/serializers/index"
       ],
       "@novel/contracts/*": [
-        "../../packages/contracts/dist/*.d.ts"
+        "../../packages/contracts/dist/*"
       ],
       "@novel/auth/*": [
-        "../../packages/auth/dist/*.d.ts"
+        "../../packages/auth/dist/*"
       ],
       "@novel/contracts": [
-        "../../packages/contracts/dist/index.d.ts"
+        "../../packages/contracts/dist/index"
       ],
       "@novel/auth": [
-        "../../packages/auth/dist/index.d.ts"
+        "../../packages/auth/dist/index"
       ]
     }
   },
@@ -50,8 +50,8 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    ".next-prod/types/**/*.ts",
-    ".next-prod/dev/types/**/*.ts"
+    ".next-build/types/**/*.ts",
+    ".next-build/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import YAML from 'yaml';
 import { ScreenplaySchema } from '@novel/contracts/screenplay';
 import { jobStore } from '@/lib/store/job-store';
+import { getHistoryRepository } from '@/lib/store/sqlite';
 import { getCurrentUser, authError } from '@/lib/auth';
 
 
@@ -97,6 +98,18 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       pipelineState: { phase4Output: sp.data },
     }));
+
+    // 写入历史表（与 PipelineEngine 转换完成一致），供历史面板读取
+    getHistoryRepository().create({
+      jobId,
+      title: sp.data.metadata.title,
+      author: sp.data.metadata.author ?? '',
+      sceneCount: sp.data.metadata.totalScenes,
+      characterCount: sp.data.metadata.totalCharacters,
+      locationCount: sp.data.metadata.totalLocations,
+      yamlContent: body.yaml,
+      userId: user.id,
+    });
 
     return NextResponse.json({
       success: true,

@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { historyStore } from '@/lib/store/history-store';
 import { QuickStats } from '@/components/JobListPanel';
 import { RequireAuth } from '@/components/RequireAuth';
 
@@ -138,15 +137,7 @@ export default function UploadPage() {
       });
       const data = await res.json();
       if (data.success) {
-        historyStore.add({
-          jobId: data.jobId,
-          title: data.preview?.title ?? '剧本',
-          sourceNovel: '',
-          totalScenes: data.preview?.totalScenes ?? 0,
-          totalCharacters: data.preview?.totalCharacters ?? 0,
-          totalLocations: data.preview?.totalLocations ?? 0,
-          author: '',
-        });
+        // 历史记录已由服务端 /api/import/yaml 写入 SQLite history 表
         router.push(`/result/${data.jobId}`);
       } else {
         setYamlError(data.error + (data.details ? '\n' + formatYamlError(data.details) : ''));

@@ -55,6 +55,10 @@ export interface HistoryRepository {
   /** 获取最近的历史记录；传入 userId 时按用户过滤（多用户隔离） */
   listRecent(limit?: number, userId?: string): History[];
   delete(historyId: string): void;
+  /** 按 Job ID 删除历史记录；传入 userId 时仅删除归属该用户的记录 */
+  deleteByJobId(jobId: string, userId?: string): void;
+  /** 清空指定用户（或全部）的历史记录 */
+  clearByUser(userId?: string): void;
 }
 
 class HistoryRepositoryImpl implements HistoryRepository {
@@ -149,6 +153,30 @@ class HistoryRepositoryImpl implements HistoryRepository {
   delete(historyId: string): void {
     const db = getDatabase();
     db.prepare('DELETE FROM history WHERE id = ?').run(historyId);
+  }
+
+  /**
+   * 按 Job ID 删除历史记录；传入 userId 时仅删除归属该用户的记录
+   */
+  deleteByJobId(jobId: string, userId?: string): void {
+    const db = getDatabase();
+    if (userId) {
+      db.prepare('DELETE FROM history WHERE job_id = ? AND user_id = ?').run(jobId, userId);
+    } else {
+      db.prepare('DELETE FROM history WHERE job_id = ?').run(jobId);
+    }
+  }
+
+  /**
+   * 清空指定用户（或全部）的历史记录
+   */
+  clearByUser(userId?: string): void {
+    const db = getDatabase();
+    if (userId) {
+      db.prepare('DELETE FROM history WHERE user_id = ?').run(userId);
+    } else {
+      db.prepare('DELETE FROM history').run();
+    }
   }
 
   /**

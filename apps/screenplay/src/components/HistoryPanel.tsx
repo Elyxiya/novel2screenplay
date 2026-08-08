@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { historyStore, type HistoryEntry } from '@/lib/store/history-store';
+
+interface HistoryItem {
+  jobId: string;
+  title: string | null;
+  author: string | null;
+  sceneCount: number | null;
+  characterCount: number | null;
+  locationCount: number | null;
+  createdAt: number;
+}
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -18,16 +27,42 @@ function formatDate(ts: number): string {
 export function HistoryPanel() {
   const router = useRouter();
   const pathname = usePathname();
-  const [entries, setEntries] = useState<HistoryEntry[]>(() => historyStore.list());
+  const [entries, setEntries] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const remove = (jobId: string) => {
-    historyStore.remove(jobId);
-    setEntries(historyStore.list());
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch('/api/history');
+      if (!res.ok) return;
+      const data = await res.json();
+      setEntries(data.history ?? []);
+    } catch {
+      // network error: keep current list
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const remove = async (jobId: string) => {
+    try {
+      await fetch(`/api/history?jobId=${encodeURIComponent(jobId)}`, { method: 'DELETE' });
+    } catch {
+      // ignore
+    }
+    await refresh();
   };
 
-  const clearAll = () => {
-    historyStore.clear();
+  const clearAll = async () => {
+    try {
+      await fetch('/api/history', { method: 'DELETE' });
+    } catch {
+      // ignore
+    }
     setEntries([]);
     setConfirmClear(false);
   };
@@ -53,7 +88,9 @@ export function HistoryPanel() {
 
       {/* Entry list */}
       <div className="flex-1 overflow-y-auto py-1">
-        {entries.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-full text-xs text-gray-400">加载中…</div>
+        ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="text-3xl mb-2 opacity-40">📭</div>
             <p className="text-xs text-gray-400">暂无历史记录</p>
@@ -76,20 +113,20 @@ export function HistoryPanel() {
                     className="w-full text-left"
                   >
                     <div className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
-                      {entry.title}
+                      {entry.title || '未命名'}
                     </div>
                     <div className="text-xs text-gray-400 mt-0.5 truncate">
-                      {entry.author || entry.sourceNovel || '未命名'}
+                      {entry.author || '未署名'}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-gray-400">{formatDate(entry.createdAt)}</span>
                       <span className="text-xs text-gray-300">·</span>
-                      <span className="text-xs text-gray-400">{entry.totalScenes} 场景</span>
+                      <span className="text-xs text-gray-400">{entry.sceneCount ?? 0} 场景</span>
                     </div>
                   </button>
                   <div className="flex items-center justify-end mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={(e) => { e.stopPropagation(); remove(entry.jobId); }}
+                      onClick={(e) => { e.stopPropagation(); void remove(entry.jobId); }}
                       className="text-xs text-red-400 hover:text-red-600 px-1 py-0.5 rounded hover:bg-red-50 transition-colors"
                     >
                       删除
@@ -105,7 +142,7 @@ export function HistoryPanel() {
       {/* Footer hint */}
       <div className="px-3 pb-2 pt-1 border-t border-gray-100 shrink-0">
         <p className="text-xs text-gray-300 leading-relaxed">
-          本地保存，清除浏览器数据将丢失
+          服务端持久化保存，跨浏览器访问不丢失
         </p>
       </div>
     </div>

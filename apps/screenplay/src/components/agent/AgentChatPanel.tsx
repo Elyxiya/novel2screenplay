@@ -25,17 +25,25 @@ const PHASE_LABELS: Record<string, string> = {
   merge: '合并去重',
 };
 
-function PhaseCard({ phase }: { phase: PhaseState }) {
+function PhaseCard({
+  phase,
+  onReview,
+}: {
+  phase: PhaseState;
+  onReview?: (action: 'approve' | 'retry' | 'discard') => void;
+}) {
   const statusColor =
     phase.status === 'completed' ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
     : phase.status === 'running' ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
     : phase.status === 'failed' ? 'border-red-300 bg-red-50 text-red-700'
+    : phase.status === 'awaiting' ? 'border-amber-300 bg-amber-50 text-amber-700'
     : 'border-slate-200 bg-slate-50 text-slate-400';
 
   const statusText =
     phase.status === 'completed' ? '✓ 已完成'
     : phase.status === 'running' ? '进行中…'
     : phase.status === 'failed' ? '✕ 失败'
+    : phase.status === 'awaiting' ? '⏸ 待人工介入'
     : '待执行';
 
   return (
@@ -50,11 +58,42 @@ function PhaseCard({ phase }: { phase: PhaseState }) {
         </div>
       )}
       {phase.gate && (
-        <div className={`mt-2 text-xs ${phase.gate.decision === 'pass' ? 'text-emerald-600' : 'text-amber-600'}`}>
-          质量关卡：{phase.gate.decision === 'pass' ? '通过' : '未通过'} — {phase.gate.reason}
+        <div
+          className={`mt-2 text-xs ${
+            phase.gate.decision === 'pass'
+              ? 'text-emerald-600'
+              : phase.gate.decision === 'manual_review' || phase.gate.decision === 'review'
+                ? 'text-amber-600'
+                : 'text-red-500'
+          }`}
+        >
+          质量关卡：
+          {phase.gate.decision === 'pass' ? '通过' : '待人工复核'} — {phase.gate.reason}
         </div>
       )}
-      {phase.error && (
+      {phase.status === 'awaiting' && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <button
+            onClick={() => onReview?.('approve')}
+            className="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          >
+            批准继续
+          </button>
+          <button
+            onClick={() => onReview?.('retry')}
+            className="text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          >
+            重新生成
+          </button>
+          <button
+            onClick={() => onReview?.('discard')}
+            className="text-xs px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            放弃
+          </button>
+        </div>
+      )}
+      {phase.error && phase.status !== 'awaiting' && (
         <div className="mt-2 text-xs text-red-500 break-words">错误：{phase.error}</div>
       )}
     </div>
@@ -131,6 +170,9 @@ export function AgentChatPanel() {
             eventSourceRef.current = null;
           } else if (evt?.event === 'task_start') {
             dispatch(evt as AgentChatEvent);
+          } else if (evt?.event === 'task_awaiting') {
+            // 挂起等待人工介入：保持 SSE 连接，等待用户操作后事件继续推送
+            dispatch(evt as AgentChatEvent);
           }
         } catch { /* ignore malformed */ }
       });
@@ -147,7 +189,11 @@ export function AgentChatPanel() {
         try {
           const msg = JSON.parse((e as MessageEvent).data);
           const evt = msg?.data ?? msg;
-          if (evt?.event === 'gate_result' || evt?.event === 'phase_failed') {
+          if (
+            evt?.event === 'gate_result' ||
+            evt?.event === 'phase_failed' ||
+            evt?.event === 'phase_awaiting_manual'
+          ) {
             dispatch(evt as AgentChatEvent);
           }
         } catch { /* ignore */ }
@@ -177,6 +223,11 @@ export function AgentChatPanel() {
         eventSourceRef.current?.close();
         return;
       }
+      if (data.awaiting) {
+        // 挂起等待人工介入：停止轮询，等待用户操作
+        setState((s) => ({ ...s, running: false }));
+        return;
+      }
       if (data.completed) {
         setState((s) => ({ ...s, running: false }));
         eventSourceRef.current?.close();
@@ -185,6 +236,30 @@ export function AgentChatPanel() {
       setTimeout(() => void pollTask(taskId), 2000);
     } catch { /* ignore */ }
   }, []);
+
+  const submitReview = useCallback(
+    async (phaseId: string, action: 'approve' | 'retry' | 'discard') => {
+      if (!state.taskId) return;
+      try {
+        const res = await fetch('/api/agent/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: state.taskId, phaseId, action }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? '人工介入处理失败');
+          return;
+        }
+        setError(null);
+        // 任务恢复执行：重新进入 running，等待 SSE 事件继续
+        setState((s) => ({ ...s, running: true }));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [state.taskId],
+  );
 
   const totalLogs = state.logs.length;
 
@@ -287,7 +362,13 @@ export function AgentChatPanel() {
           {state.started && state.phases.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">四阶段执行轨迹</p>
-              {state.phases.map((p) => <PhaseCard key={p.id} phase={p} />)}
+              {state.phases.map((p) => (
+                <PhaseCard
+                  key={p.id}
+                  phase={p}
+                  onReview={p.status === 'awaiting' ? (a) => void submitReview(p.id, a) : undefined}
+                />
+              ))}
             </div>
           )}
 

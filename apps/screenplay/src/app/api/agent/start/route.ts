@@ -1,21 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MultiAgentOrchestrator } from '@/lib/multi-agent/orchestrator';
-import { initializeProviders } from '@/lib/llm/registry';
-
-initializeProviders();
-
-// 单例编排器（复用默认 LLM Provider）
-let orchestrator: MultiAgentOrchestrator | null = null;
-function getOrchestrator(): MultiAgentOrchestrator {
-  if (!orchestrator) {
-    orchestrator = new MultiAgentOrchestrator({
-      enableReviewGates: true,
-      enableAutoRetry: true,
-      defaultQualityThreshold: 75,
-    });
-  }
-  return orchestrator;
-}
+import { getOrchestrator } from '@/lib/multi-agent/orchestrator-singleton';
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +39,14 @@ export async function GET(request: NextRequest) {
       })),
       completed: task.phases.every((p) => p.status === 'completed'),
       failed: task.phases.some((p) => p.status === 'failed'),
+      awaiting: task.awaiting != null,
+      awaitingPhase: task.awaiting
+        ? {
+            phaseId: task.awaiting.phaseId,
+            name: task.awaiting.phaseName,
+            reason: task.awaiting.reason,
+          }
+        : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

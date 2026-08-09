@@ -185,7 +185,6 @@ class SSEClientManager {
     if (this.heartbeatInterval) return;
 
     const HEARTBEAT_INTERVAL = 30000; // 30秒
-    const HEARTBEAT_TIMEOUT = 60000; // 60秒无响应断开
 
     this.heartbeatInterval = setInterval(() => {
       const now = Date.now();
@@ -228,7 +227,7 @@ class SSEClientManager {
   closeAll(): void {
     this.stopHeartbeat();
 
-    for (const [clientId, client] of this.clients) {
+    for (const client of this.clients.values()) {
       try {
         client.controller.close();
       } catch {

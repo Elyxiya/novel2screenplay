@@ -24,7 +24,6 @@ import type {
 import type { AgentTool } from './tool-types';
 
 import {
-  addMemoryEntry,
   addTokenUsage,
   addToolResult,
   addWorkingMessage,
@@ -35,10 +34,8 @@ import {
   evictWorkingMemory,
   getNextStates,
   getTriggerDescription,
-  isActiveState,
   isOverTokenBudget,
   isTerminalState,
-  needsLlmCall,
   resetWorkingMemory,
   rollContextualMemory,
   setWorkingTaskId,

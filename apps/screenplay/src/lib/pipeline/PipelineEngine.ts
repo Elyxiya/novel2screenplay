@@ -64,10 +64,6 @@ export class PipelineEngine {
 
     // All chapters (for result page original text display)
     const allChapterTexts = parseResult.chapters.map((c) => c.text);
-    // Filtered to selected chapters (for pipeline phases)
-    const chapterTexts = input.selectedChapters
-      ? input.selectedChapters.map(i => allChapterTexts[i]).filter(Boolean)
-      : allChapterTexts;
     // Chapters objects filtered to selected (for Phase1/Phase2)
     const selectedChapterObjs = input.selectedChapters
       ? input.selectedChapters.map(i => parseResult.chapters[i]).filter(Boolean)

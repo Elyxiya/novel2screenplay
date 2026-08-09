@@ -10,7 +10,6 @@ import type {
   HandoffContext,
   HandoffRequest,
   HandoffResult,
-  HandoffOptions,
   HandoffPayload,
 } from './handoff-protocol';
 import {

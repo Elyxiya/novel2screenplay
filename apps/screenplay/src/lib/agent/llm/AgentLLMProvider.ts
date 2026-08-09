@@ -19,7 +19,6 @@ import type {
   ParsedToolCall,
 } from './types';
 
-import { toOpenAITools } from './tool-registry';
 import { toLLMMessages, parseLLMResponse } from './message-converter';
 
 /**
@@ -79,7 +78,6 @@ export class AgentLLMProvider {
     this.messages = messages;
 
     const llmMessages = toLLMMessages(messages);
-    const openaiTools = toOpenAITools(this.tools);
 
     const llmResponse = await this.llmProvider.chat(llmMessages, {
       signal: options?.signal,

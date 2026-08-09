@@ -34,6 +34,39 @@ export default function ConvertPage() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
 
+  // 降级轮询函数
+  const startPolling = useCallback((jobId: string) => {
+    console.log('[ConvertPage] 启动降级轮询模式');
+
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pipeline/status/${jobId}`);
+        const data = await res.json();
+
+        setStatus(data.status);
+        setPhase(data.currentPhase || 0);
+        setProgress(data.progress || 0);
+        setLogs((data.logs || []).slice(-30));
+        if (data.subProgress) {
+          setSubProgress(`场景 ${data.subProgress.completedScenes}/${data.subProgress.totalScenes}`);
+        }
+
+        if (data.status === 'completed') {
+          clearInterval(poll);
+          setTimeout(() => router.push(`/result/${jobId}`), 1000);
+        }
+        if (data.status === 'failed') {
+          setError(data.error);
+          clearInterval(poll);
+        }
+      } catch {
+        // ignore
+      }
+    }, 1500);
+
+    return poll;
+  }, [router]);
+
   const connectSSE = useCallback((jobId: string) => {
     // 清理现有连接
     if (eventSourceRef.current) {
@@ -164,40 +197,7 @@ export default function ConvertPage() {
       console.error('[ConvertPage] SSE 任务错误:', e.data);
       // 不在这里切换到轮询，等待连接关闭
     });
-  }, [router]);
-
-  // 降级轮询函数
-  const startPolling = useCallback((jobId: string) => {
-    console.log('[ConvertPage] 启动降级轮询模式');
-
-    const poll = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/pipeline/status/${jobId}`);
-        const data = await res.json();
-
-        setStatus(data.status);
-        setPhase(data.currentPhase || 0);
-        setProgress(data.progress || 0);
-        setLogs((data.logs || []).slice(-30));
-        if (data.subProgress) {
-          setSubProgress(`场景 ${data.subProgress.completedScenes}/${data.subProgress.totalScenes}`);
-        }
-
-        if (data.status === 'completed') {
-          clearInterval(poll);
-          setTimeout(() => router.push(`/result/${jobId}`), 1000);
-        }
-        if (data.status === 'failed') {
-          setError(data.error);
-          clearInterval(poll);
-        }
-      } catch {
-        // ignore
-      }
-    }, 1500);
-
-    return poll;
-  }, [router]);
+  }, [router, startPolling]);
 
   useEffect(() => {
     const jid = typeof window !== 'undefined' ? sessionStorage.getItem('jobId') : null;

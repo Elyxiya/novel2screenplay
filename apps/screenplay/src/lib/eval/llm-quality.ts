@@ -79,7 +79,7 @@ export async function assessWithLLM(
 export function serializeScreenplayForEval(screenplay: Screenplay): string {
   try {
     return serializeToYaml(screenplay);
-  } catch (err) {
+  } catch {
     // YAML 序列化兜底：退回 JSON 文本（评估只需可读内容）
     return JSON.stringify(screenplay, null, 2);
   }

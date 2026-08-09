@@ -16,10 +16,7 @@ import type { ToolExecutor } from './AgentCore';
 // ── Stubs ──────────────────────────────────────────────────────────────────────
 
 class StubLLMProvider implements LLMProvider {
-  async chat(
-    messages: Array<{ role: string; content: string }>,
-    _tools: AgentTool[],
-  ): Promise<LLMResponse> {
+  async chat(messages: Array<{ role: string; content: string }>): Promise<LLMResponse> {
     return {
       content: `reply:${messages.at(-1)?.content}`,
       finishReason: 'stop',

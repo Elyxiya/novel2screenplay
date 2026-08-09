@@ -32,8 +32,7 @@ export async function GET(
     return new Response('Forbidden', { status: 403 });
   }
 
-  // 创建 AbortController 用于管理连接生命周期
-  const abortController = new AbortController();
+  // 创建 SSE 流
   let cleanup: (() => void) | null = null;
 
   // 创建 SSE 流

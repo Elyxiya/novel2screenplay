@@ -6,8 +6,6 @@
  * and the OpenAI-compatible message format.
  */
 
-import type { LLMMessage } from '../../llm/types';
-
 /**
  * Extended message format supporting the 'tool' role.
  * The base LLM layer only has system/user/assistant.

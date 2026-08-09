@@ -24,7 +24,7 @@ export function exportDramaJson(drama: Drama): void {
 export function exportDramaExcel(drama: Drama): void {
   const title = drama.metadata.title || 'shortdrama';
 
-  const rows = drama.shots.map((s, i) => ({
+  const rows = drama.shots.map((s) => ({
     镜号: s.shotNumber,
     场景: s.sceneNumber,
     场景标题: s.slugline,

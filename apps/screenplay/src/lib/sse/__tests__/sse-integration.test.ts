@@ -111,7 +111,7 @@ describe('SSE Client Manager', () => {
         close: vi.fn(),
       } as unknown as ReadableStreamDefaultController<Uint8Array>;
 
-      const { clientId, cleanup } = manager.addClient('job_123', mockController);
+      const { cleanup } = manager.addClient('job_123', mockController);
       expect(manager.getTotalClients()).toBe(1);
 
       cleanup();

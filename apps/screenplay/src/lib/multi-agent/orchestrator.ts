@@ -276,8 +276,6 @@ export class MultiAgentOrchestrator {
     const t0 = Date.now();
     if (startIndex === 0) this.emit('task_start', { taskId });
 
-    const gateResults: Record<string, { decision: GateDecision; reason: string }> = {};
-
     for (let i = startIndex; i < task.phases.length; i++) {
       const phase = task.phases[i];
       // 人工介入恢复执行时跳过已完成的阶段
@@ -310,7 +308,6 @@ export class MultiAgentOrchestrator {
         if (this.config.enableReviewGates) {
           const gateConfig = this.getGateConfig(phase.name);
           let gate = await this.evaluateGate(task, phase, output);
-          gateResults[phase.name] = gate;
           this.emit('gate_result', { taskId, phaseId: phase.id, gate });
 
           const isBelow = () => gate.decision === 'fail' || gate.decision === 'review';
@@ -331,7 +328,6 @@ export class MultiAgentOrchestrator {
             phase.status = 'completed';
             phase.completedAt = Date.now();
             gate = await this.evaluateGate(task, phase, retryOutput);
-            gateResults[phase.name] = gate;
             this.emit('gate_result', { taskId, phaseId: phase.id, gate });
           }
 
@@ -417,7 +413,7 @@ export class MultiAgentOrchestrator {
     }
 
     const success = task.phases.every((p) => p.status === 'completed');
-    await this.finalizeTask(taskId, success, t0, gateResults);
+    await this.finalizeTask(taskId, success, t0);
   }
 
   /**
@@ -484,7 +480,7 @@ export class MultiAgentOrchestrator {
       level: 'error',
       message: `人工放弃阶段 ${phase.name}，任务终止`,
     });
-    void this.finalizeTask(taskId, false, Date.now(), {}).catch((err) => {
+    void this.finalizeTask(taskId, false, Date.now()).catch((err) => {
       console.error(`[Orchestrator] 任务收尾失败:`, err);
     });
     return true;
@@ -497,22 +493,11 @@ export class MultiAgentOrchestrator {
     taskId: string,
     success: boolean,
     t0: number,
-    gateResults: Record<string, { decision: GateDecision; reason: string }>,
   ): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
     const durationMs = Date.now() - t0;
-    const result: OrchestratorResult = {
-      taskId,
-      title: task.title ?? '未命名剧本',
-      success,
-      durationMs,
-      phases: task.phases,
-      gateResults,
-      error: success ? undefined : '存在失败阶段',
-      output: success ? this.assembleOutput(task) : undefined,
-    };
 
     // 持久化任务结果
     if (task.jobId) {
@@ -708,15 +693,6 @@ export class MultiAgentOrchestrator {
   private getGateConfig(phaseName: string): GateConfig {
     const key = gateConfigMap[phaseName];
     return DEFAULT_GATE_CONFIGS[key] ?? DEFAULT_GATE_CONFIGS.analysis_characters;
-  }
-
-  /**
-   * 组装最终输出
-   */
-  private assembleOutput(task: OrchestratorTask): unknown {
-    const lastPhase = task.phases[task.phases.length - 1];
-    const output = lastPhase?.output as { agentResult?: string } | undefined;
-    return output?.agentResult ?? output;
   }
 
   /**

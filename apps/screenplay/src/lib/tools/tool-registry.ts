@@ -192,7 +192,7 @@ export function createToolExecutor(): ToolExecutor {
   const registry = getToolRegistry();
 
   return {
-    async execute(call, signal) {
+    async execute(call) {
       const result = await registry.execute(
         call.name,
         call.arguments,

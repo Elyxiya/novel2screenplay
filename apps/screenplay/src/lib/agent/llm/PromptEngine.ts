@@ -6,7 +6,6 @@
  */
 
 import type { AgentTool } from '../tool-types';
-import type { OpenAIToolDefinition } from './types';
 import { toOpenAITools } from './tool-registry';
 
 /**

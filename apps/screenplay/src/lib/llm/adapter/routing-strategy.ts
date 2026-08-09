@@ -9,7 +9,7 @@
  * - 延迟优化：选择响应最快的模型
  */
 
-import type { LLMAdapter, LLMAdapterHealth } from './types';
+import type { LLMAdapter } from './types';
 
 export type RoutingStrategy =
   | 'priority'       // 按优先级

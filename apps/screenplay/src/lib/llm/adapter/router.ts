@@ -5,8 +5,8 @@
  * 支持故障转移和负载均衡。
  */
 
-import type { LLMAdapter, LLMAdapterHealth, AdapterSelectionStrategy } from './types';
-import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMProvider } from '../types';
+import type { LLMAdapter, LLMAdapterHealth } from './types';
+import type { LLMMessage, LLMChatOptions, LLMChatResponse } from '../types';
 import { getDeepSeekAdapter } from './deepseek-adapter';
 import { getOpenAIAdapter } from './openai-adapter';
 

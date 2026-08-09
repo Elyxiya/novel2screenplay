@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/RequireAuth';
 
@@ -95,26 +95,6 @@ export default function WriterEditorPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [metaDraft, setMetaDraft] = useState({ title: '', author: '', synopsis: '' });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/writer/novels/${novelId}`);
-      if (!res.ok) throw new Error(`加载失败(${res.status})`);
-      const data = await res.json();
-      setNovel(data.novel);
-      setMetaDraft({
-        title: data.novel.title,
-        author: data.novel.author,
-        synopsis: data.novel.synopsis,
-      });
-      setError(null);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [novelId]);
 
   useEffect(() => {
     let cancelled = false;

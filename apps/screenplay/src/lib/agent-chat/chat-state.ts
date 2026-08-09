@@ -18,6 +18,8 @@ export interface PhaseState {
   status: PhaseStatus;
   gate?: GateResult;
   error?: string;
+  /** 挂起（awaiting）阶段的输出摘要，供人工介入参考 */
+  outputSummary?: string;
 }
 
 export interface LogEntry {
@@ -55,6 +57,8 @@ export type AgentChatEvent =
       name?: string;
       reason: string;
       gate?: GateResult;
+      /** 挂起阶段的可视输出摘要 */
+      outputSummary?: string;
     }
   | { event: 'task_awaiting'; taskId: string; phaseId: string; name?: string; reason: string }
   | { event: 'gate_result'; taskId: string; phaseId: string; gate: GateResult }
@@ -111,6 +115,7 @@ export function agentChatReducer(state: AgentChatState, evt: AgentChatEvent): Ag
           status: 'awaiting',
           error: evt.reason,
           gate: evt.gate ?? { decision: 'manual_review', reason: evt.reason },
+          outputSummary: evt.outputSummary,
         }),
       };
 

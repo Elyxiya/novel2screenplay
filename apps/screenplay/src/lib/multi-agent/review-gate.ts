@@ -82,7 +82,7 @@ export const DEFAULT_GATE_CONFIGS: Record<string, GateConfig> = {
       requiredDimensions: ['consistency'],
       maxIssues: 3,
     },
-    onFail: 'retry',
+    onFail: 'manual_review',
     maxRetries: 2,
     weights: { format: 0.1, consistency: 0.5, coherence: 0.2, drama: 0.2 },
   },

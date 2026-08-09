@@ -47,6 +47,17 @@ export default function ResultPage() {
   // ── 生成短剧分镜（剧本 → 分镜，第三跳）──
   const [dramaLoading, setDramaLoading] = useState(false);
 
+  // ── 场景 AI 修改（L2 局部追问：结果页针对不满意场景重生成）──
+  const [reviseInputs, setReviseInputs] = useState<Record<number, string>>({});
+  const [reviseLoading, setReviseLoading] = useState(false);
+  const [reviseMsg, setReviseMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  // ── 全局套用（L3：scope=all 批量重写全部场景）──
+  const [reviseAllOpen, setReviseAllOpen] = useState(false);
+  const [reviseAllInput, setReviseAllInput] = useState('');
+  const [reviseAllLoading, setReviseAllLoading] = useState(false);
+  const [reviseAllMsg, setReviseAllMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
   // 事件处理器中刷新数据用（含 setState，不直接在 effect 中调用）
   const fetchScreenplay = useCallback(async () => {
     const res = await fetch(`/api/result/${jobId}`);
@@ -257,6 +268,62 @@ export default function ResultPage() {
     }
   };
 
+  // ── 当前场景 AI 局部修改（L2：结果页局部追问）──
+  const submitSceneRevise = async () => {
+    const scene = sp?.scenes[activeScene];
+    if (!scene) return;
+    const instruction = (reviseInputs[scene.sceneNumber] ?? '').trim();
+    if (!instruction || reviseLoading) return;
+    setReviseLoading(true);
+    setReviseMsg(null);
+    try {
+      const res = await fetch('/api/result/revise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, sceneNumber: scene.sceneNumber, instruction, scope: 'scene' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReviseMsg({ type: 'ok', text: data.message ?? '场景已更新' });
+        setReviseInputs(prev => ({ ...prev, [scene.sceneNumber]: '' }));
+        await fetchScreenplay();
+      } else {
+        setReviseMsg({ type: 'err', text: data.error ?? '修改失败' });
+      }
+    } catch {
+      setReviseMsg({ type: 'err', text: '修改失败，请重试' });
+    } finally {
+      setReviseLoading(false);
+    }
+  };
+
+  // ── 全局套用（L3：scope=all 按一条指令重写全部场景）──
+  const submitReviseAll = async () => {
+    const instruction = reviseAllInput.trim();
+    if (!instruction || reviseAllLoading) return;
+    setReviseAllLoading(true);
+    setReviseAllMsg(null);
+    try {
+      const res = await fetch('/api/result/revise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, instruction, scope: 'all' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReviseAllMsg({ type: 'ok', text: data.message ?? `已重生成 ${data.totalUpdated ?? 0} 个场景` });
+        setReviseAllInput('');
+        await fetchScreenplay();
+      } else {
+        setReviseAllMsg({ type: 'err', text: data.error ?? '修改失败' });
+      }
+    } catch {
+      setReviseAllMsg({ type: 'err', text: '修改失败，请重试' });
+    } finally {
+      setReviseAllLoading(false);
+    }
+  };
+
   const handleAppend = async () => {
     if (!novelId) return;
     if (!appendText.trim() && !appendFile) {
@@ -310,6 +377,12 @@ export default function ResultPage() {
       .filter(Boolean)
       .join('\n\n─── 章节分隔 ───\n\n');
   }, [screenplay, activeScene, chapterTexts]);
+
+  // 全局套用（scope=all）输入量级估算：以章节原文总字符数粗估 token
+  const estimateReviseAllTokens = useMemo(() => {
+    const chars = chapterTexts.reduce((sum, t) => sum + t.length, 0);
+    return Math.ceil(chars / 2);
+  }, [chapterTexts]);
 
   if (loading) return <div className="text-center py-20 text-gray-400">加载中...</div>;
   if (!screenplay) return <div className="text-center py-20 text-gray-400">未找到剧本数据</div>;
@@ -404,6 +477,16 @@ export default function ResultPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 追加章节
+              </button>
+              <button
+                onClick={() => { setReviseAllOpen(true); setReviseAllInput(''); setReviseAllMsg(null); }}
+                className="glow-btn-ghost !px-4 !py-2 text-xs"
+                title="按一条全局指令重写全部场景（消耗 token 较多，建议先在单场景试用）"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                全局套用
               </button>
               {novelId && (
                 <Link
@@ -534,7 +617,7 @@ export default function ResultPage() {
                   {sp.scenes.map((s, i) => (
                     <button
                       key={s.sceneNumber}
-                      onClick={() => setActiveScene(i)}
+                      onClick={() => { setActiveScene(i); setReviseMsg(null); }}
                       className={`w-full text-left p-2.5 rounded-lg text-sm transition-all duration-200 border ${
                         i === activeScene
                           ? 'bg-gradient-to-r from-indigo-50 to-cyan-50 border-indigo-200 text-indigo-700 shadow-sm'
@@ -584,6 +667,46 @@ export default function ResultPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* AI 修改栏：编辑视图下按当前场景局部追问（L2） */}
+                {sceneViewMode === 'editor' && (
+                  <div className="shrink-0 px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-amber-700 shrink-0">AI 修改</span>
+                      <input
+                        type="text"
+                        value={reviseInputs[currentScene.sceneNumber] ?? ''}
+                        onChange={e => setReviseInputs(prev => ({ ...prev, [currentScene.sceneNumber]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter' && !reviseLoading) void submitSceneRevise(); }}
+                        placeholder="如：这场戏对白太干，增加人物冲突，动作描写更细腻..."
+                        className="tech-input flex-1 !py-1.5 text-xs"
+                        disabled={reviseLoading}
+                      />
+                      <button
+                        onClick={submitSceneRevise}
+                        disabled={reviseLoading || !(reviseInputs[currentScene.sceneNumber] ?? '').trim()}
+                        className="glow-btn !px-3 !py-1.5 text-xs disabled:opacity-50 shrink-0"
+                      >
+                        {reviseLoading ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        )}
+                        {reviseLoading ? '修改中...' : '应用修改'}
+                      </button>
+                    </div>
+                    {reviseMsg && (
+                      <p className={`mt-1.5 text-xs ${reviseMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {reviseMsg.text}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* 滚动内容 */}
                 <div className="flex-1 overflow-y-auto">
@@ -785,6 +908,93 @@ export default function ResultPage() {
                   )}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 全局套用弹窗（L3：scope=all）── */}
+      {reviseAllOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !reviseAllLoading && setReviseAllOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 animate-float-up">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 text-white shadow-lg shadow-amber-300/40">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="font-bold text-slate-900">全局套用 AI 修改</h3>
+                  <p className="text-xs text-slate-500">按一条指令重写全部 {sp.scenes.length} 个场景，建议先在单场景试用</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReviseAllOpen(false)}
+                disabled={reviseAllLoading}
+                className="text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <textarea
+              value={reviseAllInput}
+              onChange={e => setReviseAllInput(e.target.value)}
+              rows={4}
+              placeholder="如：全剧对白口语化、减少书面语；动作描写更简练；整体节奏加快..."
+              className="tech-input resize-y"
+              disabled={reviseAllLoading}
+            />
+
+            <div className="mt-3 flex items-start gap-2 text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200/70">
+              <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                预计输入约 <b className="text-slate-700">{estimateReviseAllTokens >= 1000 ? `${(estimateReviseAllTokens / 1000).toFixed(1)}k` : estimateReviseAllTokens}</b> tokens（按章节原文长度粗估），输出另计。全局重写耗时会明显长于单场景修改。
+              </span>
+            </div>
+
+            {reviseAllMsg && (
+              <div className={`mt-3 text-sm px-4 py-3 rounded-xl ${reviseAllMsg.type === 'ok' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                {reviseAllMsg.text}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setReviseAllOpen(false)}
+                disabled={reviseAllLoading}
+                className="glow-btn-ghost flex-1 !py-3 disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={submitReviseAll}
+                disabled={reviseAllLoading || !reviseAllInput.trim()}
+                className="glow-btn flex-1 !py-3 disabled:opacity-50"
+              >
+                {reviseAllLoading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    重写中，请勿关闭页面...
+                  </>
+                ) : (
+                  <>
+                    确认应用
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

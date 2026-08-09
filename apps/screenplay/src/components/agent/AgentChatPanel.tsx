@@ -74,6 +74,11 @@ function PhaseCard({
           {phase.gate.decision === 'pass' ? '通过' : '待人工复核'} — {phase.gate.reason}
         </div>
       )}
+      {phase.status === 'awaiting' && phase.outputSummary && (
+        <div className="mt-2 text-xs text-slate-600 bg-white/70 rounded-lg p-2 border border-amber-200 break-words">
+          阶段输出摘要：{phase.outputSummary}
+        </div>
+      )}
       {phase.status === 'awaiting' && (
         <div className="mt-2 space-y-2">
           <div className="flex flex-wrap gap-1.5">

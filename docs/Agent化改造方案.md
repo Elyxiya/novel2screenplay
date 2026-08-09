@@ -59,7 +59,7 @@ UI 主链路走 `PipelineEngine`（jobStore → SQLite），另有独立的 `src
 | FR-4 | 质量关卡用 LLM 评估剧本，低分自动重试或请求人工介入 | P1 |
 | FR-5 | 保留现有可视化编辑、YAML 导入导出、历史记录能力 | P1 |
 | FR-6 | 长文处理沿用现有截断/拆分/并发策略，Agent 只经工具拿结果 | P0 |
-| FR-7 | 支持中途追问（awaiting 状态），如"对白风格更口语化" | P2 |
+| FR-7 | 支持中途追问（awaiting 状态）与结果后局部追问：① 结构性质量关口（analyze/merge）挂起人工介入并附阶段输出摘要；② 结果页按场景自然语言修改重生成（scope=scene/all，全局套用带 token 估算确认） | P2 |
 
 ### 3.2 非功能需求
 

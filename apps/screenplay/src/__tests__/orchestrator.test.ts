@@ -273,6 +273,45 @@ describe('MultiAgentOrchestrator', () => {
       expect(task.awaiting?.decision).toBe('review');
     });
 
+    it('analyze（结构性关口）重试耗尽后同样挂起人工，并携带可视输出摘要', async () => {
+      const provider = new MockLLMProvider();
+      // analyze 首次 + 2 次自动重试均低分 → manual_review 挂起
+      provider.gateResponses = [40, 40, 40, 85, 85, 85];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+
+      const analyze = task.phases.find((p) => p.name === 'analyze');
+      expect(analyze?.status).toBe('awaiting');
+      expect(analyze?.retryCount).toBe(2); // maxRetries=2
+      expect(task.awaiting?.phaseName).toBe('analyze');
+      // 挂起信息携带阶段输出摘要（供人工介入参考）
+      expect(task.awaiting?.outputSummary).toBeDefined();
+      expect(typeof task.awaiting?.outputSummary).toBe('string');
+      expect(task.awaiting?.outputSummary!.length).toBeGreaterThan(0);
+      // 挂起而非失败
+      expect(task.phases.some((p) => p.status === 'failed')).toBe(false);
+    });
+
+    it('convert（中间态）重试耗尽后直接失败，不挂起人工', async () => {
+      const provider = new MockLLMProvider();
+      // analyze/segment pass；convert 首次 + 3 次自动重试全部低分 → failed
+      provider.gateResponses = [85, 85, 40, 40, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+
+      const convert = task.phases.find((p) => p.name === 'convert');
+      expect(convert?.status).toBe('failed');
+      expect(convert?.retryCount).toBe(3); // maxRetries=3
+      expect(task.awaiting).toBeUndefined();
+      expect(task.phases.some((p) => p.status === 'failed')).toBe(true);
+    });
+
     it('approve 后接受输出，任务继续完成', async () => {
       const provider = new MockLLMProvider();
       provider.gateResponses = [85, 85, 85, 40, 40];

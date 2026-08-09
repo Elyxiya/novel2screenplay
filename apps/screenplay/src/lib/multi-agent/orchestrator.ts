@@ -54,6 +54,8 @@ export interface OrchestratorTask {
     phaseName: string;
     reason: string;
     decision: GateDecision;
+    /** 挂起阶段的可视输出摘要（供人工介入参考） */
+    outputSummary?: string;
   };
 }
 
@@ -337,6 +339,7 @@ export class MultiAgentOrchestrator {
           if (isBelow()) {
             if (gateConfig.onFail === 'manual_review') {
               // 挂起等待人工介入（不判失败，任务保持可恢复）
+              const outputSummary = formatOutputSummary(phase.output);
               phase.status = 'awaiting';
               phase.error = `质量未达标（待人工介入）: ${gate.reason}`;
               phase.completedAt = Date.now();
@@ -345,6 +348,7 @@ export class MultiAgentOrchestrator {
                 phaseName: phase.name,
                 reason: gate.reason,
                 decision: gate.decision,
+                outputSummary,
               };
               this.emit('phase_awaiting_manual', {
                 taskId,
@@ -352,6 +356,7 @@ export class MultiAgentOrchestrator {
                 name: phase.name,
                 reason: gate.reason,
                 gate,
+                outputSummary,
               });
               this.emit('log', {
                 taskId,
@@ -405,8 +410,8 @@ export class MultiAgentOrchestrator {
 
     // 任务挂起等待人工介入：不发 task_complete
     if (task.awaiting) {
-      const { phaseId, phaseName, reason } = task.awaiting;
-      this.emit('task_awaiting', { taskId, phaseId, name: phaseName, reason });
+      const { phaseId, phaseName, reason, outputSummary } = task.awaiting;
+      this.emit('task_awaiting', { taskId, phaseId, name: phaseName, reason, outputSummary });
       this.emit('log', {
         taskId,
         level: 'warning',
@@ -833,6 +838,28 @@ function toDebugEventHandler(taskId: string, phase: OrchestratorPhase): AgentEve
         break;
     }
   };
+}
+
+/**
+ * 生成阶段输出的人类可读摘要，供人工介入（awaiting）时参考
+ */
+function formatOutputSummary(output: unknown): string {
+  if (output == null) return '（无输出）';
+  if (Array.isArray(output)) return `共 ${output.length} 项输出`;
+  if (typeof output === 'object') {
+    const obj = output as Record<string, unknown>;
+    const parts = Object.entries(obj).map(([k, v]) => {
+      if (Array.isArray(v)) return `${k}: ${v.length} 项`;
+      if (typeof v === 'string') return `${k}: ${v.slice(0, 60)}`;
+      try {
+        return `${k}: ${JSON.stringify(v)}`;
+      } catch {
+        return `${k}: ?`;
+      }
+    });
+    return parts.join('；').slice(0, 240) || '（空对象）';
+  }
+  return String(output).slice(0, 240);
 }
 
 const gateConfigMap: Record<string, keyof typeof DEFAULT_GATE_CONFIGS> = {

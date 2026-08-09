@@ -151,7 +151,9 @@ export function AgentChatPanel() {
       setTimeout(() => void pollTaskRef.current?.(taskId), 2000);
     } catch { /* ignore */ }
   }, []);
-  pollTaskRef.current = pollTask;
+  useEffect(() => {
+    pollTaskRef.current = pollTask;
+  }, [pollTask]);
 
   const startAgent = useCallback(async () => {
     if (!novelText.trim()) {

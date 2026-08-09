@@ -33,6 +33,7 @@ import {
   createLoggingToolExecutor,
 } from '../agent/debug';
 import type { AgentEventHandler } from '../agent/AgentCore';
+import { assessWithLLM } from '../eval/llm-quality';
 
 export interface OrchestratorTask {
   id: string;
@@ -596,26 +597,10 @@ export class MultiAgentOrchestrator {
       content,
       gateConfig,
       provider
-        ? async () => {
-            const messages: Array<{ role: 'system' | 'user'; content: string }> = [
-              { role: 'system', content: VALIDATOR_EVAL_PROMPT },
-              { role: 'user', content: `请评估以下剧本片段的质量:\n\n${content.slice(0, 8000)}` },
-            ];
-            const response = await provider.chat(messages, { responseFormat: 'json_object' });
-            const parsed = safeJsonParse(response.content);
-            return {
-              score: clampScore(parsed.overall),
-              passed: clampScore(parsed.overall) >= this.config.defaultQualityThreshold,
-              dimensions: {
-                format: clampScore(parsed.format),
-                consistency: clampScore(parsed.consistency),
-                coherence: clampScore(parsed.coherence),
-                drama: clampScore(parsed.dramaticTension),
-              },
-              issues: [],
-              suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
-            };
-          }
+        ? () =>
+            assessWithLLM(provider, content, {
+              passThreshold: this.config.defaultQualityThreshold,
+            })
         : undefined,
     );
 
@@ -772,36 +757,3 @@ const gateConfigMap: Record<string, keyof typeof DEFAULT_GATE_CONFIGS> = {
 const DEFAULT_SYSTEM_PROMPT =
   '你是一个专业的影视剧本创作助手。根据任务描述，使用可用工具完成小说到剧本的转换工作。' +
   '每一步都先规划，再调用工具执行，最后总结结果。输出保持结构化、可解析。';
-
-const VALIDATOR_EVAL_PROMPT = `你是一位资深剧本评审。请从四个维度评估剧本片段质量，并输出 JSON：
-{
-  "format": 0-100,      // 格式规范性（场景标题、对白、动作指示）
-  "consistency": 0-100, // 与小说原著的忠实度
-  "coherence": 0-100,   // 逻辑连贯性与节奏
-  "dramaticTension": 0-100, // 戏剧张力
-  "overall": 0-100,     // 综合评分
-  "suggestions": []     // 改进建议（字符串数组）
-}
-只输出 JSON，不要其他文字。`;
-
-function safeJsonParse(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      try {
-        return JSON.parse(match[0]) as Record<string, unknown>;
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  }
-}
-
-function clampScore(value: unknown): number {
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return 70;
-  return Math.max(0, Math.min(100, Math.round(n)));
-}

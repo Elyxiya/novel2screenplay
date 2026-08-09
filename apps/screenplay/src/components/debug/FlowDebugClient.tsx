@@ -3,12 +3,16 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { FlowEvaluation } from '@/lib/debug/flow-evaluator';
+import type { QualityAssessment } from '@/lib/multi-agent/handoff-protocol';
+import type { BenchmarkReport } from '@/lib/eval/benchmark';
 
 /**
  * 流程调试与评测页面
  *
  * - 输入 jobId，拉取 /api/debug/flow-eval 评测结果
  * - 展示总分、四维评分、4 阶段流水线视图、场景置信度分布、问题列表
+ * - P-评估：展示传统管线 LLM 质量评估结果（/api/debug/flow-eval 的 llmAssessment）
+ * - P-评估：一键运行质量基准集（POST /api/debug/quality-benchmark）
  * - 可选拉取 /api/debug/agent-logs 展示 LLM 对话日志
  */
 
@@ -44,10 +48,13 @@ export function FlowDebugClient() {
   const [jobId, setJobId] = useState(initialJobId);
   const [input, setInput] = useState(initialJobId);
   const [evaluation, setEvaluation] = useState<FlowEvaluation | null>(null);
+  const [llmAssessment, setLlmAssessment] = useState<QualityAssessment | null>(null);
   const [logs, setLogs] = useState<AgentLogEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showLogs, setShowLogs] = useState(false);
+  const [benchmark, setBenchmark] = useState<BenchmarkReport | null>(null);
+  const [benchmarking, setBenchmarking] = useState(false);
 
   const run = useCallback(
     async (targetId: string) => {
@@ -58,6 +65,7 @@ export function FlowDebugClient() {
       setLoading(true);
       setError('');
       setEvaluation(null);
+      setLlmAssessment(null);
       setLogs(null);
       void (async () => {
         try {
@@ -69,6 +77,7 @@ export function FlowDebugClient() {
           }
           const data = await res.json();
           setEvaluation(data.evaluation);
+          setLlmAssessment(data.llmAssessment ?? null);
         } catch {
           setError('评测请求失败');
         } finally {
@@ -97,6 +106,25 @@ export function FlowDebugClient() {
       }
     })();
   }, [jobId, showLogs, logs]);
+
+  const runBenchmark = useCallback(async () => {
+    setBenchmarking(true);
+    setError('');
+    try {
+      const res = await fetch('/api/debug/quality-benchmark', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError((body as { error?: string }).error ?? `基准评估失败 (${res.status})`);
+        return;
+      }
+      const data = await res.json();
+      setBenchmark(data.report as BenchmarkReport);
+    } catch {
+      setError('基准评估请求失败');
+    } finally {
+      setBenchmarking(false);
+    }
+  }, []);
 
   const eval_ = evaluation;
   const dims = eval_?.overall.dimensions;
@@ -215,6 +243,74 @@ export function FlowDebugClient() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* P-评估：LLM 质量评估卡（传统管线，来自 job.pipelineState.qualityAssessment） */}
+          <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, background: '#F7F5FF', border: '1px solid #E2DCFB', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ textAlign: 'center', alignSelf: 'center' }}>
+              <div style={{ fontSize: 13, color: '#6D28D9', marginBottom: 4 }}>LLM 质量评估</div>
+              <div style={{ fontSize: 44, fontWeight: 700, color: '#4B3FE3', lineHeight: 1 }}>
+                {llmAssessment ? llmAssessment.score : '--'}
+              </div>
+              <div
+                style={{
+                  display: 'inline-block',
+                  marginTop: 8,
+                  padding: '2px 10px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: '#fff',
+                  background: llmAssessment?.passed ? '#0F9D58' : '#F5A623',
+                }}
+              >
+                {llmAssessment ? (llmAssessment.passed ? '已通过' : '未通过') : '未评估'}
+              </div>
+              <div style={{ fontSize: 12, color: '#8B7BD8', marginTop: 8 }}>
+                validator 角色 · 四维打分
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, justifyContent: 'center' }}>
+              {llmAssessment ? (
+                <>
+                  {(
+                    [
+                      ['format', '格式规范', llmAssessment.dimensions.format],
+                      ['consistency', '原著一致', llmAssessment.dimensions.consistency],
+                      ['coherence', '叙事连贯', llmAssessment.dimensions.coherence],
+                      ['drama', '戏剧张力', llmAssessment.dimensions.drama],
+                    ] as const
+                  ).map(([key, label, value]) => (
+                    <div key={key}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#52525B', marginBottom: 2 }}>
+                        <span>{label}</span>
+                        <span>{value}</span>
+                      </div>
+                      <div style={{ height: 8, background: '#E4E4E7', borderRadius: 999, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${value}%`,
+                            background: '#7C3AED',
+                            borderRadius: 999,
+                            transition: 'width 0.3s',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {llmAssessment.suggestions.length > 0 && (
+                    <div style={{ fontSize: 12, color: '#6D28D9', marginTop: 4 }}>
+                      建议：{llmAssessment.suggestions.slice(0, 3).join('；')}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: '#8B7BD8' }}>
+                  该任务尚未生成 LLM 质量评估（仅传统管线完成后写入，Agent 编排路径在 /agent 页查看）。
+                </div>
+              )}
             </div>
           </div>
 
@@ -352,6 +448,69 @@ export function FlowDebugClient() {
           )}
         </>
       )}
+
+      {/* P-评估：质量基准集（验证 LLM 评估器区分度，消耗 3 次真实 LLM 调用） */}
+      <div style={{ marginTop: 32, background: '#FAFAFA', border: '1px solid #E4E4E7', borderRadius: 12, padding: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>质量基准集</h2>
+          <span style={{ fontSize: 12, color: '#71717A' }}>3 个内置样本（优秀 / 一般 / 差）· 验证评估器排序区分度</span>
+          <button
+            onClick={() => void runBenchmark()}
+            disabled={benchmarking}
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 18px',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              cursor: benchmarking ? 'default' : 'pointer',
+              background: benchmarking ? '#C4B5FD' : '#4B3FE3',
+              color: '#fff',
+              opacity: benchmarking ? 0.7 : 1,
+            }}
+          >
+            {benchmarking ? '评估中（约 3 次 LLM 调用）...' : '运行基准'}
+          </button>
+        </div>
+
+        {benchmark && (
+          <>
+            <div style={{ fontSize: 13, marginBottom: 10, color: benchmark.orderValid ? '#0F9D58' : '#B45309', fontWeight: 500 }}>
+              {benchmark.orderValid
+                ? '✓ 排序有效：excellent > fair > poor，评估器具备区分度'
+                : '✗ 排序异常：高分样本未显著高于低分样本，建议检查评估 Prompt'}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {benchmark.samples.map((s) => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid #E4E4E7', borderRadius: 10, padding: '10px 14px', background: '#fff' }}>
+                  <div style={{ width: 120, fontSize: 13, fontWeight: 600 }}>{s.name.split('（')[0]}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: gradeColors[s.grade] ?? '#171717', width: 46 }}>
+                    {s.score}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#71717A', width: 110 }}>
+                    预期 {s.expectedGrade} → <b style={{ color: gradeColors[s.grade] ?? '#171717' }}>{s.grade}</b>
+                  </div>
+                  <div style={{ fontSize: 12, color: s.withinExpectation ? '#0F9D58' : '#B45309', width: 90 }}>
+                    {s.withinExpectation ? '档位合理 ✓' : '偏离 ✗'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#A1A1AA', flex: 1, display: 'flex', gap: 12 }}>
+                    <span>F {s.dimensions.format}</span>
+                    <span>C {s.dimensions.consistency}</span>
+                    <span>Co {s.dimensions.coherence}</span>
+                    <span>D {s.dimensions.drama}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: '#8B7BD8', whiteSpace: 'pre-wrap' }}>
+              {benchmark.notes.join('\n')}
+            </div>
+          </>
+        )}
+        {!benchmark && !benchmarking && (
+          <div style={{ fontSize: 13, color: '#A1A1AA' }}>尚未运行。点击「运行基准」对内置样本执行 LLM 评估并校验排序。</div>
+        )}
+      </div>
     </div>
   );
 }

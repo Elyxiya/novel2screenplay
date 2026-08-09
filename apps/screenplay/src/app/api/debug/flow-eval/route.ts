@@ -31,5 +31,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const evaluation = evaluateFlow(job);
-  return NextResponse.json({ evaluation });
+  // P-评估：传统管线 LLM 质量评估结果（job.pipelineState.qualityAssessment，若无则 null）
+  const llmAssessment = job.pipelineState?.qualityAssessment ?? null;
+  return NextResponse.json({ evaluation, llmAssessment });
 }

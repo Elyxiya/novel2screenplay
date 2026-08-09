@@ -11,8 +11,11 @@ import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
 import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
 import { serializeToYaml } from '@novel/contracts/serializers';
+import type { Screenplay } from '@novel/contracts/screenplay';
+import { assessPipelineScreenplay } from '../eval/llm-quality';
+import type { QualityAssessment } from '../multi-agent/handoff-protocol';
 
-type SSEEventType = 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat';
+type SSEEventType = 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat' | 'quality';
 
 /**
  * PipelineEngine orchestrates the 4-phase LLM conversion pipeline.
@@ -467,6 +470,33 @@ export class PipelineEngine {
     } catch (err) {
       console.error(`[${jobId}] 工作台数据更新失败: ${(err as Error).message}`);
     }
+
+    // ── P-评估：LLM 质量评估（异步、不阻塞完成，结果持久化到 pipelineState）──
+    this.evaluatePipelineQuality(jobId, provider, screenplay).catch((err) => {
+      console.warn(`[${jobId}] LLM 质量评估失败: ${(err as Error).message}`);
+    });
+
     console.log(`[${jobId}] === PIPELINE COMPLETE ===`);
+  }
+
+  /**
+   * P-评估：传统管线接入 LLM 质量评估。
+   * 对最终剧本四维打分（format/consistency/coherence/drama），
+   * 结果写入 job.pipelineState.qualityAssessment（SQLite 持久化）并通过 SSE 推送。
+   */
+  private async evaluatePipelineQuality(
+    jobId: string,
+    provider: LLMProvider,
+    screenplay: Screenplay,
+  ): Promise<void> {
+    const assessment: QualityAssessment = await assessPipelineScreenplay(provider, screenplay);
+
+    jobStore.update(jobId, (job) => ({
+      ...job,
+      pipelineState: { ...job.pipelineState, qualityAssessment: assessment },
+    }));
+
+    this.emitSSE(jobId, 'quality', { assessment });
+    console.log(`[${jobId}] LLM 质量评估完成: ${assessment.score} 分`);
   }
 }

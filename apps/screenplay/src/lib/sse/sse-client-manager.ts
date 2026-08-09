@@ -13,7 +13,7 @@ export interface SSEClient {
 }
 
 export interface SSEEvent {
-  type: 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat';
+  type: 'progress' | 'log' | 'phase' | 'complete' | 'error' | 'heartbeat' | 'quality';
   data: unknown;
   timestamp?: number;
 }

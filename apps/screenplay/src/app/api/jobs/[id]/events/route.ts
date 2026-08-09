@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobQueue } from '@/lib/jobs';
 import type { PipelineJob } from '@/lib/jobs/types';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +19,21 @@ interface RouteParams {
 // GET /api/jobs/[id]/events
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
+
+  // SSE 订阅必须登录（EventSource 自动携带 cookie）
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const queue = getJobQueue();
   const job = queue.get(id);
 
   // 如果任务不存在，返回 404
   if (!job) {
+    return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  }
+
+  // 归属校验：他人任务不可订阅（旧任务 userId 为空则放行）
+  if (job.userId && job.userId !== user.id) {
     return NextResponse.json({ error: '任务不存在' }, { status: 404 });
   }
 

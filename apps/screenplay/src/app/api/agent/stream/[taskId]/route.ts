@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSSEClientManager } from '@/lib/sse';
 import { getCurrentUser, authError } from '@/lib/auth';
+import { getOrchestrator } from '@/lib/multi-agent/orchestrator-singleton';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // SSE 订阅必须登录（EventSource 自动携带 cookie）
   const user = await getCurrentUser();
   if (!user) return authError();
+
+  // 归属校验：任务不存在或属于他人时拒绝订阅（旧任务 userId 为空则放行）
+  const task = getOrchestrator().getTask(taskId);
+  if (!task) {
+    return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  }
+  if (task.userId && task.userId !== user.id) {
+    return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+  }
 
   const encoder = new TextEncoder();
   let isClosed = false;

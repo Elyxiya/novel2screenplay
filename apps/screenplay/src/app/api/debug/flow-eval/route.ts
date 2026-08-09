@@ -25,6 +25,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: '任务不存在', jobId }, { status: 404 });
   }
 
+  // 归属校验：他人任务不可评测（旧数据 userId 为空则放行）
+  if (job.userId && job.userId !== user.id) {
+    return NextResponse.json({ error: '任务不存在', jobId }, { status: 404 });
+  }
+
   const evaluation = evaluateFlow(job);
   return NextResponse.json({ evaluation });
 }

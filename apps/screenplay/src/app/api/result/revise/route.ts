@@ -6,9 +6,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@novel/contracts/serializers';
 import { getCurrentUser, authError } from '@/lib/auth';
-import { llmRegistry } from '@/lib/llm/registry';
+import { initializeProviders, llmRegistry } from '@/lib/llm/registry';
 import { reviseScene } from '@/lib/result/revise-scene';
 import type { Scene, Screenplay } from '@novel/contracts/screenplay';
+
+// 模块级初始化 LLM Provider 注册表（与其他 pipeline/agent route 一致，幂等）
+initializeProviders();
 
 /** 从章节原文中定位某场戏对应的小说片段（优先章区间，回退 sourceRefs 章节） */
 function deriveSourceText(chapterTexts: string[], scene: Scene): string {

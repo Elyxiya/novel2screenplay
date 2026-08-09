@@ -8,6 +8,7 @@ import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from
 export class DeepSeekProvider extends BaseProvider {
   readonly name = 'DeepSeek';
   readonly modelId: string;
+  readonly supportedModels: string[];
   readonly description: string;
   readonly contextWindow = 65536;
   protected readonly baseUrl = 'https://api.deepseek.com/v1';
@@ -22,6 +23,10 @@ export class DeepSeekProvider extends BaseProvider {
     this.apiKey = apiKey;
     this.modelId = modelId || process.env.DEEPSEEK_MODEL_ID || 'deepseek-chat';
     this.description = `DeepSeek (${this.modelId})`;
+    // 声明支持模型，供 llmRegistry.get(modelId) 按模型 ID 查找（与 Custom Provider 一致）
+    this.supportedModels = [this.modelId, 'deepseek-chat', 'deepseek-reasoner'].filter(
+      (m, i, arr) => arr.indexOf(m) === i,
+    );
   }
 
   async chat(messages: LLMMessage[], options?: LLMChatOptions): Promise<LLMChatResponse> {

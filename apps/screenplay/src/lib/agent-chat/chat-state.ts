@@ -5,10 +5,10 @@
  * 保持纯函数，便于单元测试。
  */
 
-export type PhaseStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type PhaseStatus = 'pending' | 'running' | 'completed' | 'failed' | 'awaiting';
 
 export interface GateResult {
-  decision: 'pass' | 'fail';
+  decision: 'pass' | 'fail' | 'review' | 'manual_review';
   reason: string;
 }
 
@@ -48,6 +48,15 @@ export type AgentChatEvent =
   | { event: 'phase_start'; taskId: string; phaseId: string; name: string }
   | { event: 'phase_complete'; taskId: string; phaseId: string; name: string }
   | { event: 'phase_failed'; taskId: string; phaseId: string; name?: string; error: string }
+  | {
+      event: 'phase_awaiting_manual';
+      taskId: string;
+      phaseId: string;
+      name?: string;
+      reason: string;
+      gate?: GateResult;
+    }
+  | { event: 'task_awaiting'; taskId: string; phaseId: string; name?: string; reason: string }
   | { event: 'gate_result'; taskId: string; phaseId: string; gate: GateResult }
   | { event: 'log'; taskId: string; level?: string; message: string }
   | { event: 'task_complete'; taskId: string; success: boolean; durationMs: number; phases: { id: string; name: string; status: string }[] };
@@ -91,6 +100,24 @@ export function agentChatReducer(state: AgentChatState, evt: AgentChatEvent): Ag
       return {
         ...state,
         phases: upsertPhase(state, evt.phaseId, { name: evt.name, status: 'failed', error: evt.error }),
+      };
+
+    case 'phase_awaiting_manual':
+      return {
+        ...state,
+        running: false,
+        phases: upsertPhase(state, evt.phaseId, {
+          name: evt.name,
+          status: 'awaiting',
+          error: evt.reason,
+          gate: evt.gate ?? { decision: 'manual_review', reason: evt.reason },
+        }),
+      };
+
+    case 'task_awaiting':
+      return {
+        ...state,
+        running: false,
       };
 
     case 'gate_result':

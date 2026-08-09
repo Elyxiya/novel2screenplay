@@ -53,6 +53,14 @@ export async function GET(request: NextRequest) {
       })),
       completed: task.phases.every((p) => p.status === 'completed'),
       failed: task.phases.some((p) => p.status === 'failed'),
+      awaiting: task.awaiting != null,
+      awaitingPhase: task.awaiting
+        ? {
+            phaseId: task.awaiting.phaseId,
+            name: task.awaiting.phaseName,
+            reason: task.awaiting.reason,
+          }
+        : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

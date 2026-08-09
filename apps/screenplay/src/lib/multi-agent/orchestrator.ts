@@ -45,6 +45,15 @@ export interface OrchestratorTask {
   modelId?: string;
   phaseCount: number;
   phases: OrchestratorPhase[];
+  /** 用户附加指令（人工介入后恢复执行时沿用） */
+  instruction?: string;
+  /** 质量关卡等待人工介入的挂起信息 */
+  awaiting?: {
+    phaseId: string;
+    phaseName: string;
+    reason: string;
+    decision: GateDecision;
+  };
 }
 
 export interface OrchestratorPhase {
@@ -52,7 +61,7 @@ export interface OrchestratorPhase {
   name: string;
   description: string;
   role: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting';
   output?: unknown;
   retryCount: number;
   startedAt?: number;
@@ -151,6 +160,7 @@ export class MultiAgentOrchestrator {
       input: input.novelText,
       title: input.title,
       author: input.author,
+      instruction: input.instruction,
       phaseCount: phases.length,
       phases,
     };
@@ -176,17 +186,22 @@ export class MultiAgentOrchestrator {
   /**
    * 执行完整流水线
    */
-  private async execute(taskId: string, instruction?: string): Promise<void> {
+  private async execute(taskId: string, instruction?: string, startIndex = 0): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
     const t0 = Date.now();
-    this.emit('task_start', { taskId });
+    if (startIndex === 0) this.emit('task_start', { taskId });
 
     const gateResults: Record<string, { decision: GateDecision; reason: string }> = {};
 
-    for (const phase of task.phases) {
-      // 检查是否需要执行此阶段（全流程顺序执行）
+    for (let i = startIndex; i < task.phases.length; i++) {
+      const phase = task.phases[i];
+      // 人工介入恢复执行时跳过已完成的阶段
+      if (phase.status === 'completed') continue;
+      // 仍处于等待人工介入（防重入）
+      if (phase.status === 'awaiting') break;
+
       phase.status = 'running';
       phase.startedAt = Date.now();
       this.emit('phase_start', { taskId, phaseId: phase.id, name: phase.name });
@@ -208,18 +223,24 @@ export class MultiAgentOrchestrator {
           message: `阶段完成: ${phase.name}`,
         });
 
-        // 质量关卡：评估 → 不达标自动重试（重试后重新评估）→ 仍不达标则终止
+        // 质量关卡：评估 → 不达标自动重试 → 仍不达标按 onFail 策略分发
         if (this.config.enableReviewGates) {
+          const gateConfig = this.getGateConfig(phase.name);
           let gate = await this.evaluateGate(task, phase, output);
           gateResults[phase.name] = gate;
           this.emit('gate_result', { taskId, phaseId: phase.id, gate });
 
-          while (gate.decision === 'fail' && this.config.enableAutoRetry && phase.retryCount < 2) {
+          const isBelow = () => gate.decision === 'fail' || gate.decision === 'review';
+          while (
+            isBelow() &&
+            this.config.enableAutoRetry &&
+            phase.retryCount < gateConfig.maxRetries
+          ) {
             phase.retryCount += 1;
             this.emit('log', {
               taskId,
               level: 'warning',
-              message: `阶段 ${phase.name} 质量未达标 (${gate.reason})，自动重试 (${phase.retryCount}/2)`,
+              message: `阶段 ${phase.name} 质量未达标 (${gate.reason})，自动重试 (${phase.retryCount}/${gateConfig.maxRetries})`,
             });
             phase.status = 'running';
             const retryOutput = await this.executePhase(task, phase, instruction);
@@ -231,17 +252,53 @@ export class MultiAgentOrchestrator {
             this.emit('gate_result', { taskId, phaseId: phase.id, gate });
           }
 
-          if (gate.decision === 'fail') {
-            phase.status = 'failed';
-            phase.error = `质量未达标: ${gate.reason}`;
-            phase.completedAt = Date.now();
-            this.emit('phase_failed', { taskId, phaseId: phase.id, error: phase.error });
-            this.emit('log', {
-              taskId,
-              level: 'error',
-              message: `阶段失败: ${phase.name} - 质量未达标`,
-            });
-            break;
+          if (isBelow()) {
+            if (gateConfig.onFail === 'manual_review') {
+              // 挂起等待人工介入（不判失败，任务保持可恢复）
+              phase.status = 'awaiting';
+              phase.error = `质量未达标（待人工介入）: ${gate.reason}`;
+              phase.completedAt = Date.now();
+              task.awaiting = {
+                phaseId: phase.id,
+                phaseName: phase.name,
+                reason: gate.reason,
+                decision: gate.decision,
+              };
+              this.emit('phase_awaiting_manual', {
+                taskId,
+                phaseId: phase.id,
+                name: phase.name,
+                reason: gate.reason,
+                gate,
+              });
+              this.emit('log', {
+                taskId,
+                level: 'warning',
+                message: `阶段 ${phase.name} 质量未达标，等待人工介入: ${gate.reason}`,
+              });
+              break;
+            } else if (gateConfig.onFail === 'skip') {
+              phase.status = 'skipped';
+              phase.completedAt = Date.now();
+              this.emit('log', {
+                taskId,
+                level: 'warning',
+                message: `阶段 ${phase.name} 质量未达标，跳过: ${gate.reason}`,
+              });
+              continue;
+            } else {
+              // 'stop'（含重试耗尽仍配置 stop 的场景）
+              phase.status = 'failed';
+              phase.error = `质量未达标: ${gate.reason}`;
+              phase.completedAt = Date.now();
+              this.emit('phase_failed', { taskId, phaseId: phase.id, error: phase.error });
+              this.emit('log', {
+                taskId,
+                level: 'error',
+                message: `阶段失败: ${phase.name} - 质量未达标`,
+              });
+              break;
+            }
           }
         }
       } catch (err) {
@@ -258,9 +315,104 @@ export class MultiAgentOrchestrator {
       }
     }
 
-    const durationMs = Date.now() - t0;
-    const success = task.phases.every((p) => p.status === 'completed');
+    // 任务挂起等待人工介入：不发 task_complete
+    if (task.awaiting) {
+      const { phaseId, phaseName, reason } = task.awaiting;
+      this.emit('task_awaiting', { taskId, phaseId, name: phaseName, reason });
+      this.emit('log', {
+        taskId,
+        level: 'warning',
+        message: `任务挂起：${phaseName} 等待人工介入`,
+      });
+      return;
+    }
 
+    const success = task.phases.every((p) => p.status === 'completed');
+    await this.finalizeTask(taskId, success, t0, gateResults);
+  }
+
+  /**
+   * 人工介入处理：批准继续 / 重新生成 / 放弃
+   * @returns 是否成功处理
+   */
+  resolveManualReview(
+    taskId: string,
+    phaseId: string,
+    action: 'approve' | 'retry' | 'discard',
+  ): boolean {
+    const task = this.tasks.get(taskId);
+    const awaiting = task?.awaiting;
+    if (!task || !awaiting || awaiting.phaseId !== phaseId) return false;
+
+    const idx = task.phases.findIndex((p) => p.id === phaseId);
+    const phase = task.phases[idx];
+    if (idx === -1 || !phase || phase.status !== 'awaiting') return false;
+
+    // 清除挂起标记
+    task.awaiting = undefined;
+
+    if (action === 'approve') {
+      phase.status = 'completed';
+      phase.completedAt = Date.now();
+      phase.error = undefined;
+      this.emit('phase_complete', { taskId, phaseId, name: phase.name });
+      this.emit('log', {
+        taskId,
+        level: 'info',
+        message: `人工介入：接受 ${phase.name} 输出，继续后续阶段`,
+      });
+      void this.execute(taskId, task.instruction, idx + 1).catch((err) => {
+        console.error(`[Orchestrator] 人工介入后任务 ${taskId} 执行失败:`, err);
+        this.updatePhaseStatus(taskId, 'failed', err.message);
+      });
+      return true;
+    }
+
+    if (action === 'retry') {
+      phase.retryCount += 1;
+      phase.status = 'pending';
+      phase.error = undefined;
+      this.emit('log', {
+        taskId,
+        level: 'info',
+        message: `人工介入：重新生成 ${phase.name}（第 ${phase.retryCount} 次）`,
+      });
+      void this.execute(taskId, task.instruction, idx).catch((err) => {
+        console.error(`[Orchestrator] 人工介入后任务 ${taskId} 执行失败:`, err);
+        this.updatePhaseStatus(taskId, 'failed', err.message);
+      });
+      return true;
+    }
+
+    // discard：放弃该阶段，任务失败
+    phase.status = 'failed';
+    phase.error = '人工放弃该阶段';
+    phase.completedAt = Date.now();
+    this.emit('phase_failed', { taskId, phaseId, name: phase.name, error: phase.error });
+    this.emit('log', {
+      taskId,
+      level: 'error',
+      message: `人工放弃阶段 ${phase.name}，任务终止`,
+    });
+    void this.finalizeTask(taskId, false, Date.now(), {}).catch((err) => {
+      console.error(`[Orchestrator] 任务收尾失败:`, err);
+    });
+    return true;
+  }
+
+  /**
+   * 任务收尾：持久化结果 + 推送 task_complete
+   */
+  private async finalizeTask(
+    taskId: string,
+    success: boolean,
+    t0: number,
+    gateResults: Record<string, { decision: GateDecision; reason: string }>,
+  ): Promise<void> {
+    const task = this.tasks.get(taskId);
+    if (!task) return;
+
+    const durationMs = Date.now() - t0;
     const result: OrchestratorResult = {
       taskId,
       title: task.title ?? '未命名剧本',
@@ -553,7 +705,10 @@ function toSSEEventType(event: string): SSEEvent['type'] {
     case 'phase_complete':
       return 'phase';
     case 'gate_result':
+    case 'phase_awaiting_manual':
       return 'progress';
+    case 'task_awaiting':
+      return 'complete';
     case 'log':
       return 'log';
     default:

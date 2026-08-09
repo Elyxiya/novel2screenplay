@@ -12,13 +12,16 @@ import type { LLMProvider } from '../../llm/types';
 const GRADES: ExpectedGrade[] = ['excellent', 'good', 'fair', 'poor'];
 
 describe('benchmark samples', () => {
-  it('has 3 samples with unique ids and valid grades', () => {
-    expect(BENCHMARK_SAMPLES).toHaveLength(3);
+  it('has 8 samples with unique ids, valid grades and 4-grade coverage', () => {
+    expect(BENCHMARK_SAMPLES).toHaveLength(8);
     const ids = BENCHMARK_SAMPLES.map((s) => s.id);
-    expect(new Set(ids).size).toBe(3);
+    expect(new Set(ids).size).toBe(8);
     for (const s of BENCHMARK_SAMPLES) {
       expect(GRADES).toContain(s.expectedGrade);
     }
+    // 四档均有覆盖（excellent/good/fair/poor）
+    const grades = new Set(BENCHMARK_SAMPLES.map((s) => s.expectedGrade));
+    for (const g of GRADES) expect(grades.has(g)).toBe(true);
   });
 
   it('all samples are valid screenplays and serializable', () => {
@@ -62,8 +65,8 @@ describe('withinExpectation', () => {
 
 describe('runBenchmark', () => {
   it('reports order validity when scores are correctly ranked', async () => {
-    // runBenchmark 按样本顺序调用：excellent → fair → poor
-    const scores = [90, 65, 40];
+    // runBenchmark 按样本顺序调用：excellent → good → fair → poor → weak-consistency → weak-coherence → weak-drama → weak-format
+    const scores = [92, 78, 65, 42, 62, 48, 52, 42];
     let call = 0;
     const provider = {
       name: 'mock',
@@ -75,7 +78,8 @@ describe('runBenchmark', () => {
 
     const report = await runBenchmark(provider);
     expect(report.orderValid).toBe(true);
-    expect(report.samples).toHaveLength(3);
+    expect(report.allWithinExpectation).toBe(true);
+    expect(report.samples).toHaveLength(8);
     const sorted = report.samples as BenchmarkSampleResult[];
     expect(sorted[0].score).toBeGreaterThan(sorted[1].score);
     expect(sorted[1].score).toBeGreaterThan(sorted[2].score);
@@ -90,6 +94,24 @@ describe('runBenchmark', () => {
 
     const report = await runBenchmark(provider);
     expect(report.orderValid).toBe(false);
+    expect(report.samples).toHaveLength(8);
+  });
+
+  it('flags expectation drift when a sample misses its expected grade', async () => {
+    // excellent 被低估到 fair（差 2 档越界）、fair/poor 被高估到 excellent
+    const scores = [55, 80, 90, 85, 60, 60, 60, 60];
+    let call = 0;
+    const provider = {
+      name: 'mock',
+      modelId: 'mock-model',
+      chat: vi.fn().mockImplementation(async () => {
+        return { content: JSON.stringify({ overall: scores[call++] }), usage: undefined };
+      }),
+    } as unknown as LLMProvider;
+
+    const report = await runBenchmark(provider);
+    expect(report.orderValid).toBe(false); // excellent(55) 未高于 fair(90)
+    expect(report.allWithinExpectation).toBe(false);
   });
 
   it('tolerates LLM failure with zero-score placeholder', async () => {
@@ -100,8 +122,9 @@ describe('runBenchmark', () => {
     } as unknown as LLMProvider;
 
     const report = await runBenchmark(provider);
-    expect(report.samples).toHaveLength(3);
+    expect(report.samples).toHaveLength(8);
     expect(report.samples.every((s) => s.score === 0)).toBe(true);
     expect(report.orderValid).toBe(false);
+    expect(report.allWithinExpectation).toBe(false);
   });
 });

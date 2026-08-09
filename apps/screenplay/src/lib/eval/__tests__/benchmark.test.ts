@@ -36,8 +36,8 @@ describe('benchmark samples', () => {
     expect(excellent.scenes.length).toBeGreaterThan(poor.scenes.length);
     expect(excellent.metadata.totalScenes).toBeGreaterThan(poor.metadata.totalScenes);
     // 差样本对白占比为 0
-    expect(poor.analytics.dialoguePercentage).toBe(0);
-    expect(excellent.analytics.dialoguePercentage).toBeGreaterThan(0);
+    expect(poor.analytics?.dialoguePercentage ?? 0).toBe(0);
+    expect(excellent.analytics?.dialoguePercentage ?? 0).toBeGreaterThan(0);
   });
 });
 

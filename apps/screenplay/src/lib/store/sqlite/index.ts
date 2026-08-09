@@ -15,3 +15,4 @@ export { getProjectRepository, type ProjectRepository, type CreateProjectParams,
 export { getHistoryRepository, type HistoryRepository, type CreateHistoryParams } from './history-repository';
 export { getDramaRepository, type DramaRepository, type DramaRecord, type DramaSummary } from './drama-repository';
 export { getUserRepository, type UserRepository, type User, type PublicUser } from './user-repository';
+export { getAgentTaskRepository, type AgentTaskRepository, type AgentTaskRecord, type AgentTaskStatus } from './agent-task-repository';

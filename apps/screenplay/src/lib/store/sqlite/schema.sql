@@ -163,3 +163,24 @@ CREATE INDEX IF NOT EXISTS idx_dramas_user_id ON dramas(user_id);
 -- Schema 版本记录：短剧分镜
 INSERT OR IGNORE INTO schema_version (version, applied_at, description)
 VALUES (3, strftime('%s', 'now') * 1000, 'Add dramas: short-drama storyboard (screenplay -> shots)');
+
+-- Agent 编排任务（P-记忆）：MultiAgentOrchestrator 任务持久化
+-- 使 Agent 任务在服务重启后仍可恢复（含人工介入挂起 awaiting 的任务）。
+-- task_json 为 OrchestratorTask 全量 JSON（phases 状态机 / awaiting / 各阶段产物）。
+CREATE TABLE IF NOT EXISTS agent_tasks (
+  id TEXT PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'active', -- 'active' | 'completed' | 'failed'
+  user_id TEXT,                          -- 归属用户（多用户数据隔离，NULL 表示内部/旧任务）
+  task_json TEXT NOT NULL,               -- OrchestratorTask 全量 JSON
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  completed_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_user_id ON agent_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON agent_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_created_at ON agent_tasks(created_at);
+
+-- Schema 版本记录：Agent 任务持久化
+INSERT OR IGNORE INTO schema_version (version, applied_at, description)
+VALUES (4, strftime('%s', 'now') * 1000, 'Add agent_tasks: persist orchestrator tasks (P-记忆)');

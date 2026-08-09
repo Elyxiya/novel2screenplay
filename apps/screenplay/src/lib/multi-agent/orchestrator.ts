@@ -358,11 +358,16 @@ export class MultiAgentOrchestrator {
     // 订阅 Agent 事件 → 调试日志
     const unsubscribe = agent.on(toDebugEventHandler(task.id, phase));
     try {
-      // 构造任务输入：前面阶段输出摘要 + 用户指令
+      // 构造任务输入：小说原文 + 前面阶段输出摘要 + 用户指令
       const context = this.buildAgentContext(task, phase);
+      const novelSource =
+        task.input && task.input.trim().length > 0
+          ? `\n\n小说原文:\n${task.input}`
+          : '';
       const runPrompt = [
         phaseDescription,
-        context.length > 0 ? `\n\n任务上下文:\n${context}` : '',
+        novelSource,
+        context.length > 0 ? `\n\n前面阶段输出:\n${context}` : '',
         `\n\n需要执行的工作: ${phase.description}`,
         `\n可用工具: ${tools.map((t) => t.name).join(', ')}`,
       ].join('');

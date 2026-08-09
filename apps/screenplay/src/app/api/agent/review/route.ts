@@ -10,11 +10,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrchestrator } from '@/lib/multi-agent/orchestrator-singleton';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 const ACTIONS = ['approve', 'retry', 'discard'] as const;
 
 export async function POST(request: NextRequest) {
   try {
+    // 人工介入必须登录
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const body = (await request.json()) as {
       taskId?: unknown;
       phaseId?: unknown;
@@ -33,6 +38,15 @@ export async function POST(request: NextRequest) {
         { error: `action 必须是 ${ACTIONS.join(' | ')} 之一` },
         { status: 400 },
       );
+    }
+
+    // 归属校验：他人任务不可介入（旧任务 userId 为空则放行）
+    const task = getOrchestrator().getTask(taskId);
+    if (!task) {
+      return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+    }
+    if (task.userId && task.userId !== user.id) {
+      return NextResponse.json({ error: '任务不存在' }, { status: 404 });
     }
 
     const ok = getOrchestrator().resolveManualReview(taskId, phaseId, action);

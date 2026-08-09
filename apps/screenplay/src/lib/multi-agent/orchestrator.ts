@@ -37,6 +37,8 @@ import type { AgentEventHandler } from '../agent/AgentCore';
 export interface OrchestratorTask {
   id: string;
   jobId?: string;
+  /** 归属用户（多用户数据隔离，NULL 表示旧任务/内部任务） */
+  userId?: string;
   input: string;
   title?: string;
   author?: string;
@@ -141,6 +143,8 @@ export class MultiAgentOrchestrator {
     author?: string;
     selectedChapters?: number[];
     instruction?: string;
+    /** 归属用户（多用户数据隔离） */
+    userId?: string;
   }): string {
     const taskId = randomUUID();
     const phases: OrchestratorPhase[] = DEFAULT_PHASES.map((p) => ({
@@ -152,6 +156,7 @@ export class MultiAgentOrchestrator {
 
     const task: OrchestratorTask = {
       id: taskId,
+      userId: input.userId,
       input: input.novelText,
       title: input.title,
       author: input.author,
@@ -471,6 +476,7 @@ export class MultiAgentOrchestrator {
       role: phase.role,
       jobId: task.jobId,
       modelId: provider.modelId,
+      userId: task.userId,
     });
 
     const agentLLM = new AgentLLMProvider(provider);

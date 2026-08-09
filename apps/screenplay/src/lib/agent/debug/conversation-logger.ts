@@ -42,6 +42,8 @@ export interface DebugSessionMeta {
   role?: string;
   jobId?: string;
   modelId?: string;
+  /** 归属用户（多用户数据隔离，用于调试日志过滤） */
+  userId?: string;
 }
 
 export interface DebugSession {
@@ -176,6 +178,15 @@ export class AgentConversationLogger {
   /** 清理所有会话（可选择同步删除文件） */
   clear(): void {
     this.sessions.clear();
+  }
+
+  /** 仅清理指定用户的会话（多用户数据隔离） */
+  clearByUserId(userId: string): void {
+    for (const [taskId, session] of this.sessions) {
+      if (session.meta.userId === userId) {
+        this.sessions.delete(taskId);
+      }
+    }
   }
 
   get maxLength(): number {

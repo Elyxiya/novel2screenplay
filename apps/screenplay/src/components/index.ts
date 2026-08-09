@@ -3,5 +3,4 @@
  */
 
 export * from './ModelSelector';
-export * from './ProgressTracker';
-export * from './JobListPanel';
+export * from './QuickStats';

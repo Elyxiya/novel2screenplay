@@ -16,6 +16,8 @@ export interface ExecuteOptions {
 
 export interface ExecuteResult {
   success: boolean;
+  /** SQLite 持久化任务 ID（PipelineEngine.startJob 创建，主链路 jobStore） */
+  jobId?: string;
   output?: PipelineJobOutput;
   error?: string;
 }
@@ -57,7 +59,9 @@ export class PipelineExecutor {
 
       onProgress?.(5, '准备转换...');
 
-      await this.engine.startJob({
+      // startJob 在 SQLite jobStore 创建持久化任务并异步执行
+      // （主链路：结果以 /api/result/[jobId] 为准）
+      const jobId = await this.engine.startJob({
         novelText,
         title: job.metadata?.title as string | undefined,
         author: job.metadata?.author as string | undefined,
@@ -69,6 +73,7 @@ export class PipelineExecutor {
 
       return {
         success: true,
+        jobId,
         output: job.output,
       };
     } catch (error) {

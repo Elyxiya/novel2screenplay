@@ -1,7 +1,10 @@
 /**
  * Pipeline Worker
  *
+ * 【预留模块 · p1-2 收敛（D6）】
  * 后台任务处理器，从队列中取任务执行。
+ * startWorker() 当前无任何调用方（主链路走 PipelineEngine + jobStore），
+ * 标记为预留，不新增依赖。
  */
 
 import type { PipelineJob } from './types';
@@ -194,6 +197,10 @@ export class PipelineWorker {
 
       job.status = 'completed';
       job.output = result.output;
+      // 关联主链路 SQLite 任务（结果以 /api/result/[jobId] 为准）
+      if (result.jobId) {
+        job.metadata = { ...job.metadata, pipelineJobId: result.jobId };
+      }
       job.completedAt = Date.now();
       job.progress = 100;
 

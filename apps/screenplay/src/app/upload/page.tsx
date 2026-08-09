@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { historyStore } from '@/lib/store/history-store';
-import { QuickStats } from '@/components/JobListPanel';
+import { QuickStats } from '@/components/QuickStats';
 import { RequireAuth } from '@/components/RequireAuth';
 
 interface Chapter {

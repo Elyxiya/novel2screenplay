@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MultiAgentOrchestrator } from '@/lib/multi-agent/orchestrator';
 import { initializeProviders } from '@/lib/llm/registry';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 initializeProviders();
 
@@ -19,6 +20,10 @@ function getOrchestrator(): MultiAgentOrchestrator {
 
 export async function POST(request: NextRequest) {
   try {
+    // 启动 Agent 任务必须登录
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const { novelText, title, author, instruction } = await request.json();
     if (!novelText) return NextResponse.json({ error: '缺少 novelText' }, { status: 400 });
 
@@ -37,6 +42,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // 查询任务状态必须登录
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const taskId = request.nextUrl.searchParams.get('taskId');
     if (!taskId) return NextResponse.json({ error: '缺少 taskId' }, { status: 400 });
 

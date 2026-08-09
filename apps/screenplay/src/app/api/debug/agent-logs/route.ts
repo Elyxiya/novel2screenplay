@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAgentDebugLogger } from '@/lib/agent/debug';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 /**
  * Agent 调试日志查询 API
@@ -9,6 +10,10 @@ import { getAgentDebugLogger } from '@/lib/agent/debug';
  * DELETE /api/debug/agent-logs        → 清空内存日志
  */
 export async function GET(request: Request): Promise<NextResponse> {
+  // 调试日志查询必须登录
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const { searchParams } = new URL(request.url);
   const taskId = searchParams.get('taskId');
 
@@ -33,6 +38,10 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 export async function DELETE(): Promise<NextResponse> {
+  // 清空调试日志必须登录
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   getAgentDebugLogger().clear();
   return NextResponse.json({ ok: true });
 }

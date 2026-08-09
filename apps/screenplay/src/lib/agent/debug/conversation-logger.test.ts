@@ -115,6 +115,16 @@ describe('AgentConversationLogger', () => {
     expect(logger.listSessions()).toHaveLength(0);
   });
 
+  it('clearByUserId 仅清理指定用户的会话', () => {
+    logger.beginSession('a', { userId: 'user-1' });
+    logger.beginSession('b', { userId: 'user-2' });
+    logger.beginSession('c'); // 旧会话（无 userId）
+    logger.clearByUserId('user-1');
+    const remaining = logger.listSessions().map((s) => s.taskId);
+    expect(remaining).toEqual(expect.arrayContaining(['b', 'c']));
+    expect(remaining).not.toContain('a');
+  });
+
   it('getSession 返回深拷贝，修改不影响内部', () => {
     logger.beginSession('a');
     const s1 = logger.getSession('a')!;

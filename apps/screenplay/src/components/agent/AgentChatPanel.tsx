@@ -128,6 +128,7 @@ export function AgentChatPanel() {
   // 组件卸载时断开 SSE
   useEffect(() => () => eventSourceRef.current?.close(), []);
 
+  const pollTaskRef = useRef<((taskId: string) => Promise<void>) | null>(null);
   const pollTask = useCallback(async (taskId: string) => {
     try {
       const res = await fetch(`/api/agent/start?taskId=${encodeURIComponent(taskId)}`);
@@ -147,9 +148,10 @@ export function AgentChatPanel() {
         eventSourceRef.current?.close();
         return;
       }
-      setTimeout(() => void pollTask(taskId), 2000);
+      setTimeout(() => void pollTaskRef.current?.(taskId), 2000);
     } catch { /* ignore */ }
   }, []);
+  pollTaskRef.current = pollTask;
 
   const startAgent = useCallback(async () => {
     if (!novelText.trim()) {

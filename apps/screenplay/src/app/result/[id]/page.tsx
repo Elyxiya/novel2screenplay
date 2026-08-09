@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { historyStore } from '@/lib/store/history-store';
 import type { Screenplay, Scene, Character, Location } from '@novel/contracts/screenplay';
 import { SceneEditor } from '@/components/editors/SceneEditor';
 import { CharacterEditor } from '@/components/editors/CharacterEditor';
@@ -53,7 +52,8 @@ export default function ResultPage() {
     const res = await fetch(`/api/result/${jobId}`);
     const data = await res.json();
     if (res.status === 404) {
-      historyStore.remove(jobId);
+      // 任务已失效，清理 SQLite 历史记录（忽略失败）
+      fetch(`/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
       setLoading(false);
       return;
     }
@@ -76,7 +76,8 @@ export default function ResultPage() {
       const data = await res.json();
       if (cancelled) return;
       if (res.status === 404) {
-        historyStore.remove(jobId);
+        // 任务已失效，清理 SQLite 历史记录（忽略失败）
+        fetch(`/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
         setLoading(false);
         return;
       }

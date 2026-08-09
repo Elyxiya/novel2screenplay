@@ -66,6 +66,8 @@ export interface JobRepository {
   /** 按状态列出任务；传入 userId 时按用户过滤（多用户隔离） */
   list(status?: PipelineJob['status'], userId?: string): StoredJob[];
   listByDateRange(startTime: number, endTime: number): StoredJob[];
+  /** 删除某用户全部任务（清空历史），返回删除条数 */
+  deleteByUser(userId: string): number;
 }
 
 class JobRepositoryImpl implements JobRepository {
@@ -204,6 +206,14 @@ class JobRepositoryImpl implements JobRepository {
   delete(jobId: string): void {
     const db = getDatabase();
     db.prepare('DELETE FROM jobs WHERE id = ?').run(jobId);
+  }
+
+  /**
+   * 删除某用户全部任务（清空历史），返回删除条数
+   */
+  deleteByUser(userId: string): number {
+    const db = getDatabase();
+    return db.prepare('DELETE FROM jobs WHERE user_id = ?').run(userId).changes;
   }
 
   /**

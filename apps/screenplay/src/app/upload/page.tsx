@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { historyStore } from '@/lib/store/history-store';
 import { QuickStats } from '@/components/QuickStats';
 import { RequireAuth } from '@/components/RequireAuth';
 
@@ -138,15 +137,7 @@ export default function UploadPage() {
       });
       const data = await res.json();
       if (data.success) {
-        historyStore.add({
-          jobId: data.jobId,
-          title: data.preview?.title ?? '剧本',
-          sourceNovel: '',
-          totalScenes: data.preview?.totalScenes ?? 0,
-          totalCharacters: data.preview?.totalCharacters ?? 0,
-          totalLocations: data.preview?.totalLocations ?? 0,
-          author: '',
-        });
+        // 历史记录由服务端 SQLite 自动落库，无需前端写入
         router.push(`/result/${data.jobId}`);
       } else {
         setYamlError(data.error + (data.details ? '\n' + formatYamlError(data.details) : ''));

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { historyStore } from '@/lib/store/history-store';
 import { RequireAuth } from '@/components/RequireAuth';
 
 const PHASE_LABELS = ['', '分析中', '场景切割中', '转换中', '合并校验中'];
@@ -166,24 +165,7 @@ export default function ConvertPage() {
         setStatus('completed');
         setProgress(100);
 
-        // 保存到历史记录
-        try {
-          const r = await fetch(`/api/result/${jobId}`);
-          const d = await r.json();
-          if (d.screenplay?.metadata) {
-            historyStore.add({
-              jobId,
-              title: d.screenplay.metadata.title,
-              sourceNovel: d.screenplay.metadata.sourceNovel,
-              totalScenes: d.screenplay.metadata.totalScenes,
-              totalCharacters: d.screenplay.metadata.totalCharacters,
-              totalLocations: d.screenplay.metadata.totalLocations,
-              author: d.screenplay.metadata.author ?? '',
-            });
-          }
-        } catch {
-          // non-critical
-        }
+        // 历史记录由服务端 SQLite 自动落库，无需前端写入
 
         eventSource.close();
         setTimeout(() => router.push(`/result/${jobId}`), 1000);

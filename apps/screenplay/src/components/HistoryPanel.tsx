@@ -1,8 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { historyStore, type HistoryEntry } from '@/lib/store/history-store';
+
+interface HistoryEntry {
+  id: string;
+  status: string;
+  currentPhase?: number;
+  progress: number;
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+  completedAt?: number;
+  novelId: string | null;
+  resultId?: string;
+  title: string | null;
+  author: string;
+  sourceNovel: string;
+  totalScenes: number;
+  totalCharacters: number;
+  totalLocations: number;
+  modelId: string | null;
+  selectedChapterCount: number;
+}
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -18,16 +38,59 @@ function formatDate(ts: number): string {
 export function HistoryPanel() {
   const router = useRouter();
   const pathname = usePathname();
-  const [entries, setEntries] = useState<HistoryEntry[]>(() => historyStore.list());
+  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const remove = (jobId: string) => {
-    historyStore.remove(jobId);
-    setEntries(historyStore.list());
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/jobs/history');
+      if (!res.ok) throw new Error(`加载失败(${res.status})`);
+      const data = await res.json();
+      setEntries(data.jobs ?? []);
+    } catch {
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 挂载 + 路由变化时刷新（转换完成跳转后能立即看到新记录）
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      try {
+        const res = await fetch('/api/jobs/history');
+        if (!res.ok) throw new Error(`加载失败(${res.status})`);
+        const data = await res.json();
+        if (!cancelled) setEntries(data.jobs ?? []);
+      } catch {
+        if (!cancelled) setEntries([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void init();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const remove = async (jobId: string) => {
+    try {
+      await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+    } catch {
+      // 忽略失败，刷新后仍会显示
+    }
+    await loadHistory();
   };
 
-  const clearAll = () => {
-    historyStore.clear();
+  const clearAll = async () => {
+    try {
+      await fetch('/api/jobs/history', { method: 'DELETE' });
+    } catch {
+      // 忽略失败
+    }
     setEntries([]);
     setConfirmClear(false);
   };
@@ -38,10 +101,10 @@ export function HistoryPanel() {
       <div className="px-3 pt-3 pb-2 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-700">转换历史</h3>
-          {entries.length > 0 && (
+          {!loading && entries.length > 0 && (
             confirmClear ? (
               <div className="flex gap-1">
-                <button onClick={clearAll} className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700">确认</button>
+                <button onClick={() => void clearAll()} className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700">确认</button>
                 <button onClick={() => setConfirmClear(false)} className="text-xs px-2 py-0.5 border rounded hover:bg-gray-50">取消</button>
               </div>
             ) : (
@@ -53,7 +116,11 @@ export function HistoryPanel() {
 
       {/* Entry list */}
       <div className="flex-1 overflow-y-auto py-1">
-        {entries.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-xs text-gray-400">加载中…</p>
+          </div>
+        ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="text-3xl mb-2 opacity-40">📭</div>
             <p className="text-xs text-gray-400">暂无历史记录</p>
@@ -61,10 +128,10 @@ export function HistoryPanel() {
         ) : (
           <div className="space-y-0.5 px-2">
             {entries.map(entry => {
-              const isActive = pathname === `/result/${entry.jobId}`;
+              const isActive = pathname === `/result/${entry.id}`;
               return (
                 <div
-                  key={entry.jobId}
+                  key={entry.id}
                   className={`group rounded-lg p-2 cursor-pointer transition-colors ${
                     isActive
                       ? 'bg-blue-50 border border-blue-200'
@@ -72,7 +139,7 @@ export function HistoryPanel() {
                   }`}
                 >
                   <button
-                    onClick={() => router.push(`/result/${entry.jobId}`)}
+                    onClick={() => router.push(`/result/${entry.id}`)}
                     className="w-full text-left"
                   >
                     <div className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
@@ -89,7 +156,7 @@ export function HistoryPanel() {
                   </button>
                   <div className="flex items-center justify-end mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={(e) => { e.stopPropagation(); remove(entry.jobId); }}
+                      onClick={(e) => { e.stopPropagation(); void remove(entry.id); }}
                       className="text-xs text-red-400 hover:text-red-600 px-1 py-0.5 rounded hover:bg-red-50 transition-colors"
                     >
                       删除
@@ -105,7 +172,7 @@ export function HistoryPanel() {
       {/* Footer hint */}
       <div className="px-3 pb-2 pt-1 border-t border-gray-100 shrink-0">
         <p className="text-xs text-gray-300 leading-relaxed">
-          本地保存，清除浏览器数据将丢失
+          已持久化保存，清除浏览器数据不会丢失
         </p>
       </div>
     </div>

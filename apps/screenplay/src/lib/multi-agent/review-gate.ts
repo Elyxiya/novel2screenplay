@@ -7,7 +7,7 @@
 
 import type { QualityAssessment } from './handoff-protocol';
 
-export type GateDecision = 'pass' | 'fail' | 'review' | 'skip';
+export type GateDecision = 'pass' | 'fail' | 'review' | 'skip' | 'manual_review';
 
 export interface GateCriteria {
   /** 最低质量分数 (0-100) */

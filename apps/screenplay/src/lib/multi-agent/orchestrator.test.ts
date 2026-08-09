@@ -232,4 +232,115 @@ describe('MultiAgentOrchestrator', () => {
       expect(analyze?.error).toContain('未配置 LLM Provider');
     });
   });
+
+  describe('manual review gate（人工介入）', () => {
+    const mergePhaseId = (task: OrchestratorTask) =>
+      task.phases.find((p) => p.name === 'merge')?.id ?? '';
+
+    it('merge 重试耗尽后进入 awaiting 挂起，而非直接失败', async () => {
+      const provider = new MockLLMProvider();
+      // analyze/segment/convert pass(85)，merge 首次 fail(40) + 重试仍 fail(40)
+      provider.gateResponses = [85, 85, 85, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+
+      const merge = task.phases.find((p) => p.name === 'merge');
+      expect(merge?.status).toBe('awaiting');
+      expect(merge?.retryCount).toBe(1); // 自动重试 1 次（maxRetries=1）
+      expect(task.awaiting).toBeDefined();
+      expect(task.awaiting?.phaseId).toBe(merge?.id);
+      expect(task.awaiting?.phaseName).toBe('merge');
+      // 任务未标记失败、也未标记完成
+      expect(task.phases.some((p) => p.status === 'failed')).toBe(false);
+      expect(task.phases.every((p) => p.status === 'completed')).toBe(false);
+    });
+
+    it('review 临界区决策同样进入 awaiting 挂起', async () => {
+      const provider = new MockLLMProvider();
+      // merge 分数 80 ∈ [75, 85) 临界区 → review 决策 → 重试仍 review → awaiting
+      provider.gateResponses = [85, 85, 85, 80, 80];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+
+      const merge = task.phases.find((p) => p.name === 'merge');
+      expect(merge?.status).toBe('awaiting');
+      expect(task.awaiting?.decision).toBe('review');
+    });
+
+    it('approve 后接受输出，任务继续完成', async () => {
+      const provider = new MockLLMProvider();
+      provider.gateResponses = [85, 85, 85, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      let task = await waitForCompletion(orch, taskId);
+      expect(task.awaiting).toBeDefined();
+
+      const ok = orch.resolveManualReview(taskId, mergePhaseId(task), 'approve');
+      expect(ok).toBe(true);
+
+      task = await waitForCompletion(orch, taskId);
+      expect(task.phases.every((p) => p.status === 'completed')).toBe(true);
+      expect(task.awaiting).toBeUndefined();
+    });
+
+    it('retry 后重新生成该阶段，评分达标则完成', async () => {
+      const provider = new MockLLMProvider();
+      // 挂起后人工 retry 重跑 merge → 85 达标
+      provider.gateResponses = [85, 85, 85, 40, 40, 85];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      let task = await waitForCompletion(orch, taskId);
+      expect(task.awaiting).toBeDefined();
+
+      const ok = orch.resolveManualReview(taskId, mergePhaseId(task), 'retry');
+      expect(ok).toBe(true);
+
+      task = await waitForCompletion(orch, taskId);
+      const merge = task.phases.find((p) => p.name === 'merge');
+      expect(merge?.status).toBe('completed');
+      expect(merge?.retryCount).toBe(2); // 1 次自动 + 1 次人工
+    });
+
+    it('discard 后阶段失败，任务终止', async () => {
+      const provider = new MockLLMProvider();
+      provider.gateResponses = [85, 85, 85, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      let task = await waitForCompletion(orch, taskId);
+      expect(task.awaiting).toBeDefined();
+
+      const ok = orch.resolveManualReview(taskId, mergePhaseId(task), 'discard');
+      expect(ok).toBe(true);
+
+      task = await waitForCompletion(orch, taskId);
+      const merge = task.phases.find((p) => p.name === 'merge');
+      expect(merge?.status).toBe('failed');
+      expect(merge?.error).toContain('人工放弃');
+      expect(task.phases.some((p) => p.status === 'failed')).toBe(true);
+    });
+
+    it('对不在 awaiting 状态的阶段 resolve 返回 false', async () => {
+      const provider = new MockLLMProvider();
+      provider.gateResponses = [85, 85, 85, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+      const analyze = task.phases.find((p) => p.name === 'analyze');
+      expect(orch.resolveManualReview(taskId, analyze?.id ?? '', 'approve')).toBe(false);
+    });
+  });
 });

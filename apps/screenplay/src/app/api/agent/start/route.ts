@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MultiAgentOrchestrator } from '@/lib/multi-agent/orchestrator';
-import { initializeProviders } from '@/lib/llm/registry';
-
-initializeProviders();
-
-// 单例编排器（复用默认 LLM Provider）
-let orchestrator: MultiAgentOrchestrator | null = null;
-function getOrchestrator(): MultiAgentOrchestrator {
-  if (!orchestrator) {
-    orchestrator = new MultiAgentOrchestrator({
-      enableReviewGates: true,
-      enableAutoRetry: true,
-      defaultQualityThreshold: 75,
-    });
-  }
-  return orchestrator;
-}
+import { getOrchestrator } from '@/lib/multi-agent/orchestrator-singleton';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // 启动 Agent 任务必须登录
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const { novelText, title, author, instruction } = await request.json();
     if (!novelText) return NextResponse.json({ error: '缺少 novelText' }, { status: 400 });
 
@@ -27,6 +16,7 @@ export async function POST(request: NextRequest) {
       title,
       author,
       instruction,
+      userId: user.id,
     });
 
     return NextResponse.json({ taskId, message: 'Agent 编排任务已启动' });
@@ -37,11 +27,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // 查询任务状态必须登录
+    const user = await getCurrentUser();
+    if (!user) return authError();
+
     const taskId = request.nextUrl.searchParams.get('taskId');
     if (!taskId) return NextResponse.json({ error: '缺少 taskId' }, { status: 400 });
 
     const task = getOrchestrator().getTask(taskId);
     if (!task) return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+    // 归属校验：任务属于他人时不可见（旧任务 userId 为空则放行）
+    if (task.userId && task.userId !== user.id) {
+      return NextResponse.json({ error: '任务不存在' }, { status: 404 });
+    }
 
     return NextResponse.json({
       taskId: task.id,
@@ -55,6 +53,14 @@ export async function GET(request: NextRequest) {
       })),
       completed: task.phases.every((p) => p.status === 'completed'),
       failed: task.phases.some((p) => p.status === 'failed'),
+      awaiting: task.awaiting != null,
+      awaitingPhase: task.awaiting
+        ? {
+            phaseId: task.awaiting.phaseId,
+            name: task.awaiting.phaseName,
+            reason: task.awaiting.reason,
+          }
+        : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

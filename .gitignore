@@ -15,6 +15,7 @@ coverage/
 
 # next.js (workspace-wide)
 .next/
+.next*/
 out/
 
 # production
@@ -63,3 +64,8 @@ data-test/
 
 # 临时 worktree（残留目录，避免被当作 embedded repo）
 .worktree-main/
+
+# Chrome CDP 截图临时 profile（外部 --user-data-dir 启动，被进程占用时无法删除）
+.chrome-cdp-tmp/
+# 早期验证截图（本地资产，不入库）
+.verify-shots/

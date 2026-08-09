@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       modelId: 'imported',
       selectedChapters: [],
       temperature: 0,
+      userId: user.id,
     });
 
     jobStore.update(jobId, j => ({
@@ -94,7 +95,6 @@ export async function POST(request: NextRequest) {
       status: 'completed',
       progress: 100,
       resultId: jobId,
-      userId: user.id,
       pipelineState: { phase4Output: sp.data },
     }));
 

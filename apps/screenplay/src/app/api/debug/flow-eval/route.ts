@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { evaluateFlow } from '@/lib/debug/flow-evaluator';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 /**
  * 流程效果评测 API
@@ -8,6 +9,10 @@ import { evaluateFlow } from '@/lib/debug/flow-evaluator';
  * GET /api/debug/flow-eval?jobId=x → 返回该 job 的 FlowEvaluation
  */
 export async function GET(request: Request): Promise<NextResponse> {
+  // 流程评测必须登录
+  const user = await getCurrentUser();
+  if (!user) return authError();
+
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
 
@@ -20,6 +25,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: '任务不存在', jobId }, { status: 404 });
   }
 
+  // 归属校验：他人任务不可评测（旧数据 userId 为空则放行）
+  if (job.userId && job.userId !== user.id) {
+    return NextResponse.json({ error: '任务不存在', jobId }, { status: 404 });
+  }
+
   const evaluation = evaluateFlow(job);
-  return NextResponse.json({ evaluation });
+  // P-评估：传统管线 LLM 质量评估结果（job.pipelineState.qualityAssessment，若无则 null）
+  const llmAssessment = job.pipelineState?.qualityAssessment ?? null;
+  return NextResponse.json({ evaluation, llmAssessment });
 }

@@ -33,16 +33,28 @@ import {
   createLoggingToolExecutor,
 } from '../agent/debug';
 import type { AgentEventHandler } from '../agent/AgentCore';
+import { assessWithLLM } from '../eval/llm-quality';
 
 export interface OrchestratorTask {
   id: string;
   jobId?: string;
+  /** 归属用户（多用户数据隔离，NULL 表示旧任务/内部任务） */
+  userId?: string;
   input: string;
   title?: string;
   author?: string;
   modelId?: string;
   phaseCount: number;
   phases: OrchestratorPhase[];
+  /** 用户附加指令（人工介入后恢复执行时沿用） */
+  instruction?: string;
+  /** 质量关卡等待人工介入的挂起信息 */
+  awaiting?: {
+    phaseId: string;
+    phaseName: string;
+    reason: string;
+    decision: GateDecision;
+  };
 }
 
 export interface OrchestratorPhase {
@@ -50,7 +62,7 @@ export interface OrchestratorPhase {
   name: string;
   description: string;
   role: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting';
   output?: unknown;
   retryCount: number;
   startedAt?: number;
@@ -70,6 +82,16 @@ export interface OrchestratorResult {
   output?: unknown;
 }
 
+/** Agent 任务持久化适配器（P-记忆）：将 orchestrator 任务落盘并在重启后恢复 */
+export type AgentTaskStatus = 'active' | 'completed' | 'failed';
+
+export interface AgentTaskPersistence {
+  /** 全量保存任务状态（存在则覆盖） */
+  upsert(task: OrchestratorTask, status?: AgentTaskStatus): void;
+  /** 加载所有未完成任务（服务重启后恢复用） */
+  loadActive(): Array<{ task: OrchestratorTask }>;
+}
+
 export interface OrchestratorConfig {
   /** 是否启用质量关卡（默认 true） */
   enableReviewGates: boolean;
@@ -81,6 +103,8 @@ export interface OrchestratorConfig {
   defaultQualityThreshold: number;
   /** 注入 LLM Provider（默认从 llmRegistry 获取） */
   provider?: LLMProvider;
+  /** 任务持久化适配器（P-记忆）；不注入则纯内存运行 */
+  persistence?: AgentTaskPersistence;
 }
 
 const DEFAULT_CONFIG: OrchestratorConfig = {
@@ -132,6 +156,8 @@ export class MultiAgentOrchestrator {
     author?: string;
     selectedChapters?: number[];
     instruction?: string;
+    /** 归属用户（多用户数据隔离） */
+    userId?: string;
   }): string {
     const taskId = randomUUID();
     const phases: OrchestratorPhase[] = DEFAULT_PHASES.map((p) => ({
@@ -143,14 +169,17 @@ export class MultiAgentOrchestrator {
 
     const task: OrchestratorTask = {
       id: taskId,
+      userId: input.userId,
       input: input.novelText,
       title: input.title,
       author: input.author,
+      instruction: input.instruction,
       phaseCount: phases.length,
       phases,
     };
 
     this.tasks.set(taskId, task);
+    this.persistTask(task, 'active');
 
     // 异步执行
     void this.execute(taskId, input.instruction).catch((err) => {
@@ -169,19 +198,93 @@ export class MultiAgentOrchestrator {
   }
 
   /**
+   * 从持久化存储恢复未完成任务（P-记忆：服务重启后调用）。
+   * - 无 persistence 时直接返回
+   * - 崩溃遗留的 running 阶段结果未落盘，置回 pending 重新执行
+   * - awaiting 挂起任务保持挂起，等待人工介入（不自动续跑）
+   * - 其余未完成任务自动续跑
+   */
+  async restoreFromPersistence(): Promise<void> {
+    const persistence = this.config.persistence;
+    if (!persistence) return;
+
+    let records: Array<{ task: OrchestratorTask }> = [];
+    try {
+      records = persistence.loadActive();
+    } catch (err) {
+      console.error(`[Orchestrator] 恢复 Agent 任务失败:`, err);
+      return;
+    }
+
+    for (const { task } of records) {
+      // 修复崩溃遗留：running 阶段结果未落盘，置回 pending 重新执行
+      for (const p of task.phases) {
+        if (p.status === 'running') p.status = 'pending';
+      }
+
+      this.tasks.set(task.id, task);
+
+      // 挂起任务保持挂起，等待人工介入
+      if (task.awaiting) {
+        this.emit('log', {
+          taskId: task.id,
+          level: 'info',
+          message: `任务已从持久化存储恢复（${task.awaiting.phaseName} 等待人工介入）`,
+        });
+        continue;
+      }
+
+      const firstIncomplete = task.phases.findIndex((p) => p.status === 'pending');
+      if (firstIncomplete === -1) {
+        // active 记录不应全 completed；防御性标记完成
+        this.persistTask(task, 'completed');
+        continue;
+      }
+
+      this.emit('log', {
+        taskId: task.id,
+        level: 'info',
+        message: `任务已从持久化存储恢复，继续执行剩余阶段`,
+      });
+      void this.execute(task.id, task.instruction, firstIncomplete).catch((err) => {
+        console.error(`[Orchestrator] 恢复任务 ${task.id} 续跑失败:`, err);
+        this.updatePhaseStatus(task.id, 'failed', err.message);
+      });
+    }
+  }
+
+  /**
+   * 将任务全量状态写入持久化存储（P-记忆）。未注入 persistence 时为 no-op。
+   */
+  private persistTask(task: OrchestratorTask, status?: AgentTaskStatus): void {
+    const persistence = this.config.persistence;
+    if (!persistence) return;
+    try {
+      persistence.upsert(task, status);
+    } catch (err) {
+      console.error(`[Orchestrator] 持久化任务 ${task.id} 失败:`, err);
+    }
+  }
+
+  /**
    * 执行完整流水线
    */
-  private async execute(taskId: string, instruction?: string): Promise<void> {
+  private async execute(taskId: string, instruction?: string, startIndex = 0): Promise<void> {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
     const t0 = Date.now();
-    this.emit('task_start', { taskId });
+    if (startIndex === 0) this.emit('task_start', { taskId });
 
     const gateResults: Record<string, { decision: GateDecision; reason: string }> = {};
 
-    for (const phase of task.phases) {
-      // 检查是否需要执行此阶段（全流程顺序执行）
+    for (let i = startIndex; i < task.phases.length; i++) {
+      const phase = task.phases[i];
+      // 人工介入恢复执行时跳过已完成的阶段
+      if (phase.status === 'completed') continue;
+      // 仍处于等待人工介入（防重入）
+      if (phase.status === 'awaiting') break;
+
       phase.status = 'running';
       phase.startedAt = Date.now();
       this.emit('phase_start', { taskId, phaseId: phase.id, name: phase.name });
@@ -203,18 +306,24 @@ export class MultiAgentOrchestrator {
           message: `阶段完成: ${phase.name}`,
         });
 
-        // 质量关卡：评估 → 不达标自动重试（重试后重新评估）→ 仍不达标则终止
+        // 质量关卡：评估 → 不达标自动重试 → 仍不达标按 onFail 策略分发
         if (this.config.enableReviewGates) {
+          const gateConfig = this.getGateConfig(phase.name);
           let gate = await this.evaluateGate(task, phase, output);
           gateResults[phase.name] = gate;
           this.emit('gate_result', { taskId, phaseId: phase.id, gate });
 
-          while (gate.decision === 'fail' && this.config.enableAutoRetry && phase.retryCount < 2) {
+          const isBelow = () => gate.decision === 'fail' || gate.decision === 'review';
+          while (
+            isBelow() &&
+            this.config.enableAutoRetry &&
+            phase.retryCount < gateConfig.maxRetries
+          ) {
             phase.retryCount += 1;
             this.emit('log', {
               taskId,
               level: 'warning',
-              message: `阶段 ${phase.name} 质量未达标 (${gate.reason})，自动重试 (${phase.retryCount}/2)`,
+              message: `阶段 ${phase.name} 质量未达标 (${gate.reason})，自动重试 (${phase.retryCount}/${gateConfig.maxRetries})`,
             });
             phase.status = 'running';
             const retryOutput = await this.executePhase(task, phase, instruction);
@@ -226,19 +335,60 @@ export class MultiAgentOrchestrator {
             this.emit('gate_result', { taskId, phaseId: phase.id, gate });
           }
 
-          if (gate.decision === 'fail') {
-            phase.status = 'failed';
-            phase.error = `质量未达标: ${gate.reason}`;
-            phase.completedAt = Date.now();
-            this.emit('phase_failed', { taskId, phaseId: phase.id, error: phase.error });
-            this.emit('log', {
-              taskId,
-              level: 'error',
-              message: `阶段失败: ${phase.name} - 质量未达标`,
-            });
-            break;
+          if (isBelow()) {
+            if (gateConfig.onFail === 'manual_review') {
+              // 挂起等待人工介入（不判失败，任务保持可恢复）
+              phase.status = 'awaiting';
+              phase.error = `质量未达标（待人工介入）: ${gate.reason}`;
+              phase.completedAt = Date.now();
+              task.awaiting = {
+                phaseId: phase.id,
+                phaseName: phase.name,
+                reason: gate.reason,
+                decision: gate.decision,
+              };
+              this.emit('phase_awaiting_manual', {
+                taskId,
+                phaseId: phase.id,
+                name: phase.name,
+                reason: gate.reason,
+                gate,
+              });
+              this.emit('log', {
+                taskId,
+                level: 'warning',
+                message: `阶段 ${phase.name} 质量未达标，等待人工介入: ${gate.reason}`,
+              });
+              this.persistTask(task);
+              break;
+            } else if (gateConfig.onFail === 'skip') {
+              phase.status = 'skipped';
+              phase.completedAt = Date.now();
+              this.emit('log', {
+                taskId,
+                level: 'warning',
+                message: `阶段 ${phase.name} 质量未达标，跳过: ${gate.reason}`,
+              });
+              this.persistTask(task);
+              continue;
+            } else {
+              // 'stop'（含重试耗尽仍配置 stop 的场景）
+              phase.status = 'failed';
+              phase.error = `质量未达标: ${gate.reason}`;
+              phase.completedAt = Date.now();
+              this.emit('phase_failed', { taskId, phaseId: phase.id, error: phase.error });
+              this.emit('log', {
+                taskId,
+                level: 'error',
+                message: `阶段失败: ${phase.name} - 质量未达标`,
+              });
+              this.persistTask(task);
+              break;
+            }
           }
         }
+        // 质量关卡通过（或关闭）→ 阶段 completed 落库
+        this.persistTask(task);
       } catch (err) {
         phase.status = 'failed';
         phase.error = err instanceof Error ? err.message : String(err);
@@ -249,13 +399,110 @@ export class MultiAgentOrchestrator {
           level: 'error',
           message: `阶段失败: ${phase.name} - ${phase.error}`,
         });
+        this.persistTask(task);
         break;
       }
     }
 
-    const durationMs = Date.now() - t0;
-    const success = task.phases.every((p) => p.status === 'completed');
+    // 任务挂起等待人工介入：不发 task_complete
+    if (task.awaiting) {
+      const { phaseId, phaseName, reason } = task.awaiting;
+      this.emit('task_awaiting', { taskId, phaseId, name: phaseName, reason });
+      this.emit('log', {
+        taskId,
+        level: 'warning',
+        message: `任务挂起：${phaseName} 等待人工介入`,
+      });
+      return;
+    }
 
+    const success = task.phases.every((p) => p.status === 'completed');
+    await this.finalizeTask(taskId, success, t0, gateResults);
+  }
+
+  /**
+   * 人工介入处理：批准继续 / 重新生成 / 放弃
+   * @returns 是否成功处理
+   */
+  resolveManualReview(
+    taskId: string,
+    phaseId: string,
+    action: 'approve' | 'retry' | 'discard',
+  ): boolean {
+    const task = this.tasks.get(taskId);
+    const awaiting = task?.awaiting;
+    if (!task || !awaiting || awaiting.phaseId !== phaseId) return false;
+
+    const idx = task.phases.findIndex((p) => p.id === phaseId);
+    const phase = task.phases[idx];
+    if (idx === -1 || !phase || phase.status !== 'awaiting') return false;
+
+    // 清除挂起标记
+    task.awaiting = undefined;
+    this.persistTask(task);
+
+    if (action === 'approve') {
+      phase.status = 'completed';
+      phase.completedAt = Date.now();
+      phase.error = undefined;
+      this.emit('phase_complete', { taskId, phaseId, name: phase.name });
+      this.emit('log', {
+        taskId,
+        level: 'info',
+        message: `人工介入：接受 ${phase.name} 输出，继续后续阶段`,
+      });
+      void this.execute(taskId, task.instruction, idx + 1).catch((err) => {
+        console.error(`[Orchestrator] 人工介入后任务 ${taskId} 执行失败:`, err);
+        this.updatePhaseStatus(taskId, 'failed', err.message);
+      });
+      return true;
+    }
+
+    if (action === 'retry') {
+      phase.retryCount += 1;
+      phase.status = 'pending';
+      phase.error = undefined;
+      this.emit('log', {
+        taskId,
+        level: 'info',
+        message: `人工介入：重新生成 ${phase.name}（第 ${phase.retryCount} 次）`,
+      });
+      void this.execute(taskId, task.instruction, idx).catch((err) => {
+        console.error(`[Orchestrator] 人工介入后任务 ${taskId} 执行失败:`, err);
+        this.updatePhaseStatus(taskId, 'failed', err.message);
+      });
+      return true;
+    }
+
+    // discard：放弃该阶段，任务失败
+    phase.status = 'failed';
+    phase.error = '人工放弃该阶段';
+    phase.completedAt = Date.now();
+    this.emit('phase_failed', { taskId, phaseId, name: phase.name, error: phase.error });
+    this.emit('log', {
+      taskId,
+      level: 'error',
+      message: `人工放弃阶段 ${phase.name}，任务终止`,
+    });
+    void this.finalizeTask(taskId, false, Date.now(), {}).catch((err) => {
+      console.error(`[Orchestrator] 任务收尾失败:`, err);
+    });
+    return true;
+  }
+
+  /**
+   * 任务收尾：持久化结果 + 推送 task_complete
+   */
+  private async finalizeTask(
+    taskId: string,
+    success: boolean,
+    t0: number,
+    gateResults: Record<string, { decision: GateDecision; reason: string }>,
+  ): Promise<void> {
+    const task = this.tasks.get(taskId);
+    if (!task) return;
+
+    const durationMs = Date.now() - t0;
     const result: OrchestratorResult = {
       taskId,
       title: task.title ?? '未命名剧本',
@@ -282,6 +529,9 @@ export class MultiAgentOrchestrator {
         console.error(`[Orchestrator] 持久化结果失败:`, err);
       }
     }
+
+    // Agent 任务终态落库（保留记录供审计/查询）
+    this.persistTask(task, success ? 'completed' : 'failed');
 
     this.emit('task_complete', {
       taskId,
@@ -319,6 +569,7 @@ export class MultiAgentOrchestrator {
       role: phase.role,
       jobId: task.jobId,
       modelId: provider.modelId,
+      userId: task.userId,
     });
 
     const agentLLM = new AgentLLMProvider(provider);
@@ -358,11 +609,16 @@ export class MultiAgentOrchestrator {
     // 订阅 Agent 事件 → 调试日志
     const unsubscribe = agent.on(toDebugEventHandler(task.id, phase));
     try {
-      // 构造任务输入：前面阶段输出摘要 + 用户指令
+      // 构造任务输入：小说原文 + 前面阶段输出摘要 + 用户指令
       const context = this.buildAgentContext(task, phase);
+      const novelSource =
+        task.input && task.input.trim().length > 0
+          ? `\n\n小说原文:\n${task.input}`
+          : '';
       const runPrompt = [
         phaseDescription,
-        context.length > 0 ? `\n\n任务上下文:\n${context}` : '',
+        novelSource,
+        context.length > 0 ? `\n\n前面阶段输出:\n${context}` : '',
         `\n\n需要执行的工作: ${phase.description}`,
         `\n可用工具: ${tools.map((t) => t.name).join(', ')}`,
       ].join('');
@@ -433,26 +689,10 @@ export class MultiAgentOrchestrator {
       content,
       gateConfig,
       provider
-        ? async () => {
-            const messages: Array<{ role: 'system' | 'user'; content: string }> = [
-              { role: 'system', content: VALIDATOR_EVAL_PROMPT },
-              { role: 'user', content: `请评估以下剧本片段的质量:\n\n${content.slice(0, 8000)}` },
-            ];
-            const response = await provider.chat(messages, { responseFormat: 'json_object' });
-            const parsed = safeJsonParse(response.content);
-            return {
-              score: clampScore(parsed.overall),
-              passed: clampScore(parsed.overall) >= this.config.defaultQualityThreshold,
-              dimensions: {
-                format: clampScore(parsed.format),
-                consistency: clampScore(parsed.consistency),
-                coherence: clampScore(parsed.coherence),
-                drama: clampScore(parsed.dramaticTension),
-              },
-              issues: [],
-              suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
-            };
-          }
+        ? () =>
+            assessWithLLM(provider, content, {
+              passThreshold: this.config.defaultQualityThreshold,
+            })
         : undefined,
     );
 
@@ -514,6 +754,7 @@ export class MultiAgentOrchestrator {
       running.status = status;
       running.error = error;
       running.completedAt = Date.now();
+      this.persistTask(task);
     }
   }
 
@@ -542,7 +783,10 @@ function toSSEEventType(event: string): SSEEvent['type'] {
     case 'phase_complete':
       return 'phase';
     case 'gate_result':
+    case 'phase_awaiting_manual':
       return 'progress';
+    case 'task_awaiting':
+      return 'complete';
     case 'log':
       return 'log';
     default:
@@ -606,36 +850,3 @@ const gateConfigMap: Record<string, keyof typeof DEFAULT_GATE_CONFIGS> = {
 const DEFAULT_SYSTEM_PROMPT =
   '你是一个专业的影视剧本创作助手。根据任务描述，使用可用工具完成小说到剧本的转换工作。' +
   '每一步都先规划，再调用工具执行，最后总结结果。输出保持结构化、可解析。';
-
-const VALIDATOR_EVAL_PROMPT = `你是一位资深剧本评审。请从四个维度评估剧本片段质量，并输出 JSON：
-{
-  "format": 0-100,      // 格式规范性（场景标题、对白、动作指示）
-  "consistency": 0-100, // 与小说原著的忠实度
-  "coherence": 0-100,   // 逻辑连贯性与节奏
-  "dramaticTension": 0-100, // 戏剧张力
-  "overall": 0-100,     // 综合评分
-  "suggestions": []     // 改进建议（字符串数组）
-}
-只输出 JSON，不要其他文字。`;
-
-function safeJsonParse(text: string): Record<string, unknown> {
-  try {
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      try {
-        return JSON.parse(match[0]) as Record<string, unknown>;
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  }
-}
-
-function clampScore(value: unknown): number {
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(n)) return 70;
-  return Math.max(0, Math.min(100, Math.round(n)));
-}

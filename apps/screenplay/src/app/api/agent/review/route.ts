@@ -5,14 +5,16 @@
  * 质量关卡重试耗尽进入"等待人工介入"后，由用户决定：
  * - approve: 批准当前阶段输出，继续后续阶段
  * - retry:   重新生成当前阶段
+ * - revise:  按用户自由文本建议（instruction）重新生成当前阶段，建议累积到任务指令
  * - discard: 放弃当前阶段，任务终止
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrchestrator } from '@/lib/multi-agent/orchestrator-singleton';
+import type { ManualReviewAction } from '@/lib/multi-agent/orchestrator';
 import { getCurrentUser, authError } from '@/lib/auth';
 
-const ACTIONS = ['approve', 'retry', 'discard'] as const;
+const ACTIONS: ManualReviewAction[] = ['approve', 'retry', 'revise', 'discard'];
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,11 +26,13 @@ export async function POST(request: NextRequest) {
       taskId?: unknown;
       phaseId?: unknown;
       action?: unknown;
+      instruction?: unknown;
     };
 
     const taskId = typeof body.taskId === 'string' ? body.taskId : '';
     const phaseId = typeof body.phaseId === 'string' ? body.phaseId : '';
-    const action = body.action as (typeof ACTIONS)[number] | undefined;
+    const action = body.action as ManualReviewAction | undefined;
+    const instruction = typeof body.instruction === 'string' ? body.instruction : '';
 
     if (!taskId || !phaseId) {
       return NextResponse.json({ error: '缺少 taskId / phaseId' }, { status: 400 });
@@ -36,6 +40,12 @@ export async function POST(request: NextRequest) {
     if (!action || !ACTIONS.includes(action)) {
       return NextResponse.json(
         { error: `action 必须是 ${ACTIONS.join(' | ')} 之一` },
+        { status: 400 },
+      );
+    }
+    if (action === 'revise' && !instruction.trim()) {
+      return NextResponse.json(
+        { error: 'revise 动作必须携带非空 instruction（修改建议）' },
         { status: 400 },
       );
     }
@@ -49,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '任务不存在' }, { status: 404 });
     }
 
-    const ok = getOrchestrator().resolveManualReview(taskId, phaseId, action);
+    const ok = getOrchestrator().resolveManualReview(taskId, phaseId, action, instruction);
     if (!ok) {
       return NextResponse.json(
         { error: '任务不存在，或该阶段不在等待人工介入状态' },

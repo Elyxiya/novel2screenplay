@@ -82,6 +82,9 @@ export interface OrchestratorResult {
   output?: unknown;
 }
 
+/** 人工介入动作：批准 / 重新生成 / 放弃 / 按用户建议修改重跑 */
+export type ManualReviewAction = 'approve' | 'retry' | 'discard' | 'revise';
+
 /** Agent 任务持久化适配器（P-记忆）：将 orchestrator 任务落盘并在重启后恢复 */
 export type AgentTaskStatus = 'active' | 'completed' | 'failed';
 
@@ -417,13 +420,16 @@ export class MultiAgentOrchestrator {
   }
 
   /**
-   * 人工介入处理：批准继续 / 重新生成 / 放弃
+   * 人工介入处理：批准继续 / 重新生成 / 放弃 / 按用户建议修改重跑
+   * revise 时携带 instruction（自由文本追问），追加到任务指令后重跑当前阶段，
+   * 后续阶段同样沿用用户建议。
    * @returns 是否成功处理
    */
   resolveManualReview(
     taskId: string,
     phaseId: string,
-    action: 'approve' | 'retry' | 'discard',
+    action: ManualReviewAction,
+    instruction?: string,
   ): boolean {
     const task = this.tasks.get(taskId);
     const awaiting = task?.awaiting;
@@ -432,6 +438,8 @@ export class MultiAgentOrchestrator {
     const idx = task.phases.findIndex((p) => p.id === phaseId);
     const phase = task.phases[idx];
     if (idx === -1 || !phase || phase.status !== 'awaiting') return false;
+
+    if (action === 'revise' && !instruction?.trim()) return false;
 
     // 清除挂起标记
     task.awaiting = undefined;
@@ -454,14 +462,25 @@ export class MultiAgentOrchestrator {
       return true;
     }
 
-    if (action === 'retry') {
+    // retry 与 revise 都重跑当前阶段；revise 额外将用户建议累积进任务指令
+    if (action === 'revise') {
+      task.instruction = [task.instruction, instruction?.trim()]
+        .filter(Boolean)
+        .join('\n');
+      this.persistTask(task);
+    }
+
+    if (action === 'retry' || action === 'revise') {
       phase.retryCount += 1;
       phase.status = 'pending';
       phase.error = undefined;
       this.emit('log', {
         taskId,
         level: 'info',
-        message: `人工介入：重新生成 ${phase.name}（第 ${phase.retryCount} 次）`,
+        message:
+          action === 'revise'
+            ? `人工介入：按用户建议重新生成 ${phase.name}（建议：${instruction?.trim()}）`
+            : `人工介入：重新生成 ${phase.name}（第 ${phase.retryCount} 次）`,
       });
       void this.execute(taskId, task.instruction, idx).catch((err) => {
         console.error(`[Orchestrator] 人工介入后任务 ${taskId} 执行失败:`, err);

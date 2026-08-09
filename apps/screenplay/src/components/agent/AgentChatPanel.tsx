@@ -28,10 +28,13 @@ const PHASE_LABELS: Record<string, string> = {
 function PhaseCard({
   phase,
   onReview,
+  onRevise,
 }: {
   phase: PhaseState;
   onReview?: (action: 'approve' | 'retry' | 'discard') => void;
+  onRevise?: (instruction: string) => void;
 }) {
+  const [feedback, setFeedback] = useState('');
   const statusColor =
     phase.status === 'completed' ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
     : phase.status === 'running' ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
@@ -72,25 +75,45 @@ function PhaseCard({
         </div>
       )}
       {phase.status === 'awaiting' && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <button
-            onClick={() => onReview?.('approve')}
-            className="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-          >
-            批准继续
-          </button>
-          <button
-            onClick={() => onReview?.('retry')}
-            className="text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-          >
-            重新生成
-          </button>
-          <button
-            onClick={() => onReview?.('discard')}
-            className="text-xs px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-          >
-            放弃
-          </button>
+        <div className="mt-2 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => onReview?.('approve')}
+              className="text-xs px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+            >
+              批准继续
+            </button>
+            <button
+              onClick={() => onReview?.('retry')}
+              className="text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              重新生成
+            </button>
+            <button
+              onClick={() => onReview?.('discard')}
+              className="text-xs px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              放弃
+            </button>
+          </div>
+          <div className="flex gap-1.5">
+            <input
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && feedback.trim()) onRevise?.(feedback.trim());
+              }}
+              placeholder="输入修改建议，如：对白更口语化…"
+              className="flex-1 min-w-0 text-xs rounded-lg border border-amber-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
+            />
+            <button
+              onClick={() => feedback.trim() && onRevise?.(feedback.trim())}
+              disabled={!feedback.trim()}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              按建议重新生成
+            </button>
+          </div>
         </div>
       )}
       {phase.error && phase.status !== 'awaiting' && (
@@ -242,13 +265,13 @@ export function AgentChatPanel() {
   }, [novelText, title, author, instruction, dispatch, pollTask]);
 
   const submitReview = useCallback(
-    async (phaseId: string, action: 'approve' | 'retry' | 'discard') => {
+    async (phaseId: string, action: 'approve' | 'retry' | 'discard' | 'revise', instruction?: string) => {
       if (!state.taskId) return;
       try {
         const res = await fetch('/api/agent/review', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskId: state.taskId, phaseId, action }),
+          body: JSON.stringify({ taskId: state.taskId, phaseId, action, instruction }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -371,6 +394,7 @@ export function AgentChatPanel() {
                   key={p.id}
                   phase={p}
                   onReview={p.status === 'awaiting' ? (a) => void submitReview(p.id, a) : undefined}
+                  onRevise={p.status === 'awaiting' ? (i) => void submitReview(p.id, 'revise', i) : undefined}
                 />
               ))}
             </div>

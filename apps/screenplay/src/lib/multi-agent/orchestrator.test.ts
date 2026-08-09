@@ -311,6 +311,45 @@ describe('MultiAgentOrchestrator', () => {
       expect(merge?.retryCount).toBe(2); // 1 次自动 + 1 次人工
     });
 
+    it('revise 后按用户建议重新生成，建议累积到任务指令', async () => {
+      const provider = new MockLLMProvider();
+      // 挂起后人工 revise 重跑 merge → 85 达标
+      provider.gateResponses = [85, 85, 85, 40, 40, 85];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      let task = await waitForCompletion(orch, taskId);
+      expect(task.awaiting).toBeDefined();
+
+      const ok = orch.resolveManualReview(taskId, mergePhaseId(task), 'revise', '对白更口语化');
+      expect(ok).toBe(true);
+
+      task = await waitForCompletion(orch, taskId);
+      const merge = task.phases.find((p) => p.name === 'merge');
+      expect(merge?.status).toBe('completed');
+      expect(merge?.retryCount).toBe(2); // 1 次自动 + 1 次人工 revise
+      // 用户建议累积进任务指令（后续阶段沿用）
+      expect(task.instruction).toContain('对白更口语化');
+    });
+
+    it('revise 缺少 instruction 时返回 false，不破坏挂起状态', async () => {
+      const provider = new MockLLMProvider();
+      provider.gateResponses = [85, 85, 85, 40, 40];
+
+      const orch = new MultiAgentOrchestrator({ provider });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const task = await waitForCompletion(orch, taskId);
+      expect(task.awaiting).toBeDefined();
+
+      const ok = orch.resolveManualReview(taskId, mergePhaseId(task), 'revise', '   ');
+      expect(ok).toBe(false);
+      // 挂起状态未被清除
+      expect(orch.getTask(taskId)?.awaiting).toBeDefined();
+      expect(orch.getTask(taskId)?.instruction).toBeUndefined();
+    });
+
     it('discard 后阶段失败，任务终止', async () => {
       const provider = new MockLLMProvider();
       provider.gateResponses = [85, 85, 85, 40, 40];

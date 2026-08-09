@@ -82,6 +82,16 @@ export interface OrchestratorResult {
   output?: unknown;
 }
 
+/** Agent 任务持久化适配器（P-记忆）：将 orchestrator 任务落盘并在重启后恢复 */
+export type AgentTaskStatus = 'active' | 'completed' | 'failed';
+
+export interface AgentTaskPersistence {
+  /** 全量保存任务状态（存在则覆盖） */
+  upsert(task: OrchestratorTask, status?: AgentTaskStatus): void;
+  /** 加载所有未完成任务（服务重启后恢复用） */
+  loadActive(): Array<{ task: OrchestratorTask }>;
+}
+
 export interface OrchestratorConfig {
   /** 是否启用质量关卡（默认 true） */
   enableReviewGates: boolean;
@@ -93,6 +103,8 @@ export interface OrchestratorConfig {
   defaultQualityThreshold: number;
   /** 注入 LLM Provider（默认从 llmRegistry 获取） */
   provider?: LLMProvider;
+  /** 任务持久化适配器（P-记忆）；不注入则纯内存运行 */
+  persistence?: AgentTaskPersistence;
 }
 
 const DEFAULT_CONFIG: OrchestratorConfig = {
@@ -167,6 +179,7 @@ export class MultiAgentOrchestrator {
     };
 
     this.tasks.set(taskId, task);
+    this.persistTask(task, 'active');
 
     // 异步执行
     void this.execute(taskId, input.instruction).catch((err) => {
@@ -182,6 +195,75 @@ export class MultiAgentOrchestrator {
    */
   getTask(taskId: string): OrchestratorTask | undefined {
     return this.tasks.get(taskId);
+  }
+
+  /**
+   * 从持久化存储恢复未完成任务（P-记忆：服务重启后调用）。
+   * - 无 persistence 时直接返回
+   * - 崩溃遗留的 running 阶段结果未落盘，置回 pending 重新执行
+   * - awaiting 挂起任务保持挂起，等待人工介入（不自动续跑）
+   * - 其余未完成任务自动续跑
+   */
+  async restoreFromPersistence(): Promise<void> {
+    const persistence = this.config.persistence;
+    if (!persistence) return;
+
+    let records: Array<{ task: OrchestratorTask }> = [];
+    try {
+      records = persistence.loadActive();
+    } catch (err) {
+      console.error(`[Orchestrator] 恢复 Agent 任务失败:`, err);
+      return;
+    }
+
+    for (const { task } of records) {
+      // 修复崩溃遗留：running 阶段结果未落盘，置回 pending 重新执行
+      for (const p of task.phases) {
+        if (p.status === 'running') p.status = 'pending';
+      }
+
+      this.tasks.set(task.id, task);
+
+      // 挂起任务保持挂起，等待人工介入
+      if (task.awaiting) {
+        this.emit('log', {
+          taskId: task.id,
+          level: 'info',
+          message: `任务已从持久化存储恢复（${task.awaiting.phaseName} 等待人工介入）`,
+        });
+        continue;
+      }
+
+      const firstIncomplete = task.phases.findIndex((p) => p.status === 'pending');
+      if (firstIncomplete === -1) {
+        // active 记录不应全 completed；防御性标记完成
+        this.persistTask(task, 'completed');
+        continue;
+      }
+
+      this.emit('log', {
+        taskId: task.id,
+        level: 'info',
+        message: `任务已从持久化存储恢复，继续执行剩余阶段`,
+      });
+      void this.execute(task.id, task.instruction, firstIncomplete).catch((err) => {
+        console.error(`[Orchestrator] 恢复任务 ${task.id} 续跑失败:`, err);
+        this.updatePhaseStatus(task.id, 'failed', err.message);
+      });
+    }
+  }
+
+  /**
+   * 将任务全量状态写入持久化存储（P-记忆）。未注入 persistence 时为 no-op。
+   */
+  private persistTask(task: OrchestratorTask, status?: AgentTaskStatus): void {
+    const persistence = this.config.persistence;
+    if (!persistence) return;
+    try {
+      persistence.upsert(task, status);
+    } catch (err) {
+      console.error(`[Orchestrator] 持久化任务 ${task.id} 失败:`, err);
+    }
   }
 
   /**
@@ -277,6 +359,7 @@ export class MultiAgentOrchestrator {
                 level: 'warning',
                 message: `阶段 ${phase.name} 质量未达标，等待人工介入: ${gate.reason}`,
               });
+              this.persistTask(task);
               break;
             } else if (gateConfig.onFail === 'skip') {
               phase.status = 'skipped';
@@ -286,6 +369,7 @@ export class MultiAgentOrchestrator {
                 level: 'warning',
                 message: `阶段 ${phase.name} 质量未达标，跳过: ${gate.reason}`,
               });
+              this.persistTask(task);
               continue;
             } else {
               // 'stop'（含重试耗尽仍配置 stop 的场景）
@@ -298,10 +382,13 @@ export class MultiAgentOrchestrator {
                 level: 'error',
                 message: `阶段失败: ${phase.name} - 质量未达标`,
               });
+              this.persistTask(task);
               break;
             }
           }
         }
+        // 质量关卡通过（或关闭）→ 阶段 completed 落库
+        this.persistTask(task);
       } catch (err) {
         phase.status = 'failed';
         phase.error = err instanceof Error ? err.message : String(err);
@@ -312,6 +399,7 @@ export class MultiAgentOrchestrator {
           level: 'error',
           message: `阶段失败: ${phase.name} - ${phase.error}`,
         });
+        this.persistTask(task);
         break;
       }
     }
@@ -351,6 +439,7 @@ export class MultiAgentOrchestrator {
 
     // 清除挂起标记
     task.awaiting = undefined;
+    this.persistTask(task);
 
     if (action === 'approve') {
       phase.status = 'completed';
@@ -440,6 +529,9 @@ export class MultiAgentOrchestrator {
         console.error(`[Orchestrator] 持久化结果失败:`, err);
       }
     }
+
+    // Agent 任务终态落库（保留记录供审计/查询）
+    this.persistTask(task, success ? 'completed' : 'failed');
 
     this.emit('task_complete', {
       taskId,
@@ -662,6 +754,7 @@ export class MultiAgentOrchestrator {
       running.status = status;
       running.error = error;
       running.completedAt = Date.now();
+      this.persistTask(task);
     }
   }
 

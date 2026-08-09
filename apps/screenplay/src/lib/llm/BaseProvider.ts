@@ -32,6 +32,17 @@ export abstract class BaseProvider implements LLMProvider {
   }
 
   /**
+   * 请求头（子类可覆盖，如 Anthropic 使用 x-api-key；无 key 时不发送 Authorization）
+   */
+  protected buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) {
+      headers.Authorization = `Bearer ${this.apiKey}`;
+    }
+    return headers;
+  }
+
+  /**
    * Fetch with timeout and retry logic.
    * - Timeout: 30s via AbortSignal
    * - Retry: up to 2 attempts with exponential backoff (1s, 3s)
@@ -59,10 +70,7 @@ export abstract class BaseProvider implements LLMProvider {
       try {
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
+          headers: this.buildHeaders(),
           body: JSON.stringify(body),
           signal: combinedSignal,
         });
@@ -113,10 +121,7 @@ export abstract class BaseProvider implements LLMProvider {
     const url = `${this.baseUrl}${path}`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: this.buildHeaders(),
       body: JSON.stringify({ ...body, stream: true }),
       signal,
     });

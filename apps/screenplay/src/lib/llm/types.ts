@@ -43,6 +43,8 @@ export interface LLMProvider {
   readonly modelId: string;
   readonly description: string;
   readonly contextWindow: number;
+  /** 支持的模型列表（多模型自定义 Provider 使用，便于按模型 ID 查找） */
+  readonly supportedModels?: string[];
 
   /** Send a chat completion request */
   chat(messages: LLMMessage[], options?: LLMChatOptions): Promise<LLMChatResponse>;

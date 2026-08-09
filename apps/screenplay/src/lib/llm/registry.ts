@@ -1,6 +1,8 @@
 import type { LLMProvider } from './types';
 import { DeepSeekProvider } from './DeepSeekProvider';
 import { OpenAIProvider } from './OpenAIProvider';
+import { getCustomOpenAIProvider } from './CustomOpenAIProvider';
+import { getCustomAnthropicProvider } from './CustomAnthropicProvider';
 
 /**
  * Registry for LLM providers.
@@ -14,7 +16,10 @@ export class LLMProviderRegistry {
   }
 
   get(name: string): LLMProvider | undefined {
-    return this.providers.get(name.toLowerCase());
+    const direct = this.providers.get(name.toLowerCase());
+    if (direct) return direct;
+    // 支持按模型 ID 查找（自定义 Provider 注册了多模型）
+    return this.getAll().find((p) => p.supportedModels?.includes(name));
   }
 
   getAll(): LLMProvider[] {
@@ -27,7 +32,13 @@ export class LLMProviderRegistry {
   }
 
   getDefault(): LLMProvider | undefined {
-    return this.get('deepseek') || this.getForJSONMode();
+    // 自定义 API（显式配置）优先，其次 DeepSeek，最后任意支持 JSON 模式的 Provider
+    return (
+      this.get('custom-anthropic') ||
+      this.get('custom-openai') ||
+      this.get('deepseek') ||
+      this.getForJSONMode()
+    );
   }
 }
 
@@ -50,9 +61,25 @@ export function initializeProviders(): void {
     llmRegistry.register(new OpenAIProvider(openaiKey));
   }
 
-  if (process.env.NODE_ENV === 'development' && !deepseekKey && !openaiKey) {
+  // 自定义 API（OpenAI 兼容 / Anthropic 原生格式）
+  const customOpenAI = getCustomOpenAIProvider();
+  if (customOpenAI) {
+    llmRegistry.register(customOpenAI);
+  }
+  const customAnthropic = getCustomAnthropicProvider();
+  if (customAnthropic) {
+    llmRegistry.register(customAnthropic);
+  }
+
+  if (
+    process.env.NODE_ENV === 'development' &&
+    !deepseekKey &&
+    !openaiKey &&
+    !customOpenAI &&
+    !customAnthropic
+  ) {
     console.warn(
-      '[novel2screenplay] No API keys configured. Set DEEPSEEK_API_KEY or OPENAI_API_KEY in .env.local',
+      '[novel2screenplay] No API keys configured. Set DEEPSEEK_API_KEY / OPENAI_API_KEY，或自定义 API：CUSTOM_OPENAI_BASE_URL / CUSTOM_ANTHROPIC_BASE_URL in .env.local',
     );
   }
 }

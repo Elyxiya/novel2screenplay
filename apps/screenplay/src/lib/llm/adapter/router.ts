@@ -9,6 +9,8 @@ import type { LLMAdapter, LLMAdapterHealth } from './types';
 import type { LLMMessage, LLMChatOptions, LLMChatResponse } from '../types';
 import { getDeepSeekAdapter } from './deepseek-adapter';
 import { getOpenAIAdapter } from './openai-adapter';
+import { getCustomOpenAIProvider } from '../CustomOpenAIProvider';
+import { getCustomAnthropicProvider } from '../CustomAnthropicProvider';
 
 export interface RouterStats {
   totalRequests: number;
@@ -207,6 +209,11 @@ export function getModelRouter(): ModelRouter {
       // 注册所有内置适配器（懒加载，避免循环依赖）
       router.registerAdapter(getDeepSeekAdapter());
       router.registerAdapter(getOpenAIAdapter());
+      // 自定义 API（OpenAI 兼容 / Anthropic 原生格式，未配置时返回 null 自动跳过）
+      const customOpenAI = getCustomOpenAIProvider();
+      if (customOpenAI) router.registerAdapter(customOpenAI);
+      const customAnthropic = getCustomAnthropicProvider();
+      if (customAnthropic) router.registerAdapter(customAnthropic);
       (globalThis as Record<string, unknown>)[GLOBAL_KEY] = router;
     }
     return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as ModelRouter;
@@ -214,5 +221,9 @@ export function getModelRouter(): ModelRouter {
   const router = new ModelRouter();
   router.registerAdapter(getDeepSeekAdapter());
   router.registerAdapter(getOpenAIAdapter());
+  const customOpenAI = getCustomOpenAIProvider();
+  if (customOpenAI) router.registerAdapter(customOpenAI);
+  const customAnthropic = getCustomAnthropicProvider();
+  if (customAnthropic) router.registerAdapter(customAnthropic);
   return router;
 }

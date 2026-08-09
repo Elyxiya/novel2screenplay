@@ -29,8 +29,10 @@ export interface BenchmarkSampleResult {
 export interface BenchmarkReport {
   /** 按 score 降序排序的样本结果（用于查看区分度） */
   samples: BenchmarkSampleResult[];
-  /** 排序是否符合 expectedGrade 的预设档位顺序 */
+  /** 核心三样本（excellent/fair/poor）排序是否符合预设档位顺序 */
   orderValid: boolean;
+  /** 全部样本是否都落在预期档位（含相邻一档容差） */
+  allWithinExpectation: boolean;
   /** 逐条说明 */
   notes: string[];
   durationMs: number;
@@ -81,15 +83,23 @@ export async function runBenchmark(provider: LLMProvider): Promise<BenchmarkRepo
     });
   }
 
-  // 排序校验：excellent 应 > fair > poor（fair/good 相邻容差）
+  // 核心三样本排序校验：excellent 应 > fair > poor（评估器区分度的主指标）
   const byId = new Map(results.map((r) => [r.id, r]));
-  const orderValid = byId.get('excellent')!.score > byId.get('fair')!.score &&
-    byId.get('fair')!.score > byId.get('poor')!.score;
+  const core = (id: string) => byId.get(id)?.score ?? 0;
+  const orderValid =
+    core('excellent') > core('fair') &&
+    core('fair') > core('poor');
+
+  // 全样本档位校验：每个样本都落在预期档位（含相邻一档容差）
+  const allWithinExpectation = results.every((r) => r.withinExpectation);
 
   const notes: string[] = [
     orderValid
-      ? '排序有效：excellent > fair > poor，评估器具备区分度'
-      : '排序异常：高分样本未显著高于低分样本，建议检查评估 Prompt 或调参',
+      ? '核心排序有效：excellent > fair > poor，评估器具备区分度'
+      : '核心排序异常：高分样本未显著高于低分样本，建议检查评估 Prompt 或调参',
+    allWithinExpectation
+      ? '全部样本落在预期档位（相邻一档容差内）'
+      : '存在偏离预期档位的样本，建议校准 expectedGrade 或检查评估器偏差',
   ];
   for (const r of results) {
     notes.push(`${r.id}: score=${r.score}（预期 ${r.expectedGrade}，实际 ${r.grade}${r.withinExpectation ? ' ✓' : ' ✗ 偏离'})`);
@@ -98,6 +108,7 @@ export async function runBenchmark(provider: LLMProvider): Promise<BenchmarkRepo
   return {
     samples: [...results].sort((a, b) => b.score - a.score),
     orderValid,
+    allWithinExpectation,
     notes,
     durationMs: Date.now() - started,
     evaluatedAt: new Date().toISOString(),

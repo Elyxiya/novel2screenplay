@@ -128,6 +128,33 @@ export function AgentChatPanel() {
   // 组件卸载时断开 SSE
   useEffect(() => () => eventSourceRef.current?.close(), []);
 
+  const pollTaskRef = useRef<((taskId: string) => Promise<void>) | null>(null);
+  const pollTask = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/agent/start?taskId=${encodeURIComponent(taskId)}`);
+      const data = await res.json();
+      if (!res.ok || data.failed) {
+        setState((s) => ({ ...s, running: false, error: data.error ?? '任务中断' }));
+        eventSourceRef.current?.close();
+        return;
+      }
+      if (data.awaiting) {
+        // 挂起等待人工介入：停止轮询，等待用户操作
+        setState((s) => ({ ...s, running: false }));
+        return;
+      }
+      if (data.completed) {
+        setState((s) => ({ ...s, running: false }));
+        eventSourceRef.current?.close();
+        return;
+      }
+      setTimeout(() => void pollTaskRef.current?.(taskId), 2000);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    pollTaskRef.current = pollTask;
+  }, [pollTask]);
+
   const startAgent = useCallback(async () => {
     if (!novelText.trim()) {
       setError('请先输入小说内容');
@@ -212,30 +239,7 @@ export function AgentChatPanel() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [novelText, title, author, instruction, dispatch]);
-
-  const pollTask = useCallback(async (taskId: string) => {
-    try {
-      const res = await fetch(`/api/agent/start?taskId=${encodeURIComponent(taskId)}`);
-      const data = await res.json();
-      if (!res.ok || data.failed) {
-        setState((s) => ({ ...s, running: false, error: data.error ?? '任务中断' }));
-        eventSourceRef.current?.close();
-        return;
-      }
-      if (data.awaiting) {
-        // 挂起等待人工介入：停止轮询，等待用户操作
-        setState((s) => ({ ...s, running: false }));
-        return;
-      }
-      if (data.completed) {
-        setState((s) => ({ ...s, running: false }));
-        eventSourceRef.current?.close();
-        return;
-      }
-      setTimeout(() => void pollTask(taskId), 2000);
-    } catch { /* ignore */ }
-  }, []);
+  }, [novelText, title, author, instruction, dispatch, pollTask]);
 
   const submitReview = useCallback(
     async (phaseId: string, action: 'approve' | 'retry' | 'discard') => {

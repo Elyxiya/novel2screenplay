@@ -158,6 +158,33 @@ describe('evaluateFlow', () => {
     expect(result.issues.some((i) => i.message.includes('编号不连续'))).toBe(true);
   });
 
+  it('完整任务 → 置信度分桶统计正确', () => {
+    const result = evaluateFlow(completeJob());
+    // 0.9 / 0.85 / 0.8 全部落入 0.8-1.0 桶
+    expect(result.stats.sceneConfidence.buckets).toEqual([0, 0, 0, 0, 3]);
+    expect(result.stats.sceneConfidence.avg).toBe(0.85);
+    expect(result.stats.sceneConfidence.min).toBe(0.8);
+  });
+
+  it('低置信度场景（0.3/0.2）→ 落入低分段桶', () => {
+    const job = completeJob();
+    job.pipelineState = {
+      ...job.pipelineState,
+      phase3Output: [
+        { sceneNumber: 1, slugline: 'S1', timeOfDay: 'night', locationId: 'loc_1', characterIds: ['char_1'], content: [{ type: 'action', description: 'a', sourceRefs: [] }], summary: 'x', confidence: 0.3 },
+        { sceneNumber: 2, slugline: 'S2', timeOfDay: 'morning', locationId: 'loc_2', characterIds: ['char_2'], content: [{ type: 'action', description: 'b', sourceRefs: [] }], summary: 'y', confidence: 0.2 },
+      ],
+    };
+    const result = evaluateFlow(job);
+    // 0.3 → 桶 1（0.2-0.4）；0.2 → 桶 1（0.2-0.4）
+    expect(result.stats.sceneConfidence.buckets).toEqual([0, 2, 0, 0, 0]);
+  });
+
+  it('无置信度数据 → buckets 全零', () => {
+    const result = evaluateFlow(baseJob());
+    expect(result.stats.sceneConfidence.buckets).toEqual([0, 0, 0, 0, 0]);
+  });
+
   it('phaseTimings 缺失不崩溃，显示为空对象', () => {
     const result = evaluateFlow(completeJob());
     expect(result.stats.phaseTimings).toEqual({});

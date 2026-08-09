@@ -44,7 +44,7 @@ export interface FlowEvaluation {
   };
   stats: {
     phaseTimings: Record<string, { durationMs: number }>;
-    sceneConfidence: { avg: number; min: number; lowCount: number; total: number };
+    sceneConfidence: { avg: number; min: number; lowCount: number; total: number; buckets: number[] };
     dialoguePercentage: number | null;
     actionPercentage: number | null;
     totalScenes: number;
@@ -454,6 +454,14 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
     .map((s) => s.confidence)
     .filter((c): c is number => typeof c === 'number');
 
+  // 置信度分布桶：0-0.2 / 0.2-0.4 / 0.4-0.6 / 0.6-0.8 / 0.8-1.0
+  const BUCKET_COUNT = 5;
+  const buckets = Array<number>(BUCKET_COUNT).fill(0);
+  for (const c of confidences) {
+    const idx = Math.min(BUCKET_COUNT - 1, Math.floor(c / (1 / BUCKET_COUNT)));
+    buckets[idx]++;
+  }
+
   return {
     jobId: job.id,
     status: job.status,
@@ -484,6 +492,7 @@ export function evaluateFlow(job: StoredJob): FlowEvaluation {
         min: confidences.length > 0 ? Math.min(...confidences) : 0,
         lowCount: confidences.filter((c) => c < SCORE.CONFIDENCE_LOW).length,
         total: confidences.length,
+        buckets,
       },
       dialoguePercentage: p4?.analytics?.dialoguePercentage ?? null,
       actionPercentage: p4?.analytics?.actionPercentage ?? null,

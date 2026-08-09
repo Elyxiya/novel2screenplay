@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { FlowEvaluation } from '@/lib/debug/flow-evaluator';
 
@@ -100,6 +100,12 @@ export function FlowDebugClient() {
 
   const eval_ = evaluation;
   const dims = eval_?.overall.dimensions;
+
+  // URL 携带 jobId 时自动触发评测（分享直达）
+  useEffect(() => {
+    if (initialJobId) void run(initialJobId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const gradeColors: Record<string, string> = {
     excellent: '#0F9D58',
     good: '#22A5F7',
@@ -289,6 +295,38 @@ export function FlowDebugClient() {
                   </>
                 )}
               </div>
+              {/* 场景置信度分布（0-1 分桶条形） */}
+              {(() => {
+                const buckets = eval_.stats.sceneConfidence.buckets;
+                const total = buckets.reduce((a, b) => a + b, 0);
+                if (total === 0) {
+                  return (
+                    <div style={{ marginTop: 12, borderTop: '1px solid #E4E4E7', paddingTop: 10 }}>
+                      <div style={{ fontSize: 12, color: '#71717A', marginBottom: 4 }}>场景置信度分布</div>
+                      <div style={{ fontSize: 12, color: '#A1A1AA' }}>无置信度数据</div>
+                    </div>
+                  );
+                }
+                const maxCount = Math.max(...buckets, 1);
+                return (
+                  <div style={{ marginTop: 12, borderTop: '1px solid #E4E4E7', paddingTop: 10 }}>
+                    <div style={{ fontSize: 12, color: '#71717A', marginBottom: 6 }}>场景置信度分布（0-1 分桶）</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 60 }}>
+                      {buckets.map((count, i) => {
+                        const h = Math.max(4, Math.round((count / maxCount) * 44));
+                        const low = i < 3; // 0.6 以下视为低置信度
+                        return (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: low ? '#B45309' : '#0F9D58' }}>{count}</div>
+                            <div style={{ width: '100%', maxWidth: 30, height: h, background: low ? '#F5A623' : '#22A5F7', borderRadius: '4px 4px 0 0' }} />
+                            <div style={{ fontSize: 10, color: '#71717A' }}>{`${(i * 0.2).toFixed(1)}-${((i + 1) * 0.2).toFixed(1)}`}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={{ background: '#FAFAFA', border: '1px solid #E4E4E7', borderRadius: 12, padding: 16 }}>

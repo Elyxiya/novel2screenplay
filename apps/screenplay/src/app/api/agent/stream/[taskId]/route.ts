@@ -5,8 +5,9 @@
  * 实时推送 Agent 编排任务的状态变更、日志与阶段结果。
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSSEClientManager } from '@/lib/sse';
+import { getCurrentUser, authError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,10 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { taskId } = await params;
+
+  // SSE 订阅必须登录（EventSource 自动携带 cookie）
+  const user = await getCurrentUser();
+  if (!user) return authError();
 
   const encoder = new TextEncoder();
   let isClosed = false;

@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { RequireAuth } from '@/components/RequireAuth';
 import { FlowDebugClient } from '@/components/debug/FlowDebugClient';
 
 export const metadata = {
@@ -8,8 +9,10 @@ export const metadata = {
 
 export default function DebugPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 24 }}>加载中...</div>}>
-      <FlowDebugClient />
-    </Suspense>
+    <RequireAuth>
+      <Suspense fallback={<div style={{ padding: 24 }}>加载中...</div>}>
+        <FlowDebugClient />
+      </Suspense>
+    </RequireAuth>
   );
 }

@@ -2,6 +2,10 @@
  * Pipeline Job 定义
  *
  * 定义后台任务的类型、状态和生命周期。
+ *
+ * 【p1-2 收敛（D6）】
+ * 本文件为共享类型定义：被 pipeline/executor、flow-evaluator 等复用；
+ * 内存队列执行链路（job-queue/worker）已标记预留。
  */
 
 export type JobStatus =

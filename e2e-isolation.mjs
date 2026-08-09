@@ -1,10 +1,9 @@
-// p1-4 E2E：多用户数据隔离验证
+// p1-4 E2E：多用户数据隔离验证（p1-2 收敛后更新：内存队列 /api/jobs 已移除）
 // 用户 A / 用户 B 各自登录，验证：
-// 1. 未登录访问 /api/jobs/[id]/events → 401（补鉴权）
+// 1. 未登录访问 /api/jobs/history → 401
 // 2. A 创建的 agent 任务：B 不可见（GET/stream/agent-logs 全部 404），A 可见
 // 3. A 的调试会话：B 列表不可见，A 可见
-// 4. A 的 pipeline job：B 不可评测（flow-eval 404），A 可评测
-// 5. A 的内存队列 job：B 不可订阅（events 404），A 可订阅
+// 4. A 的 pipeline job：B 不可评测（flow-eval 404），A 可评测；B 不可删除（DELETE 403），A 可删除
 const BASE = 'http://localhost:3001';
 const PASSWORD = 'pass-123456';
 const A = 'p14a_' + Date.now().toString(36).slice(-6);
@@ -42,9 +41,9 @@ async function req(path, { method = 'GET', body, cookie } = {}) {
 }
 
 async function main() {
-  // ---- 0. 未登录：jobs/[id]/events 应 401（此前完全无鉴权） ----
-  const u = await req('/api/jobs/some-job/events');
-  check('未登录 GET /api/jobs/[id]/events → 401', u.status === 401, String(u.status));
+  // ---- 0. 未登录：jobs/history 应 401 ----
+  const u = await req('/api/jobs/history');
+  check('未登录 GET /api/jobs/history → 401', u.status === 401, String(u.status));
 
   // ---- 登录 A / B ----
   const cookieA = await login(A);
@@ -111,24 +110,14 @@ async function main() {
     check('A 评测自己的 job → 200', aEval.status === 200, String(aEval.status));
   }
 
-  // ---- 5. A 创建内存队列 job，events 归属 ----
-  const jA = await req('/api/jobs', {
-    method: 'POST',
-    body: { novelText: 'x' },
-    cookie: cookieA,
-  });
-  check('A POST /api/jobs → 201 + job.id', jA.status === 201 && !!jA.data?.job?.id, `status=${jA.status}`);
-  const qA = jA.data?.job?.id;
-  if (qA) {
-    const bEv = await req(`/api/jobs/${qA}/events`, { cookie: cookieB });
-    check('B 订阅 A 的队列 job events → 404', bEv.status === 404, String(bEv.status));
-    try {
-      const aEv = await fetch(BASE + `/api/jobs/${qA}/events`, { headers: { Cookie: cookieA } });
-      check('A 订阅自己的队列 job events → 200', aEv.status === 200, String(aEv.status));
-      aEv.body?.cancel();
-    } catch (e) {
-      check('A 订阅自己的队列 job events → 200', false, e.message);
-    }
+  // ---- 5. A 创建 pipeline job：历史列表 / 删除归属（p1-2 收敛后：内存队列已移除） ----
+  if (jobA) {
+    const bDel = await req(`/api/jobs/${jobA}`, { method: 'DELETE', cookie: cookieB });
+    check('B 删除 A 的 job → 403', bDel.status === 403, String(bDel.status));
+    const aDel = await req(`/api/jobs/${jobA}`, { method: 'DELETE', cookie: cookieA });
+    check('A 删除自己的 job → 200', aDel.status === 200, String(aDel.status));
+    const gone = await req(`/api/jobs/${jobA}`, { method: 'DELETE', cookie: cookieA });
+    check('删除不存在的 job → 404', gone.status === 404, String(gone.status));
   }
 
   console.log(failures === 0 ? '\nALL OK' : `\nE2E FAILED (${failures} 项失败)`);

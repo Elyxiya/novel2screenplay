@@ -1,7 +1,9 @@
 /**
  * Pipeline Job Queue
  *
+ * 【预留模块 · p1-2 收敛（D6）】
  * 优先级队列实现，支持延迟重试和超时控制。
+ * 当前无消费方（worker 未启动），标记为预留，不新增依赖。
  */
 
 import type { PipelineJob, JobPriority, JobStatus } from './types';

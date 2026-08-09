@@ -40,10 +40,29 @@ function createMockJobStore() {
   const state: { current: Record<string, unknown> } = { current: {} };
   return {
     state,
-    update: vi.fn((_id: string, updater: (j: any) => any) => {
+    update: vi.fn((_id: string, updater: (j: Record<string, unknown>) => Record<string, unknown>) => {
       state.current = updater(state.current);
     }),
     get: vi.fn(() => state.current),
+  };
+}
+
+// 类型化访问 Phase3SceneConverter 的私有方法（避免 as any 触发 no-explicit-any）
+function asPrivate(c: Phase3SceneConverter) {
+  return c as unknown as {
+    buildCharIdMap(characters: RawCharacter[]): Map<string, string>;
+    buildSceneContext(
+      scene: SceneBoundary,
+      characters: RawCharacter[],
+      locations: RawLocation[],
+      charIdMap: Map<string, string>,
+    ): { chars: string; locs: string; charKept: number; charTotal: number; locKept: number; locTotal: number };
+    recordUsage(
+      jobStore: ReturnType<typeof createMockJobStore>,
+      jobId: string,
+      usage: { promptTokens?: number; completionTokens?: number },
+      inputChars: number,
+    ): void;
   };
 }
 
@@ -70,7 +89,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '林墨在山顶',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     expect(result.charKept).toBe(1);
     expect(result.charTotal).toBe(characters.length);
@@ -91,7 +110,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '苏晚在草庐',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     // Should match 苏晚 via alias 晚儿
     expect(result.charKept).toBe(1);
@@ -112,7 +131,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '两人相遇',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     expect(result.charKept).toBe(2);
     expect(result.chars).toContain('林墨');
@@ -132,7 +151,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '林墨在山顶',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     // Chapter 0 only has 青云山顶
     expect(result.locKept).toBe(1);
@@ -154,7 +173,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '未知场景',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     // No character matched → fallback to full list
     expect(result.charKept).toBe(0);
@@ -176,7 +195,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '某处',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     expect(result.locKept).toBe(0);
     expect(result.locs).toContain('青云山顶');
@@ -197,7 +216,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
       summary: '空角色列表',
     };
 
-    const result = (converter as any).buildSceneContext(scene, characters, locations, (converter as any).buildCharIdMap(characters));
+    const result = asPrivate(converter).buildSceneContext(scene, characters, locations, asPrivate(converter).buildCharIdMap(characters));
 
     // Empty keyCharacterNames → no match → fallback to full list
     expect(result.charKept).toBe(0);
@@ -205,7 +224,7 @@ describe('Phase3SceneConverter - buildSceneContext', () => {
   });
 
   it('should produce charIdMap with correct ID format', () => {
-    const charIdMap = (converter as any).buildCharIdMap(characters);
+    const charIdMap = asPrivate(converter).buildCharIdMap(characters);
 
     expect(charIdMap.get('林墨')).toBe('char_01');
     expect(charIdMap.get('小林')).toBe('char_01'); // alias
@@ -228,10 +247,10 @@ describe('Phase3SceneConverter - recordUsage', () => {
   });
 
   it('should accumulate promptTokens and completionTokens', () => {
-    (converter as any).recordUsage(mockJobStore, 'job-1', { promptTokens: 100, completionTokens: 50 }, 500);
-    (converter as any).recordUsage(mockJobStore, 'job-1', { promptTokens: 200, completionTokens: 80 }, 800);
+    asPrivate(converter).recordUsage(mockJobStore, 'job-1', { promptTokens: 100, completionTokens: 50 }, 500);
+    asPrivate(converter).recordUsage(mockJobStore, 'job-1', { promptTokens: 200, completionTokens: 80 }, 800);
 
-    const meta = (mockJobStore.state.current as any).metadata;
+    const meta = mockJobStore.state.current.metadata as { usage: { promptTokens: number; completionTokens: number; inputChars: number; calls: number } };
     expect(meta.usage.promptTokens).toBe(300);
     expect(meta.usage.completionTokens).toBe(130);
     expect(meta.usage.inputChars).toBe(1300);
@@ -240,18 +259,18 @@ describe('Phase3SceneConverter - recordUsage', () => {
 
   it('should handle missing usage fields gracefully', () => {
     // Only promptTokens provided, completionTokens missing → should default to 0
-    (converter as any).recordUsage(mockJobStore, 'job-1', { promptTokens: 100 }, 500);
+    asPrivate(converter).recordUsage(mockJobStore, 'job-1', { promptTokens: 100 }, 500);
 
-    const meta = (mockJobStore.state.current as any).metadata;
+    const meta = mockJobStore.state.current.metadata as { usage: { promptTokens: number; completionTokens: number; inputChars: number; calls: number } };
     expect(meta.usage.promptTokens).toBe(100);
     expect(meta.usage.completionTokens).toBe(0);
     expect(meta.usage.calls).toBe(1);
   });
 
   it('should skip when both promptTokens and completionTokens are absent', () => {
-    (converter as any).recordUsage(mockJobStore, 'job-1', { promptTokens: 0, completionTokens: 0 }, 500);
+    asPrivate(converter).recordUsage(mockJobStore, 'job-1', { promptTokens: 0, completionTokens: 0 }, 500);
 
-    const meta = (mockJobStore.state.current as any).metadata;
+    const meta = mockJobStore.state.current.metadata as { usage: { promptTokens: number; completionTokens: number; inputChars: number; calls: number } };
     // Both are 0 → early return, no usage recorded
     expect(meta.usage).toBeUndefined();
   });
@@ -259,9 +278,9 @@ describe('Phase3SceneConverter - recordUsage', () => {
   it('should handle missing metadata on job', () => {
     mockJobStore.state.current = { id: 'job-1' }; // no metadata field
 
-    (converter as any).recordUsage(mockJobStore, 'job-1', { promptTokens: 100, completionTokens: 50 }, 500);
+    asPrivate(converter).recordUsage(mockJobStore, 'job-1', { promptTokens: 100, completionTokens: 50 }, 500);
 
-    const meta = (mockJobStore.state.current as any).metadata;
+    const meta = mockJobStore.state.current.metadata as { usage: { promptTokens: number; completionTokens: number; inputChars: number; calls: number } };
     expect(meta.usage.promptTokens).toBe(100);
     expect(meta.usage.completionTokens).toBe(50);
   });

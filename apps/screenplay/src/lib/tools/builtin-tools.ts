@@ -2,25 +2,72 @@
  * 内置工具定义
  *
  * 提供剧本转换所需的内置工具。
- * 所有 handler 均真实接线到 Pipeline / Phase 模块，不返回 mock 数据。
+ * 工具层保持纯净（共享底座），不依赖任何 ② pipeline 实现；
+ * 需要 pipeline 能力时一律通过 injectable 的 BuiltinToolDeps 回调获得，
+ * 由业务侧（②）在装配处注入真实实现。
  */
 
 import { getToolRegistry } from './tool-registry';
 import { jobStore } from '../store/job-store';
 import { getHistoryRepository } from '../store/sqlite';
-import { PipelineEngine } from '../pipeline/PipelineEngine';
-import { Phase1Analyzer } from '../pipeline/Phase1Analyzer';
-import { Phase4Merger } from '../pipeline/Phase4Merger';
-import { ContextManager } from '../pipeline/ContextManager';
-import { resolveDefaultProvider } from '../llm/llm-gateway';
-import { parseNovel } from '../novel/parser';
+
+/** 启动 pipeline 任务的入参（与 PipelineEngine.startJob 对齐） */
+export interface StartPipelineInput {
+  novelText: string;
+  title?: string;
+  author?: string;
+  modelId?: string;
+  selectedChapters?: number[];
+  userId?: string;
+}
+
+/** 文本分析输出（Phase1 结果的可序列化摘要） */
+export interface AnalyzeTextResult {
+  characters?: unknown[];
+  locations?: unknown[];
+  rawResponse?: string;
+  /** provider 缺失或出错时的错误信息 */
+  error?: string;
+}
 
 /**
- * 初始化内置工具
+ * 内置工具依赖注入契约
+ *
+ * 由业务侧（②）装配真实 pipeline 实现并传入，
+ * 工具层自身不 import 任何 pipeline / LLM Provider 模块。
  */
-export function initializeBuiltinTools(): void {
+export interface BuiltinToolDeps {
+  /** 启动一个小说转剧本任务，返回 jobId */
+  startPipeline(input: StartPipelineInput): Promise<string>;
+  /** 取消进行中的转换任务 */
+  cancelJob(jobId: string): Promise<void>;
+  /** 分析文本，返回角色/地点等（走 Phase 1 分析器） */
+  analyzeText(text: string, userId?: string): Promise<AnalyzeTextResult>;
+  /** 合并各阶段输出为最终剧本（走 Phase 4 合并器） */
+  merge(args: {
+    title: string;
+    author: string;
+    phase1Output: unknown;
+    phase2Output: unknown;
+    phase3Outputs: unknown;
+  }): Promise<{ screenplay: unknown; fixes: unknown }>;
+}
+
+/**
+ * 初始化内置工具（注册到工具注册表）
+ *
+ * @param deps 业务侧注入的 pipeline 依赖；未注入时仅注册不依赖 pipeline 的存储类工具，
+ *             pipeline/analysis/conversion 类工具在调用时会返回未装配错误。
+ */
+export function initializeBuiltinTools(deps?: BuiltinToolDeps): void {
   const registry = getToolRegistry();
-  const pipelineEngine = new PipelineEngine();
+
+  const requireDeps = (toolId: string): BuiltinToolDeps => {
+    if (!deps) {
+      throw new Error(`工具 ${toolId} 需要业务侧注入 BuiltinToolDeps，但当前未装配`);
+    }
+    return deps;
+  };
 
   // Pipeline 工具
   registry.register({
@@ -44,7 +91,7 @@ export function initializeBuiltinTools(): void {
       required: ['novelText'],
     },
     handler: async (args, context) => {
-      const jobId = await pipelineEngine.startJob({
+      const jobId = await requireDeps('pipeline.start').startPipeline({
         novelText: args.novelText as string,
         title: args.title as string | undefined,
         author: args.author as string | undefined,
@@ -105,7 +152,7 @@ export function initializeBuiltinTools(): void {
       required: ['jobId'],
     },
     handler: async (args) => {
-      pipelineEngine.cancelJob(args.jobId as string);
+      await requireDeps('pipeline.cancel').cancelJob(args.jobId as string);
       return { success: true, message: 'Pipeline cancelled' };
     },
   });
@@ -114,7 +161,7 @@ export function initializeBuiltinTools(): void {
   registry.register({
     id: 'analysis.characters',
     name: 'extract_characters',
-    description: '从小说文本中提取角色信息（真实调用 Phase 1 分析器）',
+    description: '从小说文本中提取角色信息（走 Phase 1 分析器）',
     category: 'analysis',
     tags: ['analysis', 'characters', 'extract'],
     estimatedDuration: 5000,
@@ -128,22 +175,17 @@ export function initializeBuiltinTools(): void {
       required: ['text'],
     },
     handler: async (args, context) => {
-      const provider = resolveDefaultProvider(context.userId);
-      if (!provider) {
-        return { error: '未配置 LLM Provider，请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY' };
+      const result = await requireDeps('analysis.characters').analyzeText(
+        args.text as string,
+        context?.userId,
+      );
+      if (result.error) {
+        return { error: result.error };
       }
-
-      const phase1 = new Phase1Analyzer(provider, new ContextManager());
-      const chapters = parseNovel(args.text as string).chapters;
-      const input = chapters.length > 0
-        ? chapters.map((c) => ({ index: c.index, title: c.title, text: c.text }))
-        : [{ index: 0, title: 'text', text: args.text as string }];
-
-      const output = await phase1.analyze(input);
       return {
-        characters: output.characters,
-        count: output.characters.length,
-        rawResponse: output.rawResponse,
+        characters: result.characters,
+        count: result.characters?.length,
+        rawResponse: result.rawResponse,
       };
     },
   });
@@ -151,7 +193,7 @@ export function initializeBuiltinTools(): void {
   registry.register({
     id: 'analysis.locations',
     name: 'extract_locations',
-    description: '从小说文本中提取地点信息（真实调用 Phase 1 分析器）',
+    description: '从小说文本中提取地点信息（走 Phase 1 分析器）',
     category: 'analysis',
     tags: ['analysis', 'locations', 'extract'],
     estimatedDuration: 5000,
@@ -165,22 +207,17 @@ export function initializeBuiltinTools(): void {
       required: ['text'],
     },
     handler: async (args, context) => {
-      const provider = resolveDefaultProvider(context.userId);
-      if (!provider) {
-        return { error: '未配置 LLM Provider，请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY' };
+      const result = await requireDeps('analysis.locations').analyzeText(
+        args.text as string,
+        context?.userId,
+      );
+      if (result.error) {
+        return { error: result.error };
       }
-
-      const phase1 = new Phase1Analyzer(provider, new ContextManager());
-      const chapters = parseNovel(args.text as string).chapters;
-      const input = chapters.length > 0
-        ? chapters.map((c) => ({ index: c.index, title: c.title, text: c.text }))
-        : [{ index: 0, title: 'text', text: args.text as string }];
-
-      const output = await phase1.analyze(input);
       return {
-        locations: output.locations,
-        count: output.locations.length,
-        rawResponse: output.rawResponse,
+        locations: result.locations,
+        count: result.locations?.length,
+        rawResponse: result.rawResponse,
       };
     },
   });
@@ -189,7 +226,7 @@ export function initializeBuiltinTools(): void {
   registry.register({
     id: 'conversion.merge',
     name: 'merge_validate',
-    description: '合并各阶段输出并校验为最终剧本（真实调用 Phase 4 合并器）',
+    description: '合并各阶段输出并校验为最终剧本（走 Phase 4 合并器）',
     category: 'conversion',
     tags: ['conversion', 'merge', 'validate'],
     estimatedDuration: 5000,
@@ -207,17 +244,13 @@ export function initializeBuiltinTools(): void {
       required: ['phase1Output', 'phase2Output', 'phase3Outputs'],
     },
     handler: async (args) => {
-      const phase4 = new Phase4Merger();
-      const { screenplay, fixes } = await phase4.merge(
-        {
-          title: (args.title as string) || '剧本',
-          author: (args.author as string) || '',
-          sourceNovel: (args.title as string) || '剧本',
-        },
-        args.phase1Output as Parameters<typeof phase4.merge>[1],
-        args.phase2Output as Parameters<typeof phase4.merge>[2],
-        args.phase3Outputs as Parameters<typeof phase4.merge>[3],
-      );
+      const { screenplay, fixes } = await requireDeps('conversion.merge').merge({
+        title: (args.title as string) || '剧本',
+        author: (args.author as string) || '',
+        phase1Output: args.phase1Output,
+        phase2Output: args.phase2Output,
+        phase3Outputs: args.phase3Outputs,
+      });
       return { success: true, screenplay, fixes };
     },
   });

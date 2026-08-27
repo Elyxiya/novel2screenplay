@@ -589,7 +589,8 @@ export class MultiAgentOrchestrator {
     const toolRegistry = getToolRegistry();
     if (toolRegistry.list().length === 0) {
       const { initializeBuiltinTools } = await import('../tools/builtin-tools');
-      initializeBuiltinTools();
+      const { createBuiltinToolDeps } = await import('../tools/builtin-tools-assembly');
+      initializeBuiltinTools(createBuiltinToolDeps());
     }
     const toolExecutor = createLoggingToolExecutor(createToolExecutor(task.userId), debugLogger, {
       taskId: task.id,

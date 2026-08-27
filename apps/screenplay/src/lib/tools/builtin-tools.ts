@@ -12,7 +12,7 @@ import { PipelineEngine } from '../pipeline/PipelineEngine';
 import { Phase1Analyzer } from '../pipeline/Phase1Analyzer';
 import { Phase4Merger } from '../pipeline/Phase4Merger';
 import { ContextManager } from '../pipeline/ContextManager';
-import { llmRegistry } from '../llm/registry';
+import { resolveDefaultProvider } from '../llm/llm-gateway';
 import { parseNovel } from '../novel/parser';
 
 /**
@@ -43,13 +43,14 @@ export function initializeBuiltinTools(): void {
       },
       required: ['novelText'],
     },
-    handler: async (args) => {
+    handler: async (args, context) => {
       const jobId = await pipelineEngine.startJob({
         novelText: args.novelText as string,
         title: args.title as string | undefined,
         author: args.author as string | undefined,
         modelId: args.modelId as string | undefined,
         selectedChapters: args.selectedChapters as number[] | undefined,
+        userId: context?.userId,
       });
       return { success: true, jobId, message: 'Pipeline started' };
     },
@@ -126,8 +127,8 @@ export function initializeBuiltinTools(): void {
       },
       required: ['text'],
     },
-    handler: async (args) => {
-      const provider = llmRegistry.getDefault();
+    handler: async (args, context) => {
+      const provider = resolveDefaultProvider(context.userId);
       if (!provider) {
         return { error: '未配置 LLM Provider，请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY' };
       }
@@ -163,8 +164,8 @@ export function initializeBuiltinTools(): void {
       },
       required: ['text'],
     },
-    handler: async (args) => {
-      const provider = llmRegistry.getDefault();
+    handler: async (args, context) => {
+      const provider = resolveDefaultProvider(context.userId);
       if (!provider) {
         return { error: '未配置 LLM Provider，请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY' };
       }

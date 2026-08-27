@@ -9,6 +9,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { encryptApiKey } from '../../llm/api-key-cipher';
 
 // 数据库文件路径配置
 const DB_DIR = process.env.DB_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
@@ -57,6 +58,7 @@ function createDatabase(): Database.Database {
   migrateAuthColumns(database);
   migrateWriterColumns(database);
   initializeSchema(database);
+  migrateLegacyLLMKeys(database);
 
   return database;
 }
@@ -204,8 +206,33 @@ function migrateWriterColumns(database: Database.Database): void {
   }
 }
 
+/**
+ * user_llm.api_key 自愈迁移：把存量明文密钥重写为 AES-GCM 密文（幂等）。
+ * 依赖 schema.sql 已建 user_llm 表（initializeSchema 之后调用）。
+ * 新库无明文行、直接跳过；既有无前缀明文值的旧库在此一次性加密。
+ */
+function migrateLegacyLLMKeys(database: Database.Database): void {
+  try {
+    const rows = database
+      .prepare(
+        `SELECT id, api_key FROM user_llm
+         WHERE api_key IS NOT NULL AND api_key != '' AND api_key NOT LIKE 'enc:%'`,
+      )
+      .all() as Array<{ id: string; api_key: string }>;
+    if (rows.length === 0) return;
+    const stmt = database.prepare('UPDATE user_llm SET api_key = ? WHERE id = ?');
+    const tx = database.transaction((list: Array<{ id: string; api_key: string }>) => {
+      for (const r of list) stmt.run(encryptApiKey(r.api_key), r.id);
+    });
+    tx(rows);
+    console.log(`[DB] Migrated ${rows.length} legacy user_llm api_key to encrypted (AES-GCM)`);
+  } catch (err) {
+    // user_llm 表不存在时静默（极旧库，schema.sql 未建该表）
+    console.log(`[DB] user_llm key migration skipped: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
 function initializeSchema(database: Database.Database): void {
-  // 读取并执行 schema.sql
   const schemaPath = path.join(/* turbopackIgnore: true */ process.cwd(), 'src/lib/store/sqlite', 'schema.sql');
   if (fs.existsSync(schemaPath)) {
     const schema = fs.readFileSync(schemaPath, 'utf-8');

@@ -184,3 +184,31 @@ CREATE INDEX IF NOT EXISTS idx_agent_tasks_created_at ON agent_tasks(created_at)
 -- Schema 版本记录：Agent 任务持久化
 INSERT OR IGNORE INTO schema_version (version, applied_at, description)
 VALUES (4, strftime('%s', 'now') * 1000, 'Add agent_tasks: persist orchestrator tasks (P-记忆)');
+
+-- UserLLM 表：用户导入的自定义 LLM（用户级隔离，运行时热注册）
+-- 每行 = 一条用户自定义 Provider 配置，归属 user_id，经 /api/llm 增删改。
+-- api_key 明文存储（个人部署约定），GET 回传时打码。
+CREATE TABLE IF NOT EXISTS user_llm (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,                        -- 归属用户（多用户隔离）
+  protocol TEXT NOT NULL,                       -- 'openai' | 'anthropic'
+  base_url TEXT NOT NULL,
+  api_key TEXT NOT NULL DEFAULT '',             -- 可空（本地服务如 Ollama）
+  name TEXT NOT NULL,                           -- 显示名
+  default_model TEXT NOT NULL,                  -- 默认模型
+  supported_models TEXT NOT NULL DEFAULT '[]',  -- JSON array of modelId（含 default）
+  context_window INTEGER NOT NULL DEFAULT 128000,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_llm_user_id ON user_llm(user_id);
+
+-- Schema 版本记录：用户自定义 LLM 导入
+INSERT OR IGNORE INTO schema_version (version, applied_at, description)
+VALUES (5, strftime('%s', 'now') * 1000, 'Add user_llm: per-user custom LLM imports');
+
+-- Schema 版本记录：user_llm.api_key 加密（AES-256-GCM）+ 旧明文自愈迁移
+-- 密文格式 enc:v1:<iv>.<tag>.<ciphertext>；迁移由 db.ts migrateLegacyLLMKeys 执行。
+INSERT OR IGNORE INTO schema_version (version, applied_at, description)
+VALUES (6, strftime('%s', 'now') * 1000, 'Encrypt user_llm.api_key (AES-GCM), migrate legacy plaintext');

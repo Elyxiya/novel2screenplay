@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { serializeToYaml, safeParseFromYaml } from '@novel/contracts/serializers';
 import { getCurrentUser, authError } from '@/lib/auth';
-import { initializeProviders, llmRegistry } from '@/lib/llm/registry';
+import { initializeProviders } from '@/lib/llm/registry';
+import { resolveProvider } from '@/lib/llm/llm-gateway';
 import { reviseScene } from '@/lib/result/revise-scene';
 import type { Scene, Screenplay } from '@novel/contracts/screenplay';
 
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest) {
   const targets = scope === 'all' ? screenplay.scenes : screenplay.scenes.filter((s) => s.sceneNumber === sceneNumber);
   if (targets.length === 0) return NextResponse.json({ error: '未找到目标场景' }, { status: 404 });
 
-  const provider = (job.config?.modelId ? llmRegistry.get(job.config.modelId) : undefined) ?? llmRegistry.getDefault();
+  // 用户导入的自定义 LLM 优先，未匹配回退全局 env；job 记录的 modelId 关联
+  const provider = resolveProvider(user.id, job.config?.modelId);
   if (!provider) return NextResponse.json({ error: '未配置 LLM Provider' }, { status: 400 });
 
   // 角色名（含别名）→ characterId，供归一化模型输出的 speaker 字段

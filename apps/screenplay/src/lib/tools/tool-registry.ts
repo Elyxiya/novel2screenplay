@@ -187,8 +187,9 @@ export function getToolRegistry(): ToolRegistry {
 
 /**
  * 创建 Agent 执行器包装器
+ * @param userId 可选：归属用户 ID，透传给工具执行上下文，使内置工具能解析用户自定义 LLM
  */
-export function createToolExecutor(): ToolExecutor {
+export function createToolExecutor(userId?: string): ToolExecutor {
   const registry = getToolRegistry();
 
   return {
@@ -199,6 +200,7 @@ export function createToolExecutor(): ToolExecutor {
         {
           taskId: 'unknown',
           agentRole: 'unknown',
+          userId,
         }
       );
 

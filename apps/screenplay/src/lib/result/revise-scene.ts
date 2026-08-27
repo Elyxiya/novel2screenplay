@@ -3,7 +3,7 @@
  * 仅替换场景的 content（及可选 summary/timeOfDay/confidence），其余字段与其它场景不动。
  */
 import type { LLMProvider } from '@/lib/llm/types';
-import { llmRegistry } from '@/lib/llm/registry';
+import { resolveDefaultProvider } from '@/lib/llm/llm-gateway';
 import { SYSTEM_PROMPT } from '@/lib/llm/prompts/convert-scene';
 import { safeJsonParse } from '@/lib/utils/safe-json';
 import type { ActionBlock, DialogueBlock, Scene } from '@novel/contracts/screenplay';
@@ -16,6 +16,8 @@ const TIME_OF_DAY_VALUES = ['dawn', 'morning', 'afternoon', 'dusk', 'night', 'la
 export interface ReviseSceneOptions {
   provider?: LLMProvider;
   temperature?: number;
+  /** 归属用户：provider 缺省时经用户级网关解析其自定义 LLM，回退全局 env */
+  userId?: string;
   /** 角色名（含别名）→ characterId，用于归一化模型可能返回的 speaker 字段 */
   nameToCharacterId?: Record<string, string>;
 }
@@ -112,7 +114,7 @@ export async function reviseScene(
   instruction: string,
   options: ReviseSceneOptions = {},
 ): Promise<Scene> {
-  const provider = options.provider ?? llmRegistry.getDefault();
+  const provider = options.provider ?? resolveDefaultProvider(options.userId);
   if (!provider) throw new Error('未配置 LLM Provider，无法重生成场景');
   const res = await provider.chat(
     [

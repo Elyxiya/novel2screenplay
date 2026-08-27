@@ -1,5 +1,5 @@
 import type { LLMProvider } from '../llm/types';
-import { llmRegistry } from '../llm/registry';
+import { resolveProvider, resolveDefaultProvider } from '../llm/llm-gateway';
 import { jobStore } from '../store/job-store';
 import { parseNovel } from '../novel/parser';
 import { ContextManager } from './ContextManager';
@@ -69,10 +69,8 @@ export class PipelineEngine {
       ? input.selectedChapters.map(i => parseResult.chapters[i]).filter(Boolean)
       : parseResult.chapters;
 
-    // Get LLM provider
-    const provider = input.modelId
-      ? llmRegistry.get(input.modelId) || llmRegistry.getDefault()
-      : llmRegistry.getDefault();
+    // Get LLM provider（用户导入优先，回退全局 env；modelId 缺省时用默认）
+    const provider = resolveProvider(input.userId, input.modelId);
 
     if (!provider) {
       throw new Error(
@@ -146,7 +144,7 @@ export class PipelineEngine {
 
       // TODO: Re-run Phase 3 for failed scenes only, then Phase 4
       // For V1, just re-run the full pipeline
-      const provider = llmRegistry.getDefault();
+      const provider = resolveDefaultProvider(job.userId);
       if (!provider) throw new Error('未配置 LLM Provider');
 
       jobStore.update(jobId, (j) => ({

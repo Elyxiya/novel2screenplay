@@ -8,6 +8,8 @@
 import { NextResponse } from 'next/server';
 import { getModelRouter } from '@/lib/llm/adapter';
 import { getBudgetController, BudgetController } from '@/lib/llm/adapter';
+import { getCurrentUser } from '@/lib/auth';
+import { listModelsForUser } from '@/lib/llm/llm-gateway';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,10 @@ export async function GET() {
 
   // 获取预算使用情况
   const budgetSummary = budgetController.getUsageSummary();
+
+  // 当前登录用户导入的自定义 LLM（若已导入则作为默认模型优先级）
+  const user = await getCurrentUser();
+  const userDefaultModel = user ? listModelsForUser(user.id)[0]?.defaultModel : undefined;
 
   // 获取各适配器健康状态
   const adapters = models.reduce<Array<{
@@ -52,9 +58,24 @@ export async function GET() {
     return acc;
   }, []);
 
+  // 注入当前用户导入的自定义 LLM（用户级，key 不出库）
+  if (user) {
+    for (const d of listModelsForUser(user.id)) {
+      adapters.push({
+        adapterId: d.adapterId,
+        adapterName: d.adapterName,
+        models: d.models.map((m) => ({
+          modelId: m.modelId,
+          cost: { inputCost: 0, outputCost: 0 },
+          health: 'healthy',
+        })),
+      });
+    }
+  }
+
   return NextResponse.json({
     adapters,
-    defaultModel: router.getDefaultModel(),
+    defaultModel: userDefaultModel ?? router.getDefaultModel(),
     budget: {
       monthly: budgetSummary.monthly,
       hourly: budgetSummary.hourly,

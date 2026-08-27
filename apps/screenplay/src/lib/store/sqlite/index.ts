@@ -16,3 +16,4 @@ export { getHistoryRepository, type HistoryRepository, type CreateHistoryParams 
 export { getDramaRepository, type DramaRepository, type DramaRecord, type DramaSummary } from './drama-repository';
 export { getUserRepository, type UserRepository, type User, type PublicUser } from './user-repository';
 export { getAgentTaskRepository, type AgentTaskRepository, type AgentTaskRecord, type AgentTaskStatus } from './agent-task-repository';
+export { getUserLLMRepository, type UserLLMRepository, type UserLLMRecord, type UserLLMProtocol, type CreateUserLLMParams, type UpdateUserLLMParams, type UserLLMApiKeySummary } from './user-llm-repository';

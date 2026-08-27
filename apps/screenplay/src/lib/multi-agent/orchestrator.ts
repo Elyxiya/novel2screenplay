@@ -15,6 +15,7 @@ import { createAgentCoreAdapter } from '../agent/llm/AgentCoreLLMAdapter';
 import { createToolExecutor } from '../tools/tool-registry';
 import { getToolRegistry } from '../tools/tool-registry';
 import { llmRegistry } from '../llm/registry';
+import { resolveDefaultProvider } from '../llm/llm-gateway';
 import type { LLMProvider } from '../llm/types';
 import { ROLE_PROMPTS } from './roles';
 import type { AgentRole } from './roles';
@@ -590,7 +591,7 @@ export class MultiAgentOrchestrator {
       const { initializeBuiltinTools } = await import('../tools/builtin-tools');
       initializeBuiltinTools();
     }
-    const toolExecutor = createLoggingToolExecutor(createToolExecutor(), debugLogger, {
+    const toolExecutor = createLoggingToolExecutor(createToolExecutor(task.userId), debugLogger, {
       taskId: task.id,
       phase: phase.name,
       role: phase.role,
@@ -668,7 +669,8 @@ export class MultiAgentOrchestrator {
     const cached = this.phaseProviders.get(key);
     if (cached) return cached;
 
-    const raw = this.config.provider ?? llmRegistry.getDefault();
+    const raw =
+      this.config.provider ?? resolveDefaultProvider(task.userId) ?? llmRegistry.getDefault();
     if (!raw) return undefined;
 
     const wrapped = createLoggingLLMProvider(raw, getAgentDebugLogger(), {

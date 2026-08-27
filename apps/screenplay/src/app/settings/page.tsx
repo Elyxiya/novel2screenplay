@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { RequireAuth } from '@/components/RequireAuth';
 import type { AuthUser } from '@/components/AuthStatus';
+import UserLLMList from '@/components/UserLLMList';
+import CustomLLMForm from '@/components/CustomLLMForm';
 
 export default function SettingsPage() {
   return (
@@ -160,6 +162,23 @@ function SettingsContent() {
             保存新密码
           </button>
         </form>
+      </div>
+
+      {/* 自定义 LLM 导入 */}
+      <div className="glass-card rounded-2xl p-6">
+        <div className="mb-4">
+          <h3 className="font-semibold text-slate-800">自定义 LLM</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            导入你自己的模型服务（OpenAI 兼容 / Anthropic 原生）。配置仅对当前账号生效，生成任务将优先使用此模型。
+          </p>
+        </div>
+        <CustomLLMForm onCreated={() => window.location.reload()} />
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-slate-700">已导入的模型</h4>
+          </div>
+          <UserLLMList onRefresh={() => window.location.reload()} />
+        </div>
       </div>
     </div>
   );

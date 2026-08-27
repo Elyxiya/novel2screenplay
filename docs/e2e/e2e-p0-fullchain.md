@@ -29,7 +29,7 @@
 ```powershell
 cd e:\桌面\novel\novel2screenplay
 $env:PATH = "E:\nvm\nodejs;" + $env:PATH
-node e2e-p0-fullchain.mjs
+node scripts/e2e/e2e-p0-fullchain.mjs
 ```
 
 - 输出末尾为 `ALL OK` 即验收通过；否则为 `E2E FAILED (N 项失败)`。
@@ -75,4 +75,4 @@ node e2e-p0-fullchain.mjs
   - `POST /api/drama/convert` 返回 `source`：`sourceScreenplayId===jobId`、`sourceNovelId` 与上游一致、`sourceNovelTitle`。
 - 每个分镜镜头 `shot.sceneNumber` 为有效的剧本场景号（≥1 整数），据此可推导 `/result/{sourceScreenplayId}?scene=N` 溯源 URL。
 
-> 自动化验证仅需运行第 1 节的 `node e2e-p0-fullchain.mjs`，脚本输出的溯源闭环（小说资产 / 剧本任务 / 分镜资产 URL）即为当次验收证据。
+> 自动化验证仅需运行第 1 节的 `node scripts/e2e/e2e-p0-fullchain.mjs`，脚本输出的溯源闭环（小说资产 / 剧本任务 / 分镜资产 URL）即为当次验收证据。

@@ -1,14 +1,17 @@
-// p1-3 运行截图：/debug 页面 RequireAuth 守卫
-// 截图1：未登录访问 /debug → 重定向到登录页
-// 截图2：登录后 /debug 正常渲染
+// p1-4 运行截图：登录后 Agent 工作台与调试页正常渲染
+// 截图1：/agent（Agent 会话工作台）
+// 截图2：/debug（流程评测界面）
 import { writeFileSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CDP = 'http://127.0.0.1:9222';
 const BASE = 'http://localhost:3001';
-const OUT = 'pr-evidence';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const OUT = path.join(ROOT, 'pr-evidence');
 mkdirSync(OUT, { recursive: true });
 
-const USERNAME = 'shotp13_' + Date.now().toString(36).slice(-6);
+const USERNAME = 'shotp14_' + Date.now().toString(36).slice(-6);
 const PASSWORD = 'pass-123456';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,44 +44,38 @@ async function main() {
     writeFileSync(`${OUT}/${name}.png`, Buffer.from(r.data, 'base64'));
     console.log(`[shot] ${OUT}/${name}.png`);
   };
+  const waitText = async (needle, ms = 20000) => {
+    const deadline = Date.now() + ms;
+    while (Date.now() < deadline) {
+      const txt = (await evalJS('document.body.innerText')) || '';
+      if (txt.includes(needle)) return true;
+      await wait(2000);
+    }
+    return false;
+  };
 
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Network.enable');
 
-  // 清空浏览器 cookie → 模拟未登录
-  await send('Network.clearBrowserCookies');
-  console.log('[cookie] 已清空，模拟未登录');
-
-  // 未登录访问 /debug → RequireAuth 应重定向到登录页
-  await send('Page.navigate', { url: `${BASE}/debug` });
-  await wait(4000);
-  const url1 = await evalJS('location.href');
-  const txt1 = await evalJS('document.body.innerText');
-  console.log('[未登录 /debug] url=', url1);
-  const redirected = url1.includes('/auth/login');
-  if (!redirected) throw new Error(`未登录访问 /debug 未重定向，当前 ${url1}`);
-  if (!/登录|登入|login/i.test(txt1.slice(0, 200))) throw new Error('未跳转到登录页内容');
-  console.log('[未登录 /debug] ✓ 重定向到登录页');
-  await shot('p13-debug-01-unauthed-redirect');
-
-  // 登录
+  // 登录（先导航到站内页，同源 fetch 存 cookie）
+  await send('Page.navigate', { url: `${BASE}/login` });
+  await wait(1500);
   await evalJS(`fetch('/api/auth/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:${JSON.stringify(USERNAME)}, password:${JSON.stringify(PASSWORD)}})}).then(r=>r.json())`);
-  const login = await evalJS(`fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:${JSON.stringify(USERNAME)}, password:${JSON.stringify(PASSWORD)}})}).then(r=>r.json())`);
-  console.log('[login]', JSON.stringify(login).slice(0, 100));
+  await evalJS(`fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:${JSON.stringify(USERNAME)}, password:${JSON.stringify(PASSWORD)}})}).then(r=>r.json())`);
+  console.log(`[login] ${USERNAME}`);
 
-  // 登录后访问 /debug → 正常渲染
+  // 截图1：/agent 工作台
+  await send('Page.navigate', { url: `${BASE}/agent` });
+  if (!(await waitText('Agent 对话工作台'))) throw new Error('/agent 未渲染出 Agent 对话工作台');
+  console.log('[/agent] ✓ 正常渲染');
+  await shot('p14-agent-authed');
+
+  // 截图2：/debug 评测界面
   await send('Page.navigate', { url: `${BASE}/debug` });
-  const deadline = Date.now() + 20000;
-  let rendered = false;
-  while (Date.now() < deadline) {
-    await wait(2000);
-    const txt = (await evalJS('document.body.innerText')) || '';
-    if (txt.includes('流程调试与评测') && txt.includes('输入转换任务 ID')) { rendered = true; break; }
-  }
-  if (!rendered) throw new Error('登录后 /debug 未渲染出评测界面');
-  console.log('[登录后 /debug] ✓ 正常渲染');
-  await shot('p13-debug-02-authed');
+  if (!(await waitText('流程调试与评测'))) throw new Error('/debug 未渲染出评测界面');
+  console.log('[/debug] ✓ 正常渲染');
+  await shot('p14-debug-authed');
 
   ws.close();
   console.log('SHOTS OK');

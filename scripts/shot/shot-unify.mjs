@@ -1,14 +1,18 @@
-// p1-4 运行截图：登录后 Agent 工作台与调试页正常渲染
-// 截图1：/agent（Agent 会话工作台）
-// 截图2：/debug（流程评测界面）
+// p1-2 运行截图：双执行系统收敛后上传页/历史页正常渲染（QuickStats 数据源已切到 SQLite history）
+// 截图1：/upload（QuickStats 卡片，数据来自 /api/jobs/history）
+// 截图2：/history（SQLite 历史列表）
+// 附带验证：/api/jobs 内存队列接口已收敛（404）
 import { writeFileSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CDP = 'http://127.0.0.1:9222';
 const BASE = 'http://localhost:3001';
-const OUT = 'pr-evidence';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const OUT = path.join(ROOT, 'pr-evidence');
 mkdirSync(OUT, { recursive: true });
 
-const USERNAME = 'shotp14_' + Date.now().toString(36).slice(-6);
+const USERNAME = 'shotp12_' + Date.now().toString(36).slice(-6);
 const PASSWORD = 'pass-123456';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,17 +66,30 @@ async function main() {
   await evalJS(`fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:${JSON.stringify(USERNAME)}, password:${JSON.stringify(PASSWORD)}})}).then(r=>r.json())`);
   console.log(`[login] ${USERNAME}`);
 
-  // 截图1：/agent 工作台
-  await send('Page.navigate', { url: `${BASE}/agent` });
-  if (!(await waitText('Agent 对话工作台'))) throw new Error('/agent 未渲染出 Agent 对话工作台');
-  console.log('[/agent] ✓ 正常渲染');
-  await shot('p14-agent-authed');
+  // 收敛验证：内存队列接口已移除
+  const qPost = await evalJS(`fetch('/api/jobs', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}).then(r=>r.status)`);
+  const qGet = await evalJS(`fetch('/api/jobs').then(r=>r.status)`);
+  const qEv = await evalJS(`fetch('/api/jobs/x/events').then(r=>r.status)`);
+  console.log(`[收敛] /api/jobs POST=${qPost} GET=${qGet} events=${qEv}（期望 404/404/404）`);
 
-  // 截图2：/debug 评测界面
-  await send('Page.navigate', { url: `${BASE}/debug` });
-  if (!(await waitText('流程调试与评测'))) throw new Error('/debug 未渲染出评测界面');
-  console.log('[/debug] ✓ 正常渲染');
-  await shot('p14-debug-authed');
+  // 创建一条主链路任务，保证 QuickStats / 历史页有数据
+  await evalJS(`fetch('/api/pipeline/start', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({novelText:'短篇\\n少年远行，入江湖。', title:'收敛验证', author:'t', selectedChapters:[]})}).then(r=>r.json()).then(d=>d.jobId)`);
+  await wait(1500);
+
+  // 截图1：/upload 页（QuickStats 数据源为 /api/jobs/history）
+  await send('Page.navigate', { url: `${BASE}/upload` });
+  if (!(await waitText('上传小说'))) throw new Error('/upload 未渲染出上传界面');
+  await wait(1500);
+  const qs = await evalJS(`document.body.innerText.includes('总任务') && document.body.innerText.includes('已完成')`);
+  console.log(`[QuickStats] 渲染=${qs}`);
+  await shot('p12-upload-quickstats');
+
+  // 截图2：/history 页（SQLite 历史）
+  await send('Page.navigate', { url: `${BASE}/history` });
+  if (!(await waitText('转换历史'))) throw new Error('/history 未渲染出历史列表');
+  await wait(1200);
+  console.log('[history] ✓ 正常渲染');
+  await shot('p12-history-sqlite');
 
   ws.close();
   console.log('SHOTS OK');

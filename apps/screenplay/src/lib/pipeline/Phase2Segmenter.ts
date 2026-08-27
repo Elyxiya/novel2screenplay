@@ -1,26 +1,11 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as SEGMENT_PROMPT } from '../llm/prompts/segment';
 import { ContextManager, MAX_SEGMENT_TOKENS } from './ContextManager';
-import type { Phase1Output } from './Phase1Analyzer';
 import { safeJsonParse } from '../utils/safe-json';
+import type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 
-/** A scene boundary detected by Phase 2 */
-export interface SceneBoundary {
-  sceneIndex: number;
-  chapterIndex: number;
-  startParagraph: number;
-  endParagraph: number;
-  originalStartOffset: number;
-  originalEndOffset: number;
-  draftSlugline: string;
-  keyCharacterNames: string[];
-  summary: string;
-}
-
-export interface Phase2Output {
-  scenes: SceneBoundary[];
-  rawResponses: string[];
-}
+// 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
+export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 
 /**
  * Phase 2: Segment chapters into scenes based on time/location/character changes.

@@ -2,6 +2,7 @@ import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as ANALYZE_PROMPT } from '../llm/prompts/analyze';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
+import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
 
 /** Shape of the JSON response expected from Phase 1 LLM */
 interface Phase1LLMResponse {
@@ -22,37 +23,8 @@ interface Phase1LLMResponse {
   timelineHints?: Array<unknown>;
 }
 
-/** Raw character extracted by Phase 1 */
-export interface RawCharacter {
-  name: string;
-  aliases: string[];
-  personalityTags: string[];
-  description: string;
-  isMajor: boolean;
-  sourceChapterIndex: number;
-}
-
-/** Raw location extracted by Phase 1 */
-export interface RawLocation {
-  name: string;
-  type: 'interior' | 'exterior' | 'abstract';
-  description: string;
-  sourceChapterIndex: number;
-}
-
-/** Timeline hint extracted by Phase 1 */
-export interface TimelineHint {
-  chapterIndex: number;
-  timeCue: string;
-  type: 'time-of-day' | 'time-jump' | 'season';
-}
-
-export interface Phase1Output {
-  characters: RawCharacter[];
-  locations: RawLocation[];
-  timelineHints: TimelineHint[];
-  rawResponse: string;
-}
+// 实体/输出类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
+export type { RawCharacter, RawLocation, TimelineHint, Phase1Output } from '@novel/contracts/pipeline';
 
 /**
  * Phase 1: Analyze novel text to extract characters, locations, and timeline.

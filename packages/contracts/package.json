@@ -10,6 +10,7 @@
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./novel": { "types": "./dist/novel.d.ts", "default": "./dist/novel.js" },
     "./screenplay": { "types": "./dist/screenplay.d.ts", "default": "./dist/screenplay.js" },
+    "./pipeline": { "types": "./dist/pipeline.d.ts", "default": "./dist/pipeline.js" },
     "./drama": { "types": "./dist/drama.d.ts", "default": "./dist/drama.js" },
     "./validator": { "types": "./dist/validator.d.ts", "default": "./dist/validator.js" },
     "./serializers": { "types": "./dist/serializers/index.d.ts", "default": "./dist/serializers/index.js" }

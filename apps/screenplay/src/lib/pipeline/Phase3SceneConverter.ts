@@ -1,29 +1,13 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as CONVERT_PROMPT } from '../llm/prompts/convert-scene';
 import { ContextManager } from './ContextManager';
-import type { SceneBoundary } from './Phase2Segmenter';
-import type { RawCharacter, RawLocation } from './Phase1Analyzer';
+import type { SceneBoundary, RawCharacter, RawLocation, Phase3Output } from '@novel/contracts/pipeline';
 import { TokenBucket } from '../llm/rate-limiter';
 import type { JobStore } from '../store/job-store';
 import { safeJsonParse, looksTruncated } from '../utils/safe-json';
 
-export interface Phase3Output {
-  sceneNumber: number;
-  slugline: string;
-  timeOfDay: string;
-  locationId: string;
-  characterIds: string[];
-  content: Array<{
-    type: 'action' | 'dialogue';
-    description?: string;
-    characterId?: string;
-    line?: string;
-    direction?: string;
-    sourceRefs: Array<{ chapterIndex: number; paragraphIndex: number; excerpt: string }>;
-  }>;
-  summary: string;
-  confidence: number;
-}
+// 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
+export type { SceneBoundary, RawCharacter, RawLocation, Phase3Output } from '@novel/contracts/pipeline';
 
 // ── Heuristic scene splitting ──
 

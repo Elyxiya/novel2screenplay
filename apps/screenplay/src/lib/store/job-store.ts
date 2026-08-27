@@ -9,9 +9,7 @@
  */
 
 import type { PipelineJob, SceneStatus } from '../../types/api';
-import type { Phase1Output } from '../pipeline/Phase1Analyzer';
-import type { Phase2Output } from '../pipeline/Phase2Segmenter';
-import type { Phase3Output } from '../pipeline/Phase3SceneConverter';
+import type { PipelineJobState } from '@novel/contracts/pipeline';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import type { QualityAssessment } from '../multi-agent/handoff-protocol';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
@@ -47,10 +45,7 @@ export interface StoredJob {
     title?: string;
     author?: string;
   };
-  pipelineState: {
-    phase1Output?: Phase1Output;
-    phase2Output?: Phase2Output;
-    phase3Output?: Phase3Output[];
+  pipelineState: PipelineJobState & {
     phase4Output?: Screenplay;
     /** P-评估：传统管线完成的 LLM 质量评估结果（持久化） */
     qualityAssessment?: QualityAssessment;

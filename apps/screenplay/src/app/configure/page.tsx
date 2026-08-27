@@ -18,10 +18,10 @@ function ConfigurePageInner() {
   const novelParam = searchParams.get('novel');
 
   // 数据源：优先服务端小说资产（工作台续转），否则 sessionStorage（本地上传）
-  const [data, setData] = useState<{ novelText: string; title: string; chapters: Chapter[]; novelId?: string; convertedChapters?: number[] } | null>(() => {
+  const [data, setData] = useState<{ novelText: string; title: string; author?: string; kind?: string; chapters: Chapter[]; novelId?: string; convertedChapters?: number[] } | null>(() => {
     try {
       const raw = sessionStorage.getItem('novelData');
-      return raw ? (JSON.parse(raw) as { novelText: string; title: string; chapters: Chapter[]; novelId?: string; convertedChapters?: number[] }) : null;
+      return raw ? (JSON.parse(raw) as { novelText: string; title: string; author?: string; kind?: string; chapters: Chapter[]; novelId?: string; convertedChapters?: number[] }) : null;
     } catch {
       return null;
     }
@@ -98,6 +98,8 @@ function ConfigurePageInner() {
         setData({
           novelText: chapters.map((c) => c.text).join('\n\n'),
           title: n.title,
+          author: n.author ?? undefined,
+          kind: n.kind,
           chapters,
           novelId: n.id,
           convertedChapters: converted,
@@ -184,6 +186,7 @@ function ConfigurePageInner() {
       body: JSON.stringify({
         novelText: data.novelText,
         title: data.title,
+        author: data.author,
         modelId: model,
         selectedChapters: [...selected],
         novelId: data.novelId,
@@ -204,8 +207,11 @@ function ConfigurePageInner() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-float-up">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.push(data.novelId ? '/workbench' : '/')} className="glow-btn-ghost !px-3 !py-1.5 text-xs">
-          ‹ {data.novelId ? '返回工作台' : '返回上传'}
+        <button
+          onClick={() => router.push(data.novelId ? (data.kind === 'draft' ? `/writer/${data.novelId}` : '/workbench') : '/')}
+          className="glow-btn-ghost !px-3 !py-1.5 text-xs"
+        >
+          ‹ {data.kind === 'draft' ? '返回创作台' : data.novelId ? '返回工作台' : '返回上传'}
         </button>
         <span className="tech-tag tech-tag-cyan">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

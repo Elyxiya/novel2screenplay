@@ -40,7 +40,10 @@ function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone
   );
 }
 
-function ShotCard({ shot }: { shot: Shot }) {
+function ShotCard({ shot, sourceScreenplayId }: { shot: Shot; sourceScreenplayId?: string }) {
+  const sceneUrl = sourceScreenplayId
+    ? `/result/${sourceScreenplayId}?scene=${shot.sceneNumber}`
+    : null;
   return (
     <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -57,6 +60,32 @@ function ShotCard({ shot }: { shot: Shot }) {
           <Badge tone="amber">约 {shot.durationSec}s</Badge>
         </div>
       </div>
+
+      {/* 规则增强元数据：情绪/氛围 / 环境音 / 说话人情绪 */}
+      {(shot.mood || shot.sound || shot.characterEmotion) && (
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
+          {shot.mood && <Badge tone="default">氛围 · {shot.mood}</Badge>}
+          {shot.sound && <Badge tone="emerald"># {shot.sound}</Badge>}
+          {shot.characterEmotion && <Badge tone="accent">情绪 · {shot.characterEmotion}</Badge>}
+        </div>
+      )}
+
+      {/* 溯源入口：分镜 → 剧本场景（剧本页「原文对照」再跳小说原文） */}
+      {sceneUrl && (
+        <div className="mb-3">
+          <Link
+            href={sceneUrl}
+            prefetch={false}
+            className="inline-flex items-center gap-1 text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-lg px-2.5 py-1 hover:bg-teal-100/80 transition-colors"
+            title="查看该镜头对应的剧本场景（剧本页可切「原文对照」查看小说原文）"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9v6m3-6v6m3-6v6m6-6v6m3-6v6M7 5h10" />
+            </svg>
+            溯源 · 剧本场景 #{shot.sceneNumber}
+          </Link>
+        </div>
+      )}
 
       {shot.dialogue && (
         <div className="mb-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 px-3.5 py-2.5">
@@ -85,6 +114,13 @@ function ShotCard({ shot }: { shot: Shot }) {
         <p className="mt-1.5 text-xs text-amber-600">
           <span className="font-semibold mr-1.5">备注</span>
           {shot.notes}
+        </p>
+      )}
+
+      {shot.subtitle && (
+        <p className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-400">
+          <span className="font-semibold mr-1.5">字幕</span>
+          {shot.subtitle}
         </p>
       )}
     </div>
@@ -402,7 +438,7 @@ function ShortDramaPageInner() {
             </pre>
           ) : (
             <div className="grid gap-3">
-              {drama.shots.map(s => <ShotCard key={s.shotId} shot={s} />)}
+              {drama.shots.map(s => <ShotCard key={s.shotId} shot={s} sourceScreenplayId={drama.metadata.sourceScreenplayId} />)}
             </div>
           )}
         </>
@@ -465,7 +501,7 @@ function ShortDramaPageInner() {
       {/* 编辑弹窗 */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+          <div className="glass-card w-full max-w-2xl max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="font-semibold text-slate-900">编辑分镜</h3>
               <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>

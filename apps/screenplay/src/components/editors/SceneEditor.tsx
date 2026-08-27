@@ -110,56 +110,56 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
           {/* Edit control bar */}
           <div className="flex justify-end">
             {!editing ? (
-              <button onClick={() => setEditing(true)} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">编辑</button>
+              <button onClick={() => setEditing(true)} className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-white/70 text-slate-600 transition-colors">编辑</button>
             ) : (
               <div className="flex gap-2">
-                <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+                <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white rounded-lg text-sm disabled:opacity-50 shadow-sm shadow-indigo-200/50">
                   {saving ? '保存中...' : '保存'}
                 </button>
-                <button onClick={cancel} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">取消</button>
+                <button onClick={cancel} className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm hover:bg-white/70 text-slate-600 transition-colors">取消</button>
               </div>
             )}
           </div>
 
           {/* Metadata row */}
           {editing && (
-            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+            <div className="space-y-3 p-3 bg-white/50 border border-slate-200/70 rounded-lg">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">场景标题 (Slugline)</label>
+                <label className="text-xs text-slate-500 block mb-1">场景标题 (Slugline)</label>
                 <input
                   value={draft.slugline}
                   onChange={e => setDraft({ ...draft, slugline: e.target.value })}
-                  className="w-full border rounded px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="tech-input !py-1.5 text-sm font-medium"
                   placeholder="外景. 地点 - 时间"
                 />
               </div>
               <div className="flex items-center gap-4 flex-wrap">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">时间段</label>
+                  <label className="text-xs text-slate-500 block mb-1">时间段</label>
                   <select
                     value={draft.timeOfDay}
                     onChange={e => setDraft({ ...draft, timeOfDay: e.target.value as Scene['timeOfDay'] })}
-                    className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="tech-input !py-1.5 text-sm !w-auto"
                   >
                     {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">地点</label>
+                  <label className="text-xs text-slate-500 block mb-1">地点</label>
                   <select
                     value={draft.locationId}
                     onChange={e => setDraft({ ...draft, locationId: e.target.value })}
-                    className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="tech-input !py-1.5 text-sm !w-auto"
                   >
                     {locations.map(l => <option key={l.locationId} value={l.locationId}>{l.name}</option>)}
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">摘要</label>
+                  <label className="text-xs text-slate-500 block mb-1">摘要</label>
                   <input
                     value={draft.summary}
                     onChange={e => setDraft({ ...draft, summary: e.target.value })}
-                    className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="tech-input !py-1.5 text-sm"
                     placeholder="场景摘要..."
                   />
                 </div>
@@ -170,9 +170,9 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
           {/* Content blocks */}
           <div className="space-y-3">
             {draft.content.map((block, bi) => (
-              <div key={bi} className={`group relative ${block.type === 'action' ? 'bg-gray-50' : 'bg-blue-50/50'} rounded-lg p-4 border ${block.type === 'action' ? 'border-gray-200' : 'border-blue-100'}`}>
+              <div key={bi} className={`group relative rounded-lg p-4 border ${block.type === 'action' ? 'bg-slate-50/80 border-slate-200/70' : 'bg-indigo-50/40 border-indigo-200/60'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-semibold ${block.type === 'action' ? 'text-gray-500' : 'text-blue-500'}`}>
+                  <span className={`text-xs font-semibold ${block.type === 'action' ? 'text-slate-500' : 'text-indigo-500'}`}>
                     {block.type === 'action' ? '动作' : '对白'}
                   </span>
                   {editing && (
@@ -192,11 +192,11 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
                       value={block.description}
                       onChange={e => updateBlock(bi, { ...block, description: e.target.value })}
                       rows={3}
-                      className="w-full text-sm text-gray-700 italic bg-transparent border border-gray-200 rounded px-2 py-1 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full text-sm text-slate-700 italic bg-transparent border border-slate-300/70 rounded px-2 py-1 resize-y focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
                       placeholder="描述动作..."
                     />
                   ) : (
-                    <p className="text-sm text-gray-600 italic leading-relaxed">{block.description}</p>
+                    <p className="text-sm text-slate-600 italic leading-relaxed">{block.description}</p>
                   )
                 ) : (
                   <div className="space-y-1">
@@ -205,7 +205,7 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
                         <select
                           value={block.characterId}
                           onChange={e => updateBlock(bi, { ...block, characterId: e.target.value })}
-                          className="w-full border border-blue-200 rounded px-2 py-0.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full border border-indigo-300/60 rounded px-2 py-0.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-cyan-300/40 bg-white/60 text-slate-700"
                         >
                           <option value="">请选择角色</option>
                           {characters.map(c => (
@@ -215,22 +215,22 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
                         <input
                           value={block.direction ?? ''}
                           onChange={e => updateBlock(bi, { ...block, direction: e.target.value })}
-                          className="w-full border border-gray-200 rounded px-2 py-0.5 text-xs text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full border border-slate-300/70 rounded px-2 py-0.5 text-xs text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 bg-transparent"
                           placeholder="方向提示 (微笑、叹息...)"
                         />
                         <textarea
                           value={block.line}
                           onChange={e => updateBlock(bi, { ...block, line: e.target.value })}
                           rows={2}
-                          className="w-full text-sm bg-transparent border border-blue-200 rounded px-2 py-1 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full text-sm bg-transparent border border-indigo-300/60 rounded px-2 py-1 resize-y focus:outline-none focus:ring-2 focus:ring-cyan-300/40 text-slate-700"
                           placeholder="对白内容..."
                         />
                       </>
                     ) : (
                       <>
-                        <p className="text-sm font-bold">{characters.find(c => c.characterId === block.characterId)?.name || block.characterId}</p>
-                        {block.direction && <p className="text-xs text-gray-400">({block.direction})</p>}
-                        <p className="text-sm">{block.line}</p>
+                        <p className="text-sm font-bold text-slate-800">{characters.find(c => c.characterId === block.characterId)?.name || block.characterId}</p>
+                        {block.direction && <p className="text-xs text-slate-400">({block.direction})</p>}
+                        <p className="text-sm text-slate-700">{block.line}</p>
                       </>
                     )}
                   </div>
@@ -242,10 +242,10 @@ export function SceneEditor({ scene, locations, characters, onChange, onSave }: 
           {/* Add block buttons */}
           {editing && (
             <div className="flex gap-2">
-              <button onClick={() => addBlock('action')} className="px-3 py-1.5 border border-dashed rounded text-xs text-gray-500 hover:border-gray-400 hover:text-gray-700">
+              <button onClick={() => addBlock('action')} className="px-3 py-1.5 border border-dashed border-slate-300 rounded text-xs text-slate-500 hover:border-slate-400 hover:text-slate-700 hover:bg-white/60 transition-colors">
                 + 动作段落
               </button>
-              <button onClick={() => addBlock('dialogue')} className="px-3 py-1.5 border border-dashed rounded text-xs text-blue-500 hover:border-blue-400 hover:text-blue-700">
+              <button onClick={() => addBlock('dialogue')} className="px-3 py-1.5 border border-dashed border-indigo-300 rounded text-xs text-indigo-500 hover:border-indigo-400 hover:text-indigo-700 hover:bg-indigo-50/40 transition-colors">
                 + 对白段落
               </button>
             </div>

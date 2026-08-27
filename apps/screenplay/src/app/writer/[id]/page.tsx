@@ -73,6 +73,8 @@ export default function WriterEditorPage() {
 
   const [tab, setTab] = useState<Tab>('chapters');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // 移动端侧栏/助手抽屉开关
+  const [mobilePanel, setMobilePanel] = useState<'none' | 'sidebar' | 'ai'>('none');
 
   // 章节编辑缓冲
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -433,7 +435,7 @@ export default function WriterEditorPage() {
   if (loading) {
     return (
       <RequireAuth>
-        <div className="max-w-5xl mx-auto bg-white rounded-xl border p-16 text-center text-gray-400 text-sm">加载中...</div>
+        <div className="max-w-5xl mx-auto glass-card p-16 text-center text-slate-400 text-sm">加载中...</div>
       </RequireAuth>
     );
   }
@@ -441,9 +443,9 @@ export default function WriterEditorPage() {
   if (!novel) {
     return (
       <RequireAuth>
-        <div className="max-w-5xl mx-auto bg-white rounded-xl border p-16 text-center">
-          <p className="text-gray-500 mb-4">{error ?? '创作小说不存在'}</p>
-          <button onClick={() => router.push('/writer')} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg">
+        <div className="max-w-5xl mx-auto glass-card p-16 text-center">
+          <p className="text-slate-500 mb-4">{error ?? '创作小说不存在'}</p>
+          <button onClick={() => router.push('/writer')} className="glow-btn">
             返回创作台
           </button>
         </div>
@@ -458,45 +460,45 @@ export default function WriterEditorPage() {
     <RequireAuth>
       <div className="max-w-[1400px] mx-auto flex flex-col h-[calc(100vh-90px)]">
         {/* 顶部工具条 */}
-        <div className="flex items-center gap-3 flex-wrap bg-white rounded-xl border px-4 py-2.5">
+        <div className="flex items-center gap-3 flex-wrap glass-card px-4 py-2.5">
           <button
             onClick={() => router.push('/writer')}
-            className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1"
+            className="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1 transition-colors"
           >
             ← 创作台
           </button>
-          <div className="h-4 w-px bg-slate-200" />
+          <div className="h-4 w-px bg-slate-300/70" />
           <input
             value={metaDraft.title}
             onChange={(e) => setMetaDraft({ ...metaDraft, title: e.target.value })}
-            className="text-base font-semibold bg-transparent focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded px-1.5 py-0.5 w-48"
+            className="text-base font-semibold bg-transparent focus:outline-none focus:ring-1 focus:ring-cyan-300 rounded px-1.5 py-0.5 w-48"
             placeholder="作品标题"
           />
           <input
             value={metaDraft.author}
             onChange={(e) => setMetaDraft({ ...metaDraft, author: e.target.value })}
-            className="text-xs text-gray-400 bg-transparent focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded px-1.5 py-0.5 w-24"
+            className="text-xs text-slate-400 bg-transparent focus:outline-none focus:ring-1 focus:ring-cyan-300 rounded px-1.5 py-0.5 w-24"
             placeholder="作者"
           />
           <button
             onClick={saveMeta}
-            className="px-2.5 py-1 text-xs border rounded-lg hover:bg-gray-50 text-gray-500"
+            className="px-2.5 py-1 text-xs border border-slate-300 rounded-lg hover:bg-white/70 text-slate-500 transition-colors"
           >
             保存信息
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-slate-400">
               {novel.chapters.length} 章 · {novel.chapters.reduce((s, c) => s + c.wordCount, 0).toLocaleString()} 字
             </span>
             <div className="relative group">
-              <button className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 text-gray-600">
+              <button className="px-3 py-1.5 text-xs border border-slate-300 rounded-lg hover:bg-white/70 text-slate-600 transition-colors">
                 导出 ▾
               </button>
-              <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 w-28 hidden group-hover:block z-20">
-                <button onClick={() => exportFile('md')} className="block w-full px-3 py-1.5 text-xs hover:bg-gray-50 text-left">
+              <div className="absolute right-0 top-full mt-1 glass-card py-1 w-28 hidden group-hover:block z-20 shadow-xl">
+                <button onClick={() => exportFile('md')} className="block w-full px-3 py-1.5 text-xs hover:bg-white/70 text-left text-slate-600">
                   Markdown
                 </button>
-                <button onClick={() => exportFile('txt')} className="block w-full px-3 py-1.5 text-xs hover:bg-gray-50 text-left">
+                <button onClick={() => exportFile('txt')} className="block w-full px-3 py-1.5 text-xs hover:bg-white/70 text-left text-slate-600">
                   TXT
                 </button>
               </div>
@@ -511,17 +513,17 @@ export default function WriterEditorPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-2 mt-3 flex justify-between items-center">
+          <div className="bg-red-50/80 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-2 mt-3 flex justify-between items-center">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
           </div>
         )}
 
         {/* 主体三栏 */}
-        <div className="flex flex-1 min-h-0 mt-3 gap-3">
-          {/* 左栏：树/人物/世界观 */}
-          <div className="w-60 shrink-0 bg-white rounded-xl border flex flex-col min-h-0">
-            <div className="flex border-b">
+        <div className="relative flex flex-1 min-h-0 mt-3 gap-3">
+          {/* 左栏：树/人物/世界观（移动端抽屉覆盖） */}
+          <div className={`${mobilePanel === 'sidebar' ? 'flex' : 'hidden'} md:flex absolute inset-y-0 left-0 z-20 w-72 md:static md:w-60 shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl md:shadow-none`}>
+            <div className="flex border-b border-slate-200/70">
               {(
                 [
                   ['chapters', '章节'],
@@ -533,7 +535,7 @@ export default function WriterEditorPage() {
                   key={key}
                   onClick={() => setTab(key)}
                   className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    tab === key ? 'text-indigo-600 border-b-2 border-indigo-500 bg-indigo-50/50' : 'text-gray-400 hover:text-gray-600'
+                    tab === key ? 'text-indigo-600 border-b-2 border-indigo-500 bg-indigo-50/50' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {label}
@@ -552,7 +554,7 @@ export default function WriterEditorPage() {
                   </button>
                   <button
                     onClick={addVolume}
-                    className="w-full py-1.5 text-xs rounded-lg border border-dashed border-slate-300 text-gray-500 hover:bg-gray-50"
+                    className="w-full py-1.5 text-xs rounded-lg border border-dashed border-slate-300 text-slate-500 hover:bg-white/70"
                   >
                     + 新建分卷
                   </button>
@@ -572,7 +574,7 @@ export default function WriterEditorPage() {
                                   return next;
                                 })
                               }
-                              className="text-gray-400 hover:text-gray-600 text-xs w-4"
+                              className="text-slate-400 hover:text-slate-600 text-xs w-4"
                             >
                               {isCollapsed ? '▸' : '▾'}
                             </button>
@@ -585,14 +587,14 @@ export default function WriterEditorPage() {
                             />
                             <button
                               onClick={() => addChapter(vol.id)}
-                              className="text-gray-300 hover:text-indigo-500 text-xs opacity-0 group-hover:opacity-100"
+                              className="text-slate-300 hover:text-indigo-500 text-xs opacity-0 group-hover:opacity-100"
                               title="在本卷新建章节"
                             >
                               +
                             </button>
                           </div>
                           {!isCollapsed && (
-                            <div className="ml-3 mt-0.5 space-y-0.5 border-l border-slate-100 pl-2">
+                            <div className="ml-3 mt-0.5 space-y-0.5 border-l border-slate-200/70 pl-2">
                               {volumeChapters(vol.id).map((ch) => (
                                 <ChapterItem
                                   key={ch.id}
@@ -641,17 +643,17 @@ export default function WriterEditorPage() {
                         setForm({ name: c.name, role: c.role, traits: c.traits, background: c.background, notes: c.notes });
                         setShowCharacterForm(true);
                       }}
-                      className="p-2 rounded-lg border hover:border-indigo-300 hover:bg-indigo-50/40 cursor-pointer group"
+                      className="p-2 rounded-lg border border-slate-200/70 hover:border-indigo-300 hover:bg-indigo-50/40 cursor-pointer group transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{c.name}</span>
-                        <span className="text-[10px] text-gray-400">{c.role || '未定'}</span>
+                        <span className="text-sm font-medium text-slate-700">{c.name}</span>
+                        <span className="text-[10px] text-slate-400">{c.role || '未定'}</span>
                       </div>
-                      {c.traits && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{c.traits}</p>}
+                      {c.traits && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{c.traits}</p>}
                     </div>
                   ))}
                   {novel.characters.length === 0 && (
-                    <p className="text-xs text-gray-300 text-center py-4">还没有人物卡</p>
+                    <p className="text-xs text-slate-300 text-center py-4">还没有人物卡</p>
                   )}
                 </div>
               )}
@@ -676,17 +678,17 @@ export default function WriterEditorPage() {
                         setForm({ name: w.name, category: w.category, description: w.description });
                         setShowWorldForm(true);
                       }}
-                      className="p-2 rounded-lg border hover:border-indigo-300 hover:bg-indigo-50/40 cursor-pointer group"
+                      className="p-2 rounded-lg border border-slate-200/70 hover:border-indigo-300 hover:bg-indigo-50/40 cursor-pointer group transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{w.name}</span>
-                        <span className="text-[10px] text-gray-400">{w.category || '未分类'}</span>
+                        <span className="text-sm font-medium text-slate-700">{w.name}</span>
+                        <span className="text-[10px] text-slate-400">{w.category || '未分类'}</span>
                       </div>
-                      {w.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{w.description}</p>}
+                      {w.description && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{w.description}</p>}
                     </div>
                   ))}
                   {novel.worldItems.length === 0 && (
-                    <p className="text-xs text-gray-300 text-center py-4">还没有世界观词条</p>
+                    <p className="text-xs text-slate-300 text-center py-4">还没有世界观词条</p>
                   )}
                 </div>
               )}
@@ -694,21 +696,21 @@ export default function WriterEditorPage() {
           </div>
 
           {/* 中栏：编辑器 */}
-          <div className="flex-1 min-w-0 bg-white rounded-xl border flex flex-col min-h-0">
+          <div className="flex-1 min-w-0 glass-card flex flex-col min-h-0 overflow-hidden">
             {selectedChapter ? (
               <>
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-200/70">
                   <input
                     value={draftTitle}
                     onChange={(e) => setDraftTitle(e.target.value)}
-                    className="flex-1 font-medium text-sm bg-transparent focus:outline-none rounded px-1"
+                    className="flex-1 font-medium text-sm bg-transparent focus:outline-none rounded px-1 text-slate-700"
                     placeholder="章节标题"
                   />
-                  <span className="text-xs text-gray-400">{draftContent.replace(/\s/g, '').length} 字</span>
+                  <span className="text-xs text-slate-400">{draftContent.replace(/\s/g, '').length} 字</span>
                   <button
                     onClick={saveChapter}
                     disabled={saving}
-                    className="px-4 py-1.5 text-xs rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40"
+                    className="px-4 py-1.5 text-xs rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:opacity-90 shadow-md shadow-indigo-200/50 disabled:opacity-40 transition-all"
                   >
                     {saving ? '保存中...' : '保存章节'}
                   </button>
@@ -717,19 +719,19 @@ export default function WriterEditorPage() {
                   value={draftContent}
                   onChange={(e) => setDraftContent(e.target.value)}
                   placeholder="在此输入章节正文……"
-                  className="flex-1 w-full p-4 text-sm leading-7 focus:outline-none resize-none min-h-0"
+                  className="flex-1 w-full p-4 text-sm leading-7 focus:outline-none resize-none min-h-0 bg-transparent text-slate-700 placeholder:text-slate-400"
                 />
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-300 text-sm">
+              <div className="flex-1 flex items-center justify-center text-slate-300 text-sm">
                 从左侧选择章节开始写作
               </div>
             )}
           </div>
 
-          {/* 右栏：AI 助手 */}
-          <div className="w-72 shrink-0 bg-white rounded-xl border flex flex-col min-h-0">
-            <div className="px-4 py-2.5 border-b font-medium text-sm flex items-center gap-2">
+          {/* 右栏：AI 助手（移动端抽屉覆盖） */}
+          <div className={`${mobilePanel === 'ai' ? 'flex' : 'hidden'} md:flex absolute inset-y-0 right-0 z-20 w-72 shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl md:shadow-none`}>
+            <div className="px-4 py-2.5 border-b border-slate-200/70 font-medium text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
               AI 写作助手
             </div>
@@ -744,8 +746,8 @@ export default function WriterEditorPage() {
                     }}
                     className={`py-1.5 text-xs rounded-lg border transition-colors ${
                       aiAction === a
-                        ? 'bg-cyan-500 text-white border-cyan-500'
-                        : 'text-gray-500 hover:border-cyan-300'
+                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-md shadow-cyan-200/50'
+                        : 'text-slate-500 hover:border-cyan-300 border-slate-300/70 hover:bg-white/70'
                     }`}
                   >
                     {AI_ACTION_LABEL[a]}
@@ -763,23 +765,23 @@ export default function WriterEditorPage() {
                       ? '续写方向，如：主角发现真相'
                       : '可选补充要求'
                 }
-                className="w-full px-3 py-2 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                className="w-full px-3 py-2 border border-slate-300/70 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-cyan-300/40 bg-white/60 text-slate-600 placeholder:text-slate-400"
               />
 
               <button
                 onClick={runAi}
                 disabled={aiLoading || !selectedChapter}
-                className="w-full py-2 text-xs rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:opacity-90 disabled:opacity-40"
+                className="glow-btn w-full !py-2 text-xs"
               >
                 {aiLoading ? 'AI 生成中...' : `开始${AI_ACTION_LABEL[aiAction]}`}
               </button>
 
-              {aiError && <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>}
+              {aiError && <p className="text-xs text-red-500 bg-red-50/80 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>}
 
               {aiResult && (
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 border-b">
-                    <span className="text-[10px] text-gray-400">生成结果</span>
+                <div className="border border-slate-200/70 rounded-lg overflow-hidden bg-white/60">
+                  <div className="flex items-center justify-between bg-slate-50/80 px-3 py-1.5 border-b border-slate-200/70">
+                    <span className="text-[10px] text-slate-400">生成结果</span>
                     <button
                       onClick={applyAi}
                       className="text-[10px] text-cyan-600 hover:text-cyan-800 font-medium"
@@ -787,16 +789,56 @@ export default function WriterEditorPage() {
                       {aiAction === 'continue' ? '追加到正文' : '替换正文'}
                     </button>
                   </div>
-                  <div className="p-3 text-xs leading-6 max-h-64 overflow-y-auto whitespace-pre-wrap">
+                  <div className="p-3 text-xs leading-6 max-h-64 overflow-y-auto whitespace-pre-wrap text-slate-600">
                     {aiResult}
                   </div>
                 </div>
               )}
 
               {!selectedChapter && (
-                <p className="text-xs text-gray-300 text-center pt-4">选择章节后可用 AI 续写/扩写/改写/润色</p>
+                <p className="text-xs text-slate-300 text-center pt-4">选择章节后可用 AI 续写/扩写/改写/润色</p>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* 移动端抽屉遮罩 */}
+        {mobilePanel !== 'none' && (
+          <div
+            className="fixed inset-0 z-10 bg-slate-900/30 backdrop-blur-[2px] md:hidden"
+            onClick={() => setMobilePanel('none')}
+          />
+        )}
+
+        {/* 移动端底部工具栏 */}
+        <div className="fixed bottom-4 inset-x-4 z-30 md:hidden">
+          <div className="glass-card rounded-2xl shadow-2xl px-3 py-2 flex items-center gap-2">
+            <button
+              onClick={() => setMobilePanel(mobilePanel === 'sidebar' ? 'none' : 'sidebar')}
+              className={`flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5 border transition-all duration-300 ${
+                mobilePanel === 'sidebar'
+                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-md shadow-indigo-300/40'
+                  : 'border-slate-300 bg-white/60 text-slate-600'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h7" />
+              </svg>
+              目录
+            </button>
+            <button
+              onClick={() => setMobilePanel(mobilePanel === 'ai' ? 'none' : 'ai')}
+              className={`flex-1 py-2.5 rounded-xl text-sm flex items-center justify-center gap-1.5 border transition-all duration-300 ${
+                mobilePanel === 'ai'
+                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-md shadow-indigo-300/40'
+                  : 'border-slate-300 bg-white/60 text-slate-600'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              AI 助手
+            </button>
           </div>
         </div>
 
@@ -861,19 +903,19 @@ function ChapterItem({
     <div
       onClick={onSelect}
       className={`group flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer text-xs transition-colors ${
-        active ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
+        active ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-sm' : 'text-slate-600 hover:bg-white/70'
       }`}
     >
       <span className="flex-1 truncate">{chapter.title}</span>
       {chapter.wordCount > 0 && (
-        <span className={`text-[9px] ${active ? 'text-indigo-200' : 'text-gray-300'}`}>{chapter.wordCount}</span>
+        <span className={`text-[9px] ${active ? 'text-indigo-200' : 'text-slate-300'}`}>{chapter.wordCount}</span>
       )}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-        className={`opacity-0 group-hover:opacity-100 text-[10px] ${active ? 'text-indigo-200 hover:text-white' : 'text-gray-300 hover:text-red-500'}`}
+        className={`opacity-0 group-hover:opacity-100 text-[10px] ${active ? 'text-indigo-200 hover:text-white' : 'text-slate-300 hover:text-red-500'}`}
       >
         ✕
       </button>
@@ -896,14 +938,14 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
+      <div className="glass-card w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-4 text-slate-800">{title}</h3>
         <div className="space-y-3">{children}</div>
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-500 border rounded-lg hover:bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-500 border border-slate-300 rounded-lg hover:bg-white/70 transition-colors">
             取消
           </button>
-          <button onClick={onSubmit} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+          <button onClick={onSubmit} className="px-4 py-2 text-sm text-white bg-gradient-to-r from-indigo-600 to-cyan-500 rounded-lg hover:opacity-90 shadow-md shadow-indigo-200/50 transition-all">
             {submitLabel}
           </button>
         </div>
@@ -926,10 +968,10 @@ function FormField({
   textarea?: boolean;
 }) {
   const cls =
-    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300';
+    'w-full px-3 py-2 border border-slate-300/70 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300/40 bg-white/60 text-slate-700 placeholder:text-slate-400';
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs text-slate-500 mb-1">{label}</label>
       {textarea ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`${cls} resize-none`} />
       ) : (

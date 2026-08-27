@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Screenplay, Scene, Character, Location } from '@novel/contracts/screenplay';
 import { SceneEditor } from '@/components/editors/SceneEditor';
@@ -13,10 +13,13 @@ import { RequireAuth } from '@/components/RequireAuth';
 type Tab = 'scenes' | 'characters' | 'locations' | 'yaml';
 type SceneViewMode = 'editor' | 'compare';
 
-export default function ResultPage() {
+function ResultPageInner() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const jobId = params.id as string;
+  // 溯源跳转：shortdrama 分镜「溯源」入口带 ?scene=N，落地后定位到对应剧本场景
+  const sceneParam = searchParams.get('scene');
 
   const [screenplay, setScreenplay] = useState<Screenplay | null>(null);
   const [yaml, setYaml] = useState('');
@@ -32,6 +35,8 @@ export default function ResultPage() {
 
   // 任务元信息（工具栏展示 + 追加章节需要 novelId）
   const [novelId, setNovelId] = useState<string | null>(null);
+  // 来源小说类型：'draft' = 创作台 /writer/[id]，可回跳上游
+  const [sourceKind, setSourceKind] = useState<string | null>(null);
   const [jobTitle, setJobTitle] = useState('');
   const [createdAt, setCreatedAt] = useState<number>(0);
   const [copied, setCopied] = useState(false);
@@ -74,6 +79,7 @@ export default function ResultPage() {
       setEditYaml(data.yaml);
       if (data.chapterTexts) setChapterTexts(data.chapterTexts);
       if (data.novelId) setNovelId(data.novelId);
+      if (data.sourceKind) setSourceKind(data.sourceKind);
       if (data.title) setJobTitle(data.title);
       if (data.createdAt) setCreatedAt(data.createdAt);
     }
@@ -98,6 +104,7 @@ export default function ResultPage() {
         setEditYaml(data.yaml);
         if (data.chapterTexts) setChapterTexts(data.chapterTexts);
         if (data.novelId) setNovelId(data.novelId);
+        if (data.sourceKind) setSourceKind(data.sourceKind);
         if (data.title) setJobTitle(data.title);
         if (data.createdAt) setCreatedAt(data.createdAt);
       }
@@ -107,6 +114,40 @@ export default function ResultPage() {
       cancelled = true;
     };
   }, [jobId]);
+
+  // 溯源落地：初载时按分镜「溯源」参数 ?scene=N 定位到对应剧本场景
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/result/${jobId}`);
+      const data = await res.json();
+      if (cancelled) return;
+      if (res.status === 404) {
+        // 任务已失效，清理 SQLite 历史记录（忽略失败）
+        fetch(`/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
+        setLoading(false);
+        return;
+      }
+      if (data.screenplay) {
+        setScreenplay(data.screenplay);
+        setYaml(data.yaml);
+        setEditYaml(data.yaml);
+        if (data.chapterTexts) setChapterTexts(data.chapterTexts);
+        if (data.novelId) setNovelId(data.novelId);
+        if (data.title) setJobTitle(data.title);
+        if (data.createdAt) setCreatedAt(data.createdAt);
+        // 溯源跳转落地：定位到分镜「溯源」指向的剧本场景（原文对照即剧本→小说机制）
+        if (sceneParam != null) {
+          const sidx = (data.screenplay as Screenplay).scenes.findIndex((s) => s.sceneNumber === Number(sceneParam));
+          if (sidx >= 0) setActiveScene(sidx);
+        }
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId, sceneParam]);
 
   const saveYaml = async () => {
     setSavingYaml(true);
@@ -554,11 +595,14 @@ export default function ResultPage() {
                 </button>
               ))}
             </div>
-            <Link href="/workbench" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors">
+            <Link
+              href={sourceKind === 'draft' && novelId ? `/writer/${novelId}` : '/workbench'}
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors"
+            >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              返回工作台
+              {sourceKind === 'draft' ? '返回创作台' : '返回工作台'}
             </Link>
           </div>
         </div>
@@ -634,9 +678,9 @@ export default function ResultPage() {
               )}
 
               {/* 场景详情 */}
-              <div className="flex-1 bg-white rounded-xl border overflow-hidden flex flex-col">
+              <div className="flex-1 glass-card overflow-hidden flex flex-col">
                 {/* 详情头部：场景信息 + 编辑/对照切换 */}
-                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white z-10 sticky top-0">
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-200/70 bg-white/40 backdrop-blur z-10 sticky top-0">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-500 text-white text-sm font-bold shrink-0 shadow-md shadow-indigo-300/40">
                       {currentScene.sceneNumber}
@@ -770,21 +814,21 @@ export default function ResultPage() {
 
           {/* ── YAML Tab ── */}
           {tab === 'yaml' && (
-            <div className="bg-white rounded-xl border flex flex-col min-h-[500px] overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b shrink-0">
-                <h3 className="font-semibold text-sm">YAML 输出</h3>
+            <div className="glass-card flex flex-col min-h-[500px] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200/70 shrink-0">
+                <h3 className="font-semibold text-sm text-slate-700">YAML 输出</h3>
                 <div className="flex gap-2">
                   {!editingYaml ? (
                     <>
-                      <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded-lg text-xs hover:bg-gray-50 transition-colors">编辑</button>
-                      <button onClick={copyYaml} className="px-3 py-1.5 border rounded-lg text-xs hover:bg-gray-50 transition-colors">复制</button>
+                      <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">编辑</button>
+                      <button onClick={copyYaml} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">复制</button>
                     </>
                   ) : (
                     <>
                       <button onClick={saveYaml} disabled={savingYaml} className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white rounded-lg text-xs shadow-md shadow-indigo-300/40 disabled:opacity-50">
                         {savingYaml ? '保存中...' : '校验并保存'}
                       </button>
-                      <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border rounded-lg text-xs hover:bg-gray-50 transition-colors">取消</button>
+                      <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">取消</button>
                     </>
                   )}
                 </div>
@@ -794,7 +838,7 @@ export default function ResultPage() {
                 onChange={e => editingYaml && setEditYaml(e.target.value)}
                 readOnly={!editingYaml}
                 rows={30}
-                className={`w-full p-4 text-xs font-mono resize-none focus:outline-none overflow-y-auto flex-1 ${editingYaml ? 'bg-blue-50' : ''}`}
+                className={`w-full p-4 text-xs font-mono resize-none focus:outline-none overflow-y-auto flex-1 bg-transparent ${editingYaml ? 'bg-cyan-50/50' : ''}`}
                 spellCheck={false}
               />
             </div>
@@ -806,7 +850,7 @@ export default function ResultPage() {
       {appendOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAppendOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 animate-float-up">
+          <div className="relative w-full max-w-lg glass-card rounded-3xl shadow-2xl p-6 animate-float-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-400 text-white shadow-lg shadow-indigo-300/40">
@@ -1001,5 +1045,13 @@ export default function ResultPage() {
       )}
     </div>
     </RequireAuth>
+  );
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-gray-400">加载中...</div>}>
+      <ResultPageInner />
+    </Suspense>
   );
 }

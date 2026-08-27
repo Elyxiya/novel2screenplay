@@ -23,6 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         id: novel.id,
         title: novel.title,
         author: novel.author,
+        kind: novel.kind,
         totalChapters: novel.totalChapters,
         convertedChapters: novel.convertedChapters,
         convertedCount: novel.convertedCount,

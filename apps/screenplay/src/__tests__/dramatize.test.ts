@@ -73,7 +73,7 @@ function makeScreenplay(): Screenplay {
 }
 
 describe('dramatize 剧本 → 短剧分镜', () => {
-  it('对白块 + 动作块各产出镜头，溯源字段正确', () => {
+  it('定场镜头 + 对白块 + 动作块各产出镜头，溯源字段正确', () => {
     const drama = dramatize(makeScreenplay(), {
       title: '测试短剧',
       sourceScreenplayId: 'job_123',
@@ -82,11 +82,12 @@ describe('dramatize 剧本 → 短剧分镜', () => {
       now: new Date('2026-08-03T10:00:00.000Z'),
     });
 
-    // 1 对白 + 1 动作（动作 40 字 ≤ 100 字不拆分）→ 2 镜头
-    expect(drama.shots).toHaveLength(2);
+    // 规则增强后：1 定场 + 1 对白 + 1 动作（动作 40 字 ≤ 100 字不拆分）→ 3 镜头
+    expect(drama.shots).toHaveLength(3);
     expect(drama.shots[0].shotId).toBe('shot_1');
-    expect(drama.shots[1].shotId).toBe('shot_2');
-    expect(drama.shots[1].shotNumber).toBe(2);
+    expect(drama.shots[0].notes).toBe('定场镜头');
+    expect(drama.shots[2].shotId).toBe('shot_3');
+    expect(drama.shots[2].shotNumber).toBe(3);
 
     // 溯源链
     expect(drama.metadata.sourceScreenplayId).toBe('job_123');
@@ -97,7 +98,7 @@ describe('dramatize 剧本 → 短剧分镜', () => {
 
   it('对白镜头：景别按角色数推断（1 人 → 近景），说话人映射角色名', () => {
     const drama = dramatize(makeScreenplay(), { sourceScreenplayId: 'job_123' });
-    const dialogueShot = drama.shots[0];
+    const dialogueShot = drama.shots[1];
     expect(dialogueShot.shotType).toBe('close-up');
     expect(dialogueShot.speaker).toBe('林晓');
     expect(dialogueShot.dialogue).toContain('你终于来了');
@@ -105,27 +106,28 @@ describe('dramatize 剧本 → 短剧分镜', () => {
 
   it('对白时长按 4 字/秒估算，至少 3 秒', () => {
     const drama = dramatize(makeScreenplay(), { sourceScreenplayId: 'job_123' });
-    const line = drama.shots[0].dialogue;
+    const line = drama.shots[1].dialogue;
     const expected = Math.max(3, Math.ceil(line.length / 4));
-    expect(drama.shots[0].durationSec).toBe(expected);
+    expect(drama.shots[1].durationSec).toBe(expected);
   });
 
-  it('动作镜头：超长描述（>100 字）拆分为多镜', () => {
+  it('动作镜头：超长描述（>100 字）按语义/兜底硬切拆为 3 镜 + 定场 = 4 镜', () => {
     const sp = makeScreenplay();
-    // 动作描述 250 字 > 100 字/镜 → 拆 3 镜
+    // 动作描述 250 字 > 100 字/镜，无标点 → 兜底硬切 → 3 镜；含定场共 4 镜
     sp.scenes[0].content = [{ type: 'action', description: '林晓'.repeat(125), sourceRefs: [] }]; // 250 字
     const drama = dramatize(sp, { sourceScreenplayId: 'job_123' });
-    expect(drama.shots).toHaveLength(3);
+    expect(drama.shots).toHaveLength(4);
   });
 
-  it('动作镜头：描述含"走/追"等运动词时运镜为跟移', () => {
+  it('动作镜头：描述含"走/跑"等运动词时运镜为跟移', () => {
     const sp = makeScreenplay();
     sp.scenes[0].content = [{ type: 'action', description: '林晓转身快速跑向门口。', sourceRefs: [] }];
     const drama = dramatize(sp, { sourceScreenplayId: 'job_123' });
-    expect(drama.shots[0].cameraMove).toBe('track');
+    const actionShot = drama.shots[1];
+    expect(actionShot.cameraMove).toBe('track');
   });
 
-  it('空场景兜底：至少产出 1 个 wide 镜头', () => {
+  it('空场景兜底：至少产出 1 个 wide 镜头（不叠加定场）', () => {
     const sp = makeScreenplay();
     sp.scenes[0].content = [];
     const drama = dramatize(sp, { sourceScreenplayId: 'job_123' });
@@ -136,7 +138,7 @@ describe('dramatize 剧本 → 短剧分镜', () => {
 
   it('metadata 统计正确：totalShots / totalScenes', () => {
     const drama = dramatize(makeScreenplay(), { sourceScreenplayId: 'job_123' });
-    expect(drama.metadata.totalShots).toBe(2);
+    expect(drama.metadata.totalShots).toBe(3);
     expect(drama.metadata.totalScenes).toBe(1);
     expect(drama.formatVersion).toBe('novel2drama-v1');
   });
@@ -154,7 +156,7 @@ describe('dramatize 剧本 → 短剧分镜', () => {
     });
     sp.scenes[0].characterIds = ['char_1', 'char_2'];
     const twoShot = dramatize(sp, { sourceScreenplayId: 'job_123' });
-    expect(twoShot.shots[0].shotType).toBe('two-shot');
+    expect(twoShot.shots[1].shotType).toBe('two-shot');
 
     sp.characters.push({
       characterId: 'char_3',
@@ -167,12 +169,12 @@ describe('dramatize 剧本 → 短剧分镜', () => {
     });
     sp.scenes[0].characterIds = ['char_1', 'char_2', 'char_3'];
     const medium = dramatize(sp, { sourceScreenplayId: 'job_123' });
-    expect(medium.shots[0].shotType).toBe('medium');
+    expect(medium.shots[1].shotType).toBe('medium');
   });
 
-  it('跨场景镜号全局连续', () => {
+  it('跨场景镜号全局连续（每场景含定场镜头）', () => {
     const sp = makeScreenplay();
-    // 再追加一个场景（1 对白）
+    // 场景1: 定场+对白+动作=3；场景2: 定场+对白=2，共 5
     sp.scenes.push({
       sceneNumber: 2,
       slugline: '外景. 街道 - 日',
@@ -183,8 +185,9 @@ describe('dramatize 剧本 → 短剧分镜', () => {
       summary: '',
     });
     const drama = dramatize(sp, { sourceScreenplayId: 'job_123' });
-    expect(drama.shots).toHaveLength(3);
-    expect(drama.shots.map(s => s.shotNumber)).toEqual([1, 2, 3]);
-    expect(drama.shots[2].sceneNumber).toBe(2);
+    expect(drama.shots).toHaveLength(5);
+    expect(drama.shots.map(s => s.shotNumber)).toEqual([1, 2, 3, 4, 5]);
+    expect(drama.shots[3].shotNumber).toBe(4);
+    expect(drama.shots[4].sceneNumber).toBe(2);
   });
 });

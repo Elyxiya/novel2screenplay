@@ -53,6 +53,14 @@ export const ShotSchema = z.object({
   action: z.string().default(''),
   /** 备注 */
   notes: z.string().optional(),
+  /** 镜头情绪/氛围标签（如：紧张、肃穆、清新）——规则增强可选字段 */
+  mood: z.string().optional(),
+  /** 环境音/音效指示（如：夜虫鸣、雨声、刀剑碰撞）——规则增强可选字段 */
+  sound: z.string().optional(),
+  /** 说话人情绪（仅对白镜头，由语气/标点/方向词推出）——规则增强可选字段 */
+  characterEmotion: z.string().optional(),
+  /** 落屏字幕稿：对白镜头=台词；动作镜头=白描句——规则增强可选字段 */
+  subtitle: z.string().optional(),
 });
 
 // ── 元信息（含溯源链）──

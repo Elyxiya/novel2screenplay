@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
+import { getNovelRepository } from '@/lib/store/sqlite';
 import { serializeToYaml, safeParseFromYaml } from '@novel/contracts/serializers';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import { getCurrentUser, authError } from '@/lib/auth';
@@ -34,6 +35,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ job
 
   const screenplay = job.pipelineState.phase4Output;
   if (!screenplay) return NextResponse.json({ error: '剧本数据不存在' }, { status: 404 });
+  // 溯源来源小说类型（'draft' 时为创作台 /writer/[id] 的小说，可回跳上游）
+  const sourceKind = job.novelId ? (getNovelRepository().get(job.novelId)?.kind ?? 'upload') : null;
   return NextResponse.json({
     screenplay,
     yaml: serializeToYaml(screenplay),
@@ -41,6 +44,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ job
     metadata: screenplay.metadata,
     chapterTexts: job.chapterTexts,
     novelId: job.novelId ?? null,
+    sourceKind,
     modelId: job.config?.modelId ?? null,
     title: job.config?.title ?? screenplay.metadata.title,
     createdAt: job.createdAt,

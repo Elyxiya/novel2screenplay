@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jobStore } from '@/lib/store/job-store';
 import { getDramaRepository } from '@/lib/store/sqlite/drama-repository';
-import { getNovelRepository } from '@/lib/store/sqlite/novel-repository';
+import { getScreenplaySnapshot, ScreenplaySnapshotError } from '@/lib/jobs/screenplay-snapshot';
 import { dramatize } from '@/lib/drama/dramatize';
 import { serializeDramaToYaml, safeParseDramaFromYaml } from '@novel/contracts/serializers';
 import { getCurrentUser, authError } from '@/lib/auth';
@@ -28,31 +27,22 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId;
     if (!jobId) return NextResponse.json({ error: '缺少 jobId' }, { status: 400 });
 
-    const job = jobStore.get(jobId);
-    if (!job) return NextResponse.json({ error: '剧本任务不存在' }, { status: 404 });
-    if (job.userId && job.userId !== user.id) {
-      return authError('无权访问该任务', 403);
-    }
-    if (job.status !== 'completed') {
-      return NextResponse.json({ error: `任务未完成(${job.status})，无法生成分镜` }, { status: 400 });
-    }
-
-    const screenplay = job.pipelineState.phase4Output;
-    if (!screenplay) return NextResponse.json({ error: '剧本数据不存在' }, { status: 404 });
-
-    // 溯源链：job.novelId → 小说资产（补全来源标题）
-    const novelId = job.novelId ?? null;
-    let sourceNovelTitle = '';
-    if (novelId) {
-      const novel = getNovelRepository().get(novelId);
-      if (novel) sourceNovelTitle = novel.title;
+    // C1 收敛：通过 ② 侧剧本快照读取输入，不再直接触碰 ② 内部存储
+    let snapshot;
+    try {
+      snapshot = getScreenplaySnapshot(jobId, user.id);
+    } catch (err) {
+      if (err instanceof ScreenplaySnapshotError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
+      throw err;
     }
 
-    const drama = dramatize(screenplay, {
-      title: job.config?.title ?? screenplay.metadata.title,
-      sourceScreenplayId: jobId,
-      sourceNovelId: novelId,
-      sourceNovelTitle,
+    const drama = dramatize(snapshot.screenplay, {
+      title: snapshot.title,
+      sourceScreenplayId: snapshot.sourceJobId,
+      sourceNovelId: snapshot.sourceNovelId,
+      sourceNovelTitle: snapshot.sourceNovelTitle,
     });
     const yaml = serializeDramaToYaml(drama);
 
@@ -67,7 +57,7 @@ export async function POST(request: NextRequest) {
     const existing = repo.findBySourceJobId(jobId, user.id);
     const dramaId = existing?.id ?? repo.create({
       sourceJobId: jobId,
-      sourceNovelId: novelId,
+      sourceNovelId: snapshot.sourceNovelId,
       title: drama.metadata.title,
       dramaYaml: yaml,
       userId: user.id,
@@ -79,8 +69,8 @@ export async function POST(request: NextRequest) {
       yaml,
       source: {
         sourceScreenplayId: jobId,
-        sourceNovelId: novelId,
-        sourceNovelTitle,
+        sourceNovelId: snapshot.sourceNovelId,
+        sourceNovelTitle: snapshot.sourceNovelTitle,
       },
     });
   } catch (err) {

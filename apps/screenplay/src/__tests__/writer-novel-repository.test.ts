@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getWriterNovelRepository, type WriterNovelRepository } from '@/lib/store/sqlite/writer-novel-repository';
+import { getNovelRepository } from '@/lib/store/sqlite/novel-repository';
 import { getDatabase, closeDatabase } from '@/lib/store/sqlite/db';
 
 describe('writer-novel-repository 创作小说 CRUD', () => {
@@ -102,6 +103,45 @@ describe('writer-novel-repository 创作小说 CRUD', () => {
     expect(texts).toHaveLength(2);
     expect(texts[0].title).toBe('第一章');
     expect(texts[1].text).toBe('第二段正文。');
+  });
+
+  it('materialize 后 ②输入字段不丢（title/author/novelText/chapterTexts），且 kind=draft 可被 ② 读取', () => {
+    repo.saveChapter(draftId, { id: 'c1', volumeId: null, title: '第一章', order: 0, content: '内容甲。', wordCount: 0, updatedAt: 1 });
+    repo.saveChapter(draftId, { id: 'c2', volumeId: null, title: '第二章', order: 1, content: '内容乙。', wordCount: 0, updatedAt: 1 });
+    repo.materialize(draftId);
+
+    // ② 侧通过 /api/novels/[id] 读取同一行（novel-repository.get），须能拿到完整输入
+    const novel = getNovelRepository().get(draftId)!;
+    expect(novel).not.toBeNull();
+    expect(novel.kind).toBe('draft');
+    expect(novel.id).toBe(draftId);
+    expect(novel.title).toBe(TEST_TITLE);
+    expect(novel.author).toBe('测试作者');
+    expect(novel.chapterTexts).toEqual(['内容甲。', '内容乙。']);
+    expect(novel.novelText).toContain('第一章');
+    expect(novel.novelText).toContain('内容乙。');
+    expect(novel.totalChapters).toBe(2);
+  });
+
+  it('转换完成后回写 last_job_id 与已转换索引，可据此回跳上游（job 关联）', () => {
+    repo.saveChapter(draftId, { id: 'c1', volumeId: null, title: '第一章', order: 0, content: '内容甲。', wordCount: 0, updatedAt: 1 });
+    repo.saveChapter(draftId, { id: 'c2', volumeId: null, title: '第二章', order: 1, content: '内容乙。', wordCount: 0, updatedAt: 1 });
+    repo.materialize(draftId);
+
+    // 模拟由 pipeline 完成（novel-repository.markChaptersConverted 写同一行）——真实链路
+    getNovelRepository().markChaptersConverted(draftId, [0], 'job_conv_1');
+    const novel = getNovelRepository().get(draftId)!;
+    expect(novel.lastJobId).toBe('job_conv_1');
+    expect(novel.convertedChapters).toEqual([0]);
+
+    // 创作侧列表同步反映已转换数
+    const summary = repo.listDrafts(TEST_USER).find((s) => s.id === draftId);
+    expect(summary?.convertedCount).toBe(1);
+
+    // 创作侧 writer 仓库的 markConverted 同样能记录 job 关联（供按 jobId 跳转结果页）
+    repo.markConverted(draftId, ['c2'], 'job_conv_2');
+    const row = getDatabase().prepare('SELECT last_job_id FROM novels WHERE id = ?').get(draftId) as { last_job_id: string };
+    expect(row.last_job_id).toBe('job_conv_2');
   });
 
   it('updateMeta 更新标题/作者/简介', () => {

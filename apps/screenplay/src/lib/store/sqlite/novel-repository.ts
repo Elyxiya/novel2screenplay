@@ -17,6 +17,8 @@ export interface NovelAsset {
   id: string;
   title: string;
   author: string | null;
+  /** 'upload' 上传资产 | 'draft' 创作台小说（kind='draft' 时 id 即创作台 /writer/[id] 的 id，可回跳） */
+  kind: string;
   /** 归属用户（NULL 表示旧库遗留数据） */
   userId: string | null;
   novelText: string;
@@ -59,6 +61,7 @@ interface NovelRow {
   id: string;
   title: string;
   author: string | null;
+  kind: string;
   user_id: string | null;
   novel_text: string;
   chapter_texts: string;
@@ -234,6 +237,7 @@ class NovelRepositoryImpl implements NovelRepository {
       id: row.id,
       title: row.title,
       author: row.author,
+      kind: row.kind ?? 'upload',
       userId: row.user_id,
       novelText: row.novel_text,
       chapters: chapters.map(({ index, title, paragraphCount }) => ({ index, title, paragraphCount })),

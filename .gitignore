@@ -69,3 +69,10 @@ data-test/
 .chrome-cdp-tmp/
 # 早期验证截图（本地资产，不入库）
 .verify-shots/
+
+
+/docs/项目立项文档.md
+/docs/产品定义.md
+/docs/README.md
+/docs/简历亮点验证报告.md
+/docs/项目介绍完整文档.md

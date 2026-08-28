@@ -1179,12 +1179,15 @@ function ChapterItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(chapter.title);
+  const [prevTitle, setPrevTitle] = useState(chapter.title);
   const inputRef = useRef<HTMLInputElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // 外部重命名/重排后同步草稿：渲染期调整 state，避免 effect 内 setState 级联渲染
+  if (prevTitle !== chapter.title) {
+    setPrevTitle(chapter.title);
     setDraft(chapter.title);
-  }, [chapter.title]);
+  }
   useEffect(() => {
     if (editing) {
       const t = setTimeout(() => inputRef.current?.focus(), 0);

@@ -13,10 +13,10 @@
 - [ ] T1-C8. 步骤 1 对比数字落 `docs/`（动 Task 2 前）
 
 ## Task 2 · 评估窄版（步骤 2）
-- [ ] T2-C1. eval runner：`npm run eval -- --set/--model/--stages`；manifest hash → JSONL + hash 缓存；**`--dry-run` 输出总 token 预算**
-- [ ] T2-C2. 身份断言集：**按入选标准筛样本**（别名密集/多线/章节边界，3–5 短 + 3–5 中，标注 1–2h/本）；确定性依赖标注的死亡/揭示章（非输出推导）
-- [ ] T2-C3. 确定性断言走规则检查（零成本）；语义断言走双评委
-- [ ] T2-C4. 《judge 稳定性报告》：复跑方差（每类 1 本 × k=5 × 双评委）→ 定阈值（不拍脑袋）；**同一方差供 T5-C1 推导 Δ_tail**
+- [x] T2-C1. eval runner：`npm run eval -- --set/--model/--stages`；manifest hash → JSONL + hash 缓存；**`--dry-run` 输出总 token 预算**（已实现并验证：`scripts/eval-runner.mjs` + `scripts/eval/*.mjs`，24 例单测）
+- [ ] T2-C2. 身份断言集：**按入选标准筛样本**（别名密集/多线/章节边界，3–5 短 + 3–5 中，标注 1–2h/本）；确定性依赖标注的死亡/揭示章（非输出推导）（规则 + 合成 fixture 已实现；**真实样本标注待人工**）
+- [x] T2-C3. 确定性断言走规则检查（零成本）；语义断言走双评委（已实现：identity.mjs 规则 + judge.mjs 双评委 + manifest 缓存，24 例单测全绿）
+- [ ] T2-C4. 《judge 稳定性报告》：复跑方差（每类 1 本 × k=5 × 双评委）→ 定阈值（不拍脑袋）；**同一方差供 T5-C1 推导 Δ_tail**（stability.mjs + `--stability` 已实现并单测；实跑待 T2-C2 标注）
 - [ ] T2-C5. 分层对比曲线：新旧 Phase1 断言通过率按章节前/中/后三段（尾段应被压平）
 - [ ] T2-C6. 报告/复现单元入 `docs/`
 

@@ -26,12 +26,12 @@
 
 **目标**：身份断言集（确定性 + 语义）+ eval runner（git-hash 复现 + manifest 缓存）+ judge 稳定性报告。为 Task 1/3 的可信底座，可与 Task 1 并行（标注是纯人力活）。
 
-- [ ] 2.1 eval runner：`npm run eval -- --set <name> --model <id> [--stages analyze|convert]`；manifest=`(prompt 文件 hash, model id, 参数, 数据集 hash, judge prompt hash)` → JSONL；**按 hash 缓存**结果；**提供 `--dry-run`** 输出总 token 预算（manifest 各格预估值求和），跑前先见账。
-- [ ] 2.2 身份断言集：**按入选标准筛样本**（3–5 短 + 3–5 中，须"别名密集、多线叙事、有清晰章节边界切分"，标注 1–2h/本）；确定性断言（已死角色不再开口、称谓揭示章前不出现——**依赖标注的死亡/揭示章，非输出推导**）+ 语义断言（身份陈述矛盾，只兜规则查不到的）。
-- [ ] 2.3 确定性断言走规则检查（零成本）；语义断言走 judge（双评委）；评委成本被 manifest 缓存控住。
-- [ ] 2.4 《judge 稳定性报告》：**方差研究限成本**（每类抽 1 本 × 复跑 k=5 × 双评委）→ 用**方差数据**定阈值（不拍脑袋）；该方差同时供 T5-C1 推导 `Δ_tail`。
-- [ ] 2.5 分层对比：新旧 Phase1 断言通过率按章节**前/中/后三段**出曲线（截断损伤集中尾段，新管线应压平尾段）。
-- [ ] 2.6 回归 + 落档：runner 可复现执行；报告入 `docs/`。
+- [x] 2.1 eval runner：`npm run eval -- --set <name> --model <id> [--stages analyze|convert]`；manifest=`(prompt 文件 hash, model id, 参数, 数据集 hash, judge prompt hash)` → JSONL；**按 hash 缓存**结果；**提供 `--dry-run`** 输出总 token 预算（manifest 各格预估值求和），跑前先见账。（已实现并验证：`scripts/eval-runner.mjs` + `scripts/eval/*.mjs`；dry-run 账单与零 LLM 规则集实跑均通过）
+- [ ] 2.2 身份断言集：**按入选标准筛样本**（3–5 短 + 3–5 中，须"别名密集、多线叙事、有清晰章节边界切分"，标注 1–2h/本）；确定性断言（已死角色不再开口、称谓揭示章前不出现——**依赖标注的死亡/揭示章，非输出推导**）+ 语义断言（身份陈述矛盾，只兜规则查不到的）。（规则与合成 fixture 已实现；**真实样本标注为纯人力活**，标注后填充 `identity` 集）
+- [x] 2.3 确定性断言走规则检查（零成本）；语义断言走 judge（双评委）；评委成本被 manifest 缓存控住。（已实现并 24 例单测全绿）
+- [ ] 2.4 《judge 稳定性报告》：**方差研究限成本**（每类抽 1 本 × 复跑 k=5 × 双评委）→ 用**方差数据**定阈值（不拍脑袋）；该方差同时供 T5-C1 推导 `Δ_tail`。（`stability.mjs` 噪声带/阈值推导 + `--stability` 已实现并单测；**实跑报告待 2.2 标注样本就绪**）
+- [ ] 2.5 分层对比：新旧 Phase1 断言通过率按章节**前/中/后三段**出曲线（截断损伤集中尾段，新管线应压平尾段）。（依赖 Task 1 双路径 + 2.2 样本，后置）
+- [ ] 2.6 回归 + 落档：runner 可复现执行；报告入 `docs/`。（单测/lint/typecheck/全量 test 已绿；docs 落档待 2.4/2.5 出数后执行）
 
 ## Task 5（插序）· 翻 Phase1 默认（数据门槛驱动，独立小 PR）
 

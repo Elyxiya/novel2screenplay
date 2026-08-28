@@ -120,7 +120,7 @@ export function autoFixScreenplay(screenplay: Screenplay): {
     const updatedCharIds: string[] = [];
     for (const charId of scene.characterIds) {
       if (!characterIds.has(charId)) {
-        const canonicalName = `未知角色 (${charId})`;
+        const canonicalName = `未知角色(id=${charId})`;
         let newCharId: string;
         if (canonicalNameToId.has(canonicalName)) {
           // Reuse existing stub for the same original name
@@ -150,7 +150,7 @@ export function autoFixScreenplay(screenplay: Screenplay): {
     // Fix missing characters in dialogue blocks
     for (const block of scene.content) {
       if (block.type === 'dialogue' && !characterIds.has(block.characterId)) {
-        const canonicalName = `未知角色 (${block.characterId})`;
+        const canonicalName = `未知角色(id=${block.characterId})`;
         let newCharId: string;
         if (canonicalNameToId.has(canonicalName)) {
           newCharId = canonicalNameToId.get(canonicalName)!;

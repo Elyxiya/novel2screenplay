@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 // ── Raw entities (Phase 1 output) ──
 
+/** One (alias, chapterIndex) pair that contributed to a merged entity's identity. */
+export const MergeProvenanceSchema = z.object({
+  name: z.string(),
+  chapterIndex: z.number().int(),
+});
+
 export const RawCharacterSchema = z.object({
   name: z.string(),
   aliases: z.array(z.string()),
@@ -9,6 +15,11 @@ export const RawCharacterSchema = z.object({
   description: z.string(),
   isMajor: z.boolean(),
   sourceChapterIndex: z.number().int(),
+  /**
+   * map-reduce 归并出处（可选）：跨章合并时，记录被归并进的别名及来源章节，
+   * 使断言矛盾可回溯到具体 merge 决策。旧截断路径不产出该字段。
+   */
+  mergeProvenance: z.array(MergeProvenanceSchema).optional(),
 });
 
 export const RawLocationSchema = z.object({
@@ -24,10 +35,33 @@ export const TimelineHintSchema = z.object({
   type: z.enum(['time-of-day', 'time-jump', 'season']),
 });
 
+// ── Phase 1 map-reduce: 全局设定卡（章节摘要 + open threads）──
+
+export const ChapterSummarySchema = z.object({
+  chapterIndex: z.number().int(),
+  summary: z.string(),
+});
+
+export const OpenThreadSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  startChapterIndex: z.number().int(),
+  /** 有终点则为已闭合伏笔，否则是开放线索 */
+  endChapterIndex: z.number().int().optional(),
+});
+
+export const SettingCardSchema = z.object({
+  chapterSummaries: z.array(ChapterSummarySchema),
+  openThreads: z.array(OpenThreadSchema),
+});
+
 export const Phase1OutputSchema = z.object({
   characters: z.array(RawCharacterSchema),
   locations: z.array(RawLocationSchema),
   timelineHints: z.array(TimelineHintSchema),
+  /** 全局设定卡（map-reduce 路径产出；旧截断路径无此字段） */
+  settingCard: SettingCardSchema.optional(),
   rawResponse: z.string(),
 });
 
@@ -88,9 +122,13 @@ export const PipelineJobStateSchema = z.object({
 
 // ── Derived Types ──
 
+export type MergeProvenance = z.infer<typeof MergeProvenanceSchema>;
 export type RawCharacter = z.infer<typeof RawCharacterSchema>;
 export type RawLocation = z.infer<typeof RawLocationSchema>;
 export type TimelineHint = z.infer<typeof TimelineHintSchema>;
+export type ChapterSummary = z.infer<typeof ChapterSummarySchema>;
+export type OpenThread = z.infer<typeof OpenThreadSchema>;
+export type SettingCard = z.infer<typeof SettingCardSchema>;
 export type Phase1Output = z.infer<typeof Phase1OutputSchema>;
 export type SceneBoundary = z.infer<typeof SceneBoundarySchema>;
 export type Phase2Output = z.infer<typeof Phase2OutputSchema>;

@@ -3,13 +3,13 @@
 事实验证（对照 `spec.md` v0.3.0 §6 硬验收标准；`T#-C#` 编号）、回归与落档。每步对比数字须在动下一步前写入受版本控制 `docs/`。
 
 ## Task 1 · Phase1 map-reduce + 实体归并落数据（步骤 1）
-- [ ] T1-C1. 契约增量：`RawCharacter.mergeProvenance` + 全局设定卡（含**章节摘要**）/open-threads 类型；rebuild `@novel/contracts`
-- [ ] T1-C2. map 抽取：按章并行抽角色/地点/时间线/open-threads/**每章 2–3 句摘要**；超长单章按 size + 重叠二次分块（复用 splitIntoChunks）；**内置廉价 cap（每 job 最大章节×每章 token 预估，超限优雅降级）**；**合成长单章 fixture（>30k，免标注）专测分块**
-- [ ] T1-C3. reduce 归并：merge 决策落数据带出处（可回溯到具体 merge），产出全局设定卡 + 别名索引
-- [ ] T1-C4. 双路径 + flag：map-reduce 新路径、旧截断保留，默认行为留 baseline
-- [ ] T1-C5. 占位 rawName 保留（ask-first 确认后改，`未知角色(id=<原名>)`）
-- [ ] T1-C6. 验收（硬）：>4 万字（含 8 万字级单章）不再截断且出设定卡；**自洽性代理 + correctness floor 并列出数**；两路径可切换
-- [ ] T1-C7. 回归：分块/摘要/reduce/mergeProvenance/代理/floor 单测 + lint/typecheck/test 全绿
+- [x] T1-C1. 契约增量：`RawCharacter.mergeProvenance` + 全局设定卡（含**章节摘要**）/open-threads 类型；rebuild `@novel/contracts`
+- [x] T1-C2. map 抽取：按章并行抽角色/地点/时间线/open-threads/**每章 2–3 句摘要**；超长单章按 size + 重叠二次分块（复用 splitIntoChunks）；**内置廉价 cap（每 job 最大章节×每章 token 预估，超限优雅降级）**；**合成长单章 fixture（>30k，免标注）专测分块**
+- [x] T1-C3. reduce 归并：merge 决策落数据带出处（可回溯到具体 merge），产出全局设定卡 + 别名索引
+- [x] T1-C4. 双路径 + flag：map-reduce 新路径、旧截断保留，默认行为留 baseline
+- [x] T1-C5. 占位 rawName 保留（**ask-first 已确认**，`未知角色(id=<原名>)`）
+- [ ] T1-C6. 验收（硬）：>4 万字（含 8 万字级单章）不再截断且出设定卡；**自洽性代理 + correctness floor 并列出数**；两路径可切换（自洽性代理已实现并测；数值验收由主线执行）
+- [x] T1-C7. 回归：分块/摘要/reduce/mergeProvenance/代理/floor 单测 + lint/typecheck/test 全绿（**docs 落档见 T1-C8，由主线执行**）
 - [ ] T1-C8. 步骤 1 对比数字落 `docs/`（动 Task 2 前）
 
 ## Task 2 · 评估窄版（步骤 2）

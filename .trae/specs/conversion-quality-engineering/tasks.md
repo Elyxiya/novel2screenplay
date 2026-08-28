@@ -12,15 +12,15 @@
 
 **前置（ask-first）**：新增 `mergeProvenance`/设定卡类型为增量、非破坏，直接做。`validator` 占位 rawName 保留属**行为变更，需先确认**（见 1.5）。
 
-- [ ] 1.1 契约增量（`packages/contracts/src/pipeline.ts`）：`RawCharacter` 增 `mergeProvenance`（别名/出处链）；新增统一输出类型 =「全局设定卡（含**章节摘要**）/ open threads（带章节跨度）」，schema 携带别名索引；rebuild `@novel/contracts`。
-- [ ] 1.2 map 抽取（含滚动摘要生产者与章内分块）：按章并行抽角色/地点/时间线/open-threads/**每章 2–3 句摘要**，每章带 `sourceChapterIndex`；**超长单章按 size + 少量重叠二次分块**（复用 ContextManager.splitIntoChunks），保证 >30k 的单章不撞墙；做成独立可测函数。
-- [ ] 1.2b 内置廉价 cap（预算挂点前置）：map 循环内置"每 job 最大章节数 × 每章 token 预估"cap，超限**优雅降级**（有条件跳过/合并分块），不静默爆 token。
-- [ ] 1.2c 合成长单章 fixture：把几章拼成一个 >30k token 的合成 fixture（免标注、确定性），专门测分块路径。
-- [ ] 1.3 reduce 归并：跨章合并决策**落数据**（`char_N = 已有实体(别名, 章节出处) 归并入`，形成 merge log & 别名索引），产出全局设定卡；合并交 LLM 决策但不丢出处，可回溯。
-- [ ] 1.4 双路径 + flag：`Phase1Analyzer` 增 map-reduce 路径，旧截断路径保留；flag/env 切换，默认行为先不动（留 baseline）。
-- [ ] 1.5 占位 rawName 保留（**ask-first 确认后做**）：`validator.ts` 占位 stub 从 `未知角色(id)` 改 `未知角色(id=<原名>)`，行为增量。
-- [ ] 1.6 验收（硬）：>4 万字（**含 8 万字级单章**）跨界样本不再截断且出全局设定卡；**自洽性代理**（两切序 reduce 实体集差）**与 correctness floor（挑 1 本短篇人工数主要角色，`实体数/人工数`）并列出数**；两路径可切换。
-- [ ] 1.7 回归：add 单测（map 分块/摘要/reduce 归并/mergeProvenance/自洽性代理/floor）；lint/typecheck/test 全绿；对比数字落 `docs/`（动 Task 2 前）。
+- [x] 1.1 契约增量（`packages/contracts/src/pipeline.ts`）：`RawCharacter` 增 `mergeProvenance`（别名/出处链）；新增统一输出类型 =「全局设定卡（含**章节摘要**）/ open threads（带章节跨度）」，schema 携带别名索引；rebuild `@novel/contracts`。
+- [x] 1.2 map 抽取（含滚动摘要生产者与章内分块）：按章并行抽角色/地点/时间线/open-threads/**每章 2–3 句摘要**，每章带 `sourceChapterIndex`；**超长单章按 size + 少量重叠二次分块**（复用 ContextManager.splitIntoChunks），保证 >30k 的单章不撞墙；做成独立可测函数（`phase1-map.ts#mapChapters`）。
+- [x] 1.2b 内置廉价 cap（预算挂点前置）：map 循环内置"每 job 最大章节数 × 每章 token 预估"cap，超限**优雅降级**（有条件跳过/合并分块），不静默爆 token。
+- [x] 1.2c 合成长单章 fixture：把几章拼成一个 >30k token 的合成 fixture（免标注、确定性），专门测分块路径。
+- [x] 1.3 reduce 归并：跨章合并决策**落数据**（`char_N = 已有实体(别名, 章节出处) 归并入`，形成 merge log & 别名索引），产出全局设定卡；合并交 LLM 决策但不丢出处，可回溯。
+- [x] 1.4 双路径 + flag：`Phase1Analyzer` 增 map-reduce 路径，旧截断路径保留；flag/env 切换，默认行为先不动（留 baseline）。
+- [x] 1.5 占位 rawName 保留（**ask-first 已确认**）：`validator.ts` 占位 stub 保留原始名 `未知角色(id=<原名>)`（如 `未知角色(id=老秦)`），行为增量。
+- [ ] 1.6 验收（硬）：>4 万字（**含 8 万字级单章**）跨界样本不再截断且出全局设定卡；**自洽性代理**（两切序 reduce 实体集差）**与 correctness floor（挑 1 本短篇人工数主要角色，`实体数/人工数`）并列出数**；两路径可切换。（自洽性代理已实现并测；数值验收落档由主线执行）
+- [x] 1.7 回归：add 单测（map 分块/摘要/reduce 归并/mergeProvenance/自洽性代理/floor）；lint/typecheck/test 全绿；对比数字落 `docs/`（动 Task 2 前）。（单测 + 三命令全绿已达成；**docs 落档由主线在动 Task 2 前执行**）
 
 ## Task 2 · 评估窄版（步骤 2）
 

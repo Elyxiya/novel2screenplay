@@ -1,10 +1,23 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as CONVERT_PROMPT } from '../llm/prompts/convert-scene';
 import { ContextManager } from './ContextManager';
-import type { SceneBoundary, RawCharacter, RawLocation, Phase3Output } from '@novel/contracts/pipeline';
+import type { SceneBoundary, RawCharacter, RawLocation, Phase3Output, SettingCard } from '@novel/contracts/pipeline';
 import { TokenBucket } from '../llm/rate-limiter';
 import type { JobStore } from '../store/job-store';
 import { safeJsonParse, looksTruncated } from '../utils/safe-json';
+import { BudgetController, getBudgetController } from '../llm/adapter/budget-controller';
+import {
+  resolveKeyCharacters,
+  selectSceneCharacters,
+  buildRollingSummary,
+  buildOpenThreadContext,
+} from './phase3-context';
+
+/** Task 3 convertScenes 可选增强上下文（向后兼容，未传则行为与改造前一致） */
+export interface Phase3ConvertOptions {
+  /** map-reduce 路径的全局设定卡（章节摘要 + open threads），驱动 3.2 上下文注入 */
+  settingCard?: SettingCard;
+}
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
 export type { SceneBoundary, RawCharacter, RawLocation, Phase3Output } from '@novel/contracts/pipeline';
@@ -171,7 +184,11 @@ export class Phase3SceneConverter {
   private semaphore = new Semaphore(3);
   private rateLimiter = new TokenBucket(50, 60_000);
 
-  constructor(private provider: LLMProvider, private ctxManager: ContextManager) {}
+  constructor(
+    private provider: LLMProvider,
+    private ctxManager: ContextManager,
+    private budgetController: BudgetController = getBudgetController(),
+  ) {}
 
   private buildCharIdMap(characters: RawCharacter[]): Map<string, string> {
     const map = new Map<string, string>();
@@ -207,10 +224,20 @@ export class Phase3SceneConverter {
     charContext: string, locContext: string,
     charIdMap: Map<string, string>, jobStore: JobStore, jobId: string,
     abortSignal?: AbortSignal,
+    summaries?: string, threads?: string,
   ): Promise<Phase3Output> {
+    const contextParts = [
+      `角色: ${charContext}`,
+      `地点: ${locContext}`,
+      `标题: ${scene.draftSlugline}`,
+      `摘要: ${scene.summary}`,
+    ];
+    if (summaries) contextParts.push(`前情摘要:\n${summaries}`);
+    if (threads) contextParts.push(`伏笔线索:\n${threads}`);
+    contextParts.push('', partText);
     const messages: LLMMessage[] = [
       { role: 'system', content: CONVERT_PROMPT },
-      { role: 'user', content: [`角色: ${charContext}`, `地点: ${locContext}`, `标题: ${scene.draftSlugline}`, `摘要: ${scene.summary}`, '', partText].join('\n') },
+      { role: 'user', content: contextParts.join('\n') },
     ];
 
     let lastError: Error | null = null;
@@ -292,25 +319,38 @@ export class Phase3SceneConverter {
    * Characters are filtered by the scene's keyCharacterNames (name + alias
    * match); locations by the scene's chapterIndex. Falls back to the full
    * list when filtering yields nothing, so context is never empty.
+   *
+   * Task 3 增强（传入 settingCard 时启用）：主角卡常驻 + 配角按键 + 前 N 章
+   * 滚动摘要 + open threads 按章节区间注入。未传 settingCard 行为与改造前一致。
    */
   private buildSceneContext(
     scene: SceneBoundary,
     characters: RawCharacter[],
     locations: RawLocation[],
     charIdMap: Map<string, string>,
-  ): { chars: string; locs: string; charKept: number; charTotal: number; locKept: number; locTotal: number } {
-    const byName = new Map<string, RawCharacter>();
-    for (const c of characters) {
-      byName.set(c.name, c);
-      c.aliases.forEach(a => byName.set(a, c));
+    settingCard?: SettingCard,
+  ): { chars: string; locs: string; charKept: number; charTotal: number; locKept: number; locTotal: number; summaries: string; threads: string } {
+    let charsForCtx: RawCharacter[];
+    let charKept: number;
+    if (settingCard) {
+      const sel = selectSceneCharacters(scene, characters);
+      charsForCtx = sel.kept;
+      charKept = sel.kept.length;
+    } else {
+      const byName = new Map<string, RawCharacter>();
+      for (const c of characters) {
+        byName.set(c.name, c);
+        c.aliases.forEach(a => byName.set(a, c));
+      }
+      const keptNames = new Set<string>();
+      for (const n of scene.keyCharacterNames || []) {
+        const c = byName.get(n);
+        if (c) keptNames.add(c.name);
+      }
+      const keptChars = characters.filter(c => keptNames.has(c.name));
+      charsForCtx = keptChars.length > 0 ? keptChars : characters;
+      charKept = keptChars.length;
     }
-    const keptNames = new Set<string>();
-    for (const n of scene.keyCharacterNames || []) {
-      const c = byName.get(n);
-      if (c) keptNames.add(c.name);
-    }
-    const keptChars = characters.filter(c => keptNames.has(c.name));
-    const charsForCtx = keptChars.length > 0 ? keptChars : characters;
 
     const keptLocs = locations.filter(l => l.sourceChapterIndex === scene.chapterIndex);
     const locsForCtx = keptLocs.length > 0 ? keptLocs : locations;
@@ -322,10 +362,14 @@ export class Phase3SceneConverter {
       .map(l => `loc_${String(l.sourceChapterIndex + 1).padStart(2, '0')}=${l.name}(${l.type})`)
       .join(', ');
 
+    const summaries = buildRollingSummary(settingCard, scene.chapterIndex);
+    const threads = buildOpenThreadContext(settingCard, scene.chapterIndex);
+
     return {
       chars, locs,
-      charKept: keptChars.length, charTotal: characters.length,
+      charKept, charTotal: characters.length,
       locKept: keptLocs.length, locTotal: locations.length,
+      summaries, threads,
     };
   }
 
@@ -345,10 +389,58 @@ export class Phase3SceneConverter {
     });
   }
 
+  /** 估算本场景一次转换的全部输入 token（上下文 + 正文 + system prompt 余量） */
+  private async estimateScenePromptTokens(
+    sceneCtx: { chars: string; locs: string; summaries: string; threads: string },
+    scene: SceneBoundary,
+    parts: string[],
+  ): Promise<number> {
+    const ctxText = `角色: ${sceneCtx.chars}\n地点: ${sceneCtx.locs}\n标题: ${scene.draftSlugline}\n摘要: ${scene.summary}\n前情摘要: ${sceneCtx.summaries}\n伏笔线索: ${sceneCtx.threads}`;
+    const ctxTokens = await this.ctxManager.countTokens(ctxText);
+    let bodyTokens = 0;
+    for (const p of parts) bodyTokens += await this.ctxManager.countTokens(p);
+    return ctxTokens + bodyTokens + 1000; // + system prompt 余量
+  }
+
+  /** 预算超限拦截：记入 metadata.budgetBlocked 计数 + warn 日志（不调 LLM） */
+  private recordBudgetBlocked(jobStore: JobStore, jobId: string, scene: SceneBoundary, reason?: string): void {
+    jobStore.update(jobId, j => {
+      const meta = (j.metadata || {}) as Record<string, unknown>;
+      const prev = (meta.budgetBlocked as number) || 0;
+      meta.budgetBlocked = prev + 1;
+      return {
+        ...j,
+        metadata: meta,
+        logs: [...j.logs, { timestamp: Date.now(), level: 'warn' as const, message: `场景 #${scene.sceneIndex} 预算超限已拦截: ${reason ?? '未知'}` }],
+      };
+    });
+  }
+
+  /** 3.1 占位率测点：未解析出 char_N 的在场角色名累计进 metadata.placeholder */
+  private recordPlaceholder(
+    jobStore: JobStore,
+    jobId: string,
+    scene: SceneBoundary,
+    charIdMap: Map<string, string>,
+  ): void {
+    const resolve = resolveKeyCharacters(scene.keyCharacterNames || [], charIdMap);
+    if (resolve.unresolved.length === 0) return;
+    jobStore.update(jobId, j => {
+      const meta = (j.metadata || {}) as Record<string, unknown>;
+      const prev = (meta.placeholder || {}) as { total: number; unresolved: number };
+      meta.placeholder = {
+        total: (prev.total || 0) + resolve.resolved.length + resolve.unresolved.length,
+        unresolved: (prev.unresolved || 0) + resolve.unresolved.length,
+      };
+      return { ...j, metadata: meta };
+    });
+  }
+
   async convertScenes(
     scenes: SceneBoundary[], characters: RawCharacter[], locations: RawLocation[],
     chapterTexts: string[], jobStore: JobStore, jobId: string,
     abortSignal?: AbortSignal,
+    opts?: Phase3ConvertOptions,
   ): Promise<Phase3Output[]> {
     const charIdMap = this.buildCharIdMap(characters);
     console.log(`[Phase3] 开始转换 ${scenes.length} 个场景, semaphore=3, rateLimit=50/min`);
@@ -366,10 +458,14 @@ export class Phase3SceneConverter {
 
       // Scene-scoped context: filter characters by keyCharacterNames,
       // locations by chapterIndex (falls back to full lists when empty).
-      const sceneCtx = this.buildSceneContext(scene, characters, locations, charIdMap);
+      // Task 3：传入 settingCard 时启用主角常驻 + 滚动摘要 + open threads 注入。
+      const sceneCtx = this.buildSceneContext(scene, characters, locations, charIdMap, opts?.settingCard);
       if (sceneCtx.charKept < sceneCtx.charTotal || sceneCtx.locKept < sceneCtx.locTotal) {
         console.log(`[Phase3]  场景 #${scene.sceneIndex} 上下文裁剪: 角色 ${sceneCtx.charKept}/${sceneCtx.charTotal}, 地点 ${sceneCtx.locKept}/${sceneCtx.locTotal}`);
       }
+
+      // 3.1 显式 name→charN 解析：未命中名计入占位率（metadata 测点）
+      this.recordPlaceholder(jobStore, jobId, scene, charIdMap);
 
       const chapterText = chapterTexts[scene.chapterIndex] || '';
       const sceneText = chapterText.slice(scene.originalStartOffset, scene.originalEndOffset);
@@ -383,11 +479,23 @@ export class Phase3SceneConverter {
         }));
       }
 
+      // 3.3 预算守卫：估算本场景输入 token，超限整场景降级、不调 LLM（真实拦截）
+      const estPrompt = await this.estimateScenePromptTokens(sceneCtx, scene, parts);
+      const check = this.budgetController.canRequest(this.provider.modelId, {
+        promptTokens: estPrompt,
+        completionTokens: 8192,
+        totalTokens: estPrompt + 8192,
+      });
+      if (!check.allowed) {
+        this.recordBudgetBlocked(jobStore, jobId, scene, check.reason);
+        return this.degradedScene(scene, `预算超限已拦截: ${check.reason}`);
+      }
+
       // Convert each part
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads);
         convResults.push(result);
       }
 

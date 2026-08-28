@@ -174,6 +174,8 @@ export class PipelineEngine {
         job.chapterTexts,
         jobStore,
         jobId,
+        undefined,
+        { settingCard: phase1Output.settingCard },
       );
 
       // Merge old + new results
@@ -365,6 +367,8 @@ export class PipelineEngine {
       chapters.map((c) => c.text),
       jobStore,
       jobId,
+      undefined,
+      { settingCard: phase1Output.settingCard },
     );
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;

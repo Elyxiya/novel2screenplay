@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Phase3SceneConverter } from '@/lib/pipeline/Phase3SceneConverter';
 import type { SceneBoundary } from '@/lib/pipeline/Phase2Segmenter';
 import type { RawCharacter, RawLocation } from '@/lib/pipeline/Phase1Analyzer';
-import type { LLMProvider } from '@/lib/llm/types';
+import type { LLMProvider, LLMMessage } from '@/lib/llm/types';
 import { ContextManager } from '@/lib/pipeline/ContextManager';
+import { BudgetController } from '@/lib/llm/adapter/budget-controller';
+import type { JobStore } from '@/lib/store/job-store';
+import type { SettingCard } from '@novel/contracts/pipeline';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -45,6 +48,11 @@ function createMockJobStore() {
     }),
     get: vi.fn(() => state.current),
   };
+}
+
+// convertScenes 的 JobStore 形参要求完整接口；mock 以窄 shape 满足运行语义，类型上经 asJobStore 收窄
+function asJobStore(m: ReturnType<typeof createMockJobStore>): JobStore {
+  return m as unknown as JobStore;
 }
 
 // 类型化访问 Phase3SceneConverter 的私有方法（避免 as any 触发 no-explicit-any）
@@ -283,5 +291,142 @@ describe('Phase3SceneConverter - recordUsage', () => {
     const meta = mockJobStore.state.current.metadata as { usage: { promptTokens: number; completionTokens: number; inputChars: number; calls: number } };
     expect(meta.usage.promptTokens).toBe(100);
     expect(meta.usage.completionTokens).toBe(50);
+  });
+});
+
+describe('Phase3SceneConverter - Task 3 增强上下文（settingCard）', () => {
+  let converter: Phase3SceneConverter;
+  let mockJobStore: ReturnType<typeof createMockJobStore>;
+
+  const settingCard: SettingCard = {
+    chapterSummaries: [{ chapterIndex: 0, summary: '第一章：主角登场，结识老者' }],
+    openThreads: [
+      { id: 't1', title: '神秘玉佩', description: '玉佩来历不明', startChapterIndex: 0, endChapterIndex: undefined },
+      { id: 't2', title: '师门恩怨', description: '三十年前旧事', startChapterIndex: 0, endChapterIndex: 1 },
+    ],
+  };
+
+  function mkEnhancedScene(overrides: Partial<SceneBoundary> = {}): SceneBoundary {
+    return {
+      sceneIndex: 2,
+      chapterIndex: 1,
+      startParagraph: 0,
+      endParagraph: 3,
+      originalStartOffset: 0,
+      originalEndOffset: 300,
+      draftSlugline: '内景. 山腰草庐 - 夜',
+      keyCharacterNames: ['围观者甲'],
+      summary: '苏晚在草庐',
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    converter = new Phase3SceneConverter(mockProvider, mockCtxManager);
+    mockJobStore = createMockJobStore();
+    mockJobStore.state.current = { id: 'job-1', metadata: {}, logs: [] };
+  });
+
+  it('传入 settingCard → 主角常驻注入 + 摘要/线索上下文进入 LLM messages', async () => {
+    const results = await converter.convertScenes(
+      [mkEnhancedScene()],
+      characters,
+      locations,
+      ['第一章文本', '第二章文本'],
+      asJobStore(mockJobStore),
+      'job-1',
+      undefined,
+      { settingCard },
+    );
+
+    expect(results).toHaveLength(1);
+    // provider.chat 收到增强后的 user content
+    const messages = vi.mocked(mockProvider.chat).mock.calls[0][0] as LLMMessage[];
+    const userContent = String(messages[1].content);
+    expect(userContent).toContain('前情摘要');
+    expect(userContent).toContain('第一章：主角登场');
+    expect(userContent).toContain('伏笔线索');
+    expect(userContent).toContain('神秘玉佩');
+    expect(userContent).toContain('师门恩怨');
+    // 主角常驻：林墨/苏晚（isMajor）进入角色上下文
+    expect(userContent).toContain('林墨');
+    expect(userContent).toContain('苏晚');
+    expect(userContent).toContain('围观者');
+  });
+
+  it('未传 settingCard → 行为与改造前一致（不注入摘要/线索）', async () => {
+    await converter.convertScenes(
+      [mkEnhancedScene()],
+      characters,
+      locations,
+      ['第一章文本', '第二章文本'],
+      asJobStore(mockJobStore),
+      'job-1',
+    );
+
+    const messages = vi.mocked(mockProvider.chat).mock.calls[0][0] as LLMMessage[];
+    const userContent = String(messages[1].content);
+    expect(userContent).not.toContain('前情摘要');
+    expect(userContent).not.toContain('伏笔线索');
+  });
+});
+
+describe('Phase3SceneConverter - Task 3.3 预算守卫拦截', () => {
+  let mockJobStore: ReturnType<typeof createMockJobStore>;
+
+  const tinyScene: SceneBoundary = {
+    sceneIndex: 1,
+    chapterIndex: 0,
+    startParagraph: 0,
+    endParagraph: 3,
+    originalStartOffset: 0,
+    originalEndOffset: 200,
+    draftSlugline: '外景. 青云山顶 - 日',
+    keyCharacterNames: ['林墨'],
+    summary: '林墨在山顶',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockJobStore = createMockJobStore();
+    mockJobStore.state.current = { id: 'job-1', metadata: {}, logs: [] };
+  });
+
+  it('超限 → 整场景降级、不调 LLM、记 metadata.budgetBlocked', async () => {
+    const tinyBudget = new BudgetController({ minuteLimit: 1e-9, hourlyLimit: 1e-9, monthlyLimit: 1e-9 });
+    const blocked = new Phase3SceneConverter(mockProvider, mockCtxManager, tinyBudget);
+
+    const results = await blocked.convertScenes(
+      [tinyScene],
+      characters,
+      locations,
+      ['第一章文本'],
+      asJobStore(mockJobStore),
+      'job-1',
+    );
+
+    expect(mockProvider.chat).not.toHaveBeenCalled();
+    expect(results[0].confidence).toBe(0.1);
+    expect(results[0].content[0].description).toContain('预算超限');
+    const meta = mockJobStore.state.current.metadata as { budgetBlocked: number };
+    expect(meta.budgetBlocked).toBe(1);
+  });
+
+  it('预算充足 → 正常转换，provider.chat 被调用', async () => {
+    const generous = new BudgetController({ minuteLimit: 100, hourlyLimit: 1000, monthlyLimit: 10000 });
+    const ok = new Phase3SceneConverter(mockProvider, mockCtxManager, generous);
+
+    const results = await ok.convertScenes(
+      [tinyScene],
+      characters,
+      locations,
+      ['第一章文本'],
+      asJobStore(mockJobStore),
+      'job-1',
+    );
+
+    expect(mockProvider.chat).toHaveBeenCalledTimes(1);
+    expect(results[0].confidence).toBeGreaterThan(0.5);
   });
 });

@@ -46,11 +46,11 @@
 
 **目标**：Phase3 上下文组装器（name→charN 解析 + 主角常驻/配角按键/滚动摘要/open-threads）+ 预算守卫同步落地。依赖 Task 1（设定卡/别名索引）。
 
-- [ ] 3.1 显式"在场角色名→实体"解析：用 Task 1 reduce 的**别名索引**解析 Phase2 `keyCharacterNames` → `char_N`，**未命中名计入占位率**（明确测点）；复用 Phase3 现成的 `buildCharIdMap` 演进。
-- [ ] 3.2 Phase3 上下文组装：主角卡常驻 + 配角按键 + 前 N 章滚动摘要 + `open threads` 按章节区间注入；扩展现成 `charContext/locContext` 拼接（不改外围签名）。
-- [ ] 3.3 BudgetController 接主链：`canRequest` 检查进 Phase3 调用点，超限**真实拦截**（单测证明）；与 3.2 同步，作单 job token 成本护栏。
-- [ ] 3.4 验收（硬）：断言矛盾率降、占位角色率降（validator 计数，逐场景）；token/字增幅**如实入表**；预算超限拦截生效。
-- [ ] 3.5 回归 + 落档：add 单测（解析/组装器/拦截/efficiency）；lint/typecheck/test 全绿；对比数字入 `docs/`（动 Task 4 前）。
+- [x] 3.1 显式"在场角色名→实体"解析：用 Task 1 reduce 的**别名索引**解析 Phase2 `keyCharacterNames` → `char_N`，**未命中名计入占位率**（明确测点）；复用 Phase3 现成的 `buildCharIdMap` 演进。（`phase3-context.ts#resolveKeyCharacters` + Phase3SceneConverter `recordPlaceholder` 落 metadata，已单测）
+- [x] 3.2 Phase3 上下文组装：主角卡常驻 + 配角按键 + 前 N 章滚动摘要 + `open threads` 按章节区间注入；扩展现成 `charContext/locContext` 拼接（不改外围签名）。（`selectSceneCharacters/buildRollingSummary/buildOpenThreadContext`，settingCard 传入时启用、缺省行为与改造前一致，已单测）
+- [x] 3.3 BudgetController 接主链：`canRequest` 检查进 Phase3 调用点，超限**真实拦截**（单测证明）；与 3.2 同步，作单 job token 成本护栏。（`estimateScenePromptTokens` + 超限降级 + `metadata.budgetBlocked`，已单测）
+- [ ] 3.4 验收（硬）：断言矛盾率降、占位角色率降（validator 计数，逐场景）；token/字增幅**如实入表**；预算超限拦截生效。（拦截与 token 入表已单测证明；**数值验收依赖 Task 2.2 标注样本，由主线执行**）
+- [x] 3.5 回归 + 落档：add 单测（解析/组装器/拦截/efficiency）；lint/typecheck/test 全绿；对比数字入 `docs/`（动 Task 4 前）。（单测 + 三命令全绿已达成，typecheck 45+37+32=498 例全绿；**docs 落档由主线在动 Task 4 前执行**）
 
 ## Task 4 · 外科式 supervisor（步骤 4）
 

@@ -7,7 +7,7 @@
  * - 任务终态（completed / failed）标记保留，供审计与查询
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 import type { OrchestratorTask } from '../../multi-agent/orchestrator';
 
 export type AgentTaskStatus = 'active' | 'completed' | 'failed';
@@ -43,7 +43,7 @@ export interface AgentTaskRepository {
 
 class AgentTaskRepositoryImpl implements AgentTaskRepository {
   upsert(task: OrchestratorTask, status: AgentTaskStatus = 'active'): void {
-    const db = getDatabase();
+    const db = getEngine();
     const now = Date.now();
     const taskJson = JSON.stringify(task);
     const completedAt = status === 'active' ? null : now;
@@ -69,7 +69,7 @@ class AgentTaskRepositoryImpl implements AgentTaskRepository {
   }
 
   get(taskId: string): AgentTaskRecord | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db
       .prepare('SELECT * FROM agent_tasks WHERE id = ?')
       .get(taskId) as AgentTaskRow | undefined;
@@ -78,7 +78,7 @@ class AgentTaskRepositoryImpl implements AgentTaskRepository {
   }
 
   loadActive(): AgentTaskRecord[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db
       .prepare(`SELECT * FROM agent_tasks WHERE status = 'active' ORDER BY created_at ASC`)
       .all() as AgentTaskRow[];
@@ -86,7 +86,7 @@ class AgentTaskRepositoryImpl implements AgentTaskRepository {
   }
 
   delete(taskId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM agent_tasks WHERE id = ?').run(taskId);
   }
 

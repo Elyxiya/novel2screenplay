@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="100%" height="auto" role="img" aria-labelledby="chainTitle">
+<style>
+:root{color-scheme:light;--surface:#F7F7F8;--surface-muted:#EFEFF2;--text:#171717;--text-muted:#52525B;--border:rgba(23,23,23,.12);--brand:#4B3FE3;--brand-soft:#F2F7FF;--brand-text:#1A1759}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--surface:#171717;--surface-muted:#262626;--text:#E5E5E5;--text-muted:#A1A1AA;--border:rgba(229,229,229,.12);--brand:#6054F1;--brand-soft:#1A1759;--brand-text:#CFD8FF}}
+.t{fill:var(--text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.ts{fill:var(--text-muted);font:400 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.thb{fill:var(--brand-text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.tsb{fill:var(--brand);font:500 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.arr{stroke:var(--text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bb{fill:var(--brand-soft);stroke:var(--brand)}
+.nn{fill:var(--surface);stroke:var(--border)}
+.lc{fill:var(--surface-muted);stroke:var(--border)}
+.lead{stroke:var(--text-muted);stroke-width:.75;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:4 4;fill:none}
+</style>
+<title id="chainTitle">Novel2Screenplay 内容转化链路</title>
+<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="currentColor"/></marker></defs>
+
+<text class="t" x="40" y="22" style="font-weight:600">内容转化链路（小说 → 剧本 → 分镜）</text>
+
+<g>
+
+<rect class="nn" x="40" y="76" width="104" height="84" rx="8"/>
+<text class="t" x="92" y="112" text-anchor="middle">小说资产</text>
+<text class="ts" x="92" y="134" text-anchor="middle">上传 / 创作台</text>
+
+<rect class="nn" x="172" y="76" width="140" height="84" rx="8"/>
+<text class="t" x="242" y="112" text-anchor="middle">转换流水线</text>
+<text class="ts" x="242" y="134" text-anchor="middle">LLM · 四阶段</text>
+
+<rect class="bb" x="340" y="76" width="104" height="84" rx="8"/>
+<text class="thb" x="392" y="112" text-anchor="middle">剧本 YAML</text>
+<text class="tsb" x="392" y="134" text-anchor="middle">编辑 / 导出</text>
+
+<rect class="nn" x="472" y="76" width="96" height="84" rx="8"/>
+<text class="t" x="520" y="112" text-anchor="middle">短剧分镜</text>
+<text class="ts" x="520" y="134" text-anchor="middle">景别 · 运镜</text>
+
+<path class="arr" d="M144 118 H172" marker-end="url(#m)"/>
+<path class="arr" d="M312 118 H340" marker-end="url(#m)"/>
+<path class="arr" d="M444 118 H472" marker-end="url(#m)"/>
+
+<rect class="lc" x="118" y="48" width="80" height="20" rx="8"/><text class="ts" x="158" y="61" text-anchor="middle">送去转剧本</text>
+<rect class="lc" x="286" y="48" width="80" height="20" rx="8"/><text class="ts" x="326" y="61" text-anchor="middle">物化落库</text>
+<rect class="lc" x="444" y="48" width="80" height="20" rx="8"/><text class="ts" x="484" y="61" text-anchor="middle">一键转分镜</text>
+
+</g>
+
+<path class="lead" d="M242 160 V204"/>
+
+<text class="ts" x="40" y="198">流水线内部四阶段：</text>
+
+<g>
+<rect class="nn" x="90" y="206" width="120" height="52" rx="8"/><text class="t" x="150" y="228" text-anchor="middle">① 分析</text><text class="ts" x="150" y="246" text-anchor="middle">角色 / 地点</text>
+<rect class="nn" x="230" y="206" width="120" height="52" rx="8"/><text class="t" x="290" y="228" text-anchor="middle">② 场景切割</text><text class="ts" x="290" y="246" text-anchor="middle">分章分场</text>
+<rect class="nn" x="370" y="206" width="120" height="52" rx="8"/><text class="t" x="430" y="228" text-anchor="middle">③ 场景转换</text><text class="ts" x="430" y="246" text-anchor="middle">LLM 逐场</text>
+<rect class="nn" x="510" y="206" width="120" height="52" rx="8"/><text class="t" x="570" y="228" text-anchor="middle">④ 合并校验</text><text class="ts" x="570" y="246" text-anchor="middle">去重 · sourceRefs</text>
+<path class="arr" d="M210 232 H230" marker-end="url(#m)"/>
+<path class="arr" d="M350 232 H370" marker-end="url(#m)"/>
+<path class="arr" d="M490 232 H510" marker-end="url(#m)"/>
+</g>
+
+<text class="ts" x="40" y="286">成果全程溯源回跳：novelId → jobId → dramaId</text>
+</svg>

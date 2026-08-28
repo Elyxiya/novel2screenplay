@@ -5,7 +5,7 @@
  * Project 是用户的转换项目容器，可以包含多个转换历史。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 
 export interface ProjectRow {
   id: string;
@@ -57,7 +57,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
    * 创建新项目
    */
   create(params: CreateProjectParams): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `proj_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -89,7 +89,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
    * 获取单个项目
    */
   get(projectId: string): Project | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) as ProjectRow | undefined;
 
     if (!row) return null;
@@ -101,7 +101,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
    * 更新项目
    */
   update(projectId: string, params: UpdateProjectParams): void {
-    const db = getDatabase();
+    const db = getEngine();
     const updates: string[] = [];
     const values: Record<string, unknown> = { id: projectId };
 
@@ -139,7 +139,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
    * 删除项目（软删除）
    */
   delete(projectId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare(`
       UPDATE projects SET status = 'deleted', updated_at = ? WHERE id = ?
     `).run(Date.now(), projectId);
@@ -149,7 +149,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
    * 按状态列出项目
    */
   list(status?: Project['status']): Project[] {
-    const db = getDatabase();
+    const db = getEngine();
 
     let rows: ProjectRow[];
     if (status) {

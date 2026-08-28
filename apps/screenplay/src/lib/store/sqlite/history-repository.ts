@@ -5,7 +5,7 @@
  * 支持版本管理和快速检索。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 
 export interface HistoryRow {
   id: string;
@@ -62,7 +62,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 创建新历史记录
    */
   create(params: CreateHistoryParams): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `hist_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -99,7 +99,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 获取单个历史记录
    */
   get(historyId: string): History | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM history WHERE id = ?').get(historyId) as HistoryRow | undefined;
 
     if (!row) return null;
@@ -111,7 +111,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 通过 Job ID 获取历史记录
    */
   getByJobId(jobId: string): History | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM history WHERE job_id = ?').get(jobId) as HistoryRow | undefined;
 
     if (!row) return null;
@@ -123,7 +123,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 按项目列出历史记录
    */
   listByProject(projectId: string): History[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db.prepare(
       'SELECT * FROM history WHERE project_id = ? ORDER BY created_at DESC'
     ).all(projectId) as HistoryRow[];
@@ -135,7 +135,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 获取最近的历史记录；传入 userId 时按用户过滤（多用户隔离）
    */
   listRecent(limit: number = 10, userId?: string): History[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = userId
       ? db.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT ?').all(userId, limit) as HistoryRow[]
       : db.prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT ?').all(limit) as HistoryRow[];
@@ -147,7 +147,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
    * 删除历史记录
    */
   delete(historyId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM history WHERE id = ?').run(historyId);
   }
 

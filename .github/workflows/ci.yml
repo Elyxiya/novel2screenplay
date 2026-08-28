@@ -38,6 +38,25 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    # 可选 PostgreSQL 服务：配置 DATABASE_URL 时多跑 PG 测试空间（决策 B 保守策略——
+    # 无 PG 配置维持 SQLite 单跑；repository-contract / schema-parity 按 env 自动启用 PG）。
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: novel2screenplay_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # 仅在仓库设置里显式提供 DATABASE_URL 时启用 PG 分支（服务本身在 PR/push 均可用）
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

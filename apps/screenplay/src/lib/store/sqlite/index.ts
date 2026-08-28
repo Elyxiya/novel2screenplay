@@ -7,6 +7,9 @@
 // 数据库管理
 export { getDatabase, closeDatabase, runMigrations, healthCheck } from './db';
 
+// 存储引擎（@novel/db）：repository 与后续多后端切换的入口
+export { getEngine, getStorageKind, useEngine, useSqlite, resetEngine } from '@novel/db';
+
 // Repository
 export { getJobRepository, type JobRepository, type CreateJobParams, type UpdateJobParams } from './job-repository';
 export { getNovelRepository, type NovelRepository, type NovelAsset, type NovelSummary, type CreateNovelParams } from './novel-repository';

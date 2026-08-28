@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 import { decryptApiKey, encryptApiKey } from '../../llm/api-key-cipher';
 
 export type UserLLMProtocol = 'openai' | 'anthropic';
@@ -81,7 +81,7 @@ export interface UserLLMRepository {
 
 class UserLLMRepositoryImpl implements UserLLMRepository {
   listByUser(userId: string): UserLLMRecord[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db
       .prepare('SELECT * FROM user_llm WHERE user_id = ? ORDER BY created_at ASC')
       .all(userId) as UserLLMRow[];
@@ -89,7 +89,7 @@ class UserLLMRepositoryImpl implements UserLLMRepository {
   }
 
   getById(id: string): UserLLMRecord | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM user_llm WHERE id = ?').get(id) as
       | UserLLMRow
       | undefined;
@@ -97,7 +97,7 @@ class UserLLMRepositoryImpl implements UserLLMRepository {
   }
 
   create(params: CreateUserLLMParams): UserLLMRecord {
-    const db = getDatabase();
+    const db = getEngine();
     const now = Date.now();
     const id = `ulm_${now}_${randomUUID().slice(0, 8)}`;
     const supportedModels = this.normalizeSupported(params);
@@ -138,7 +138,7 @@ class UserLLMRepositoryImpl implements UserLLMRepository {
   }
 
   update(id: string, patch: UpdateUserLLMParams): UserLLMRecord | null {
-    const db = getDatabase();
+    const db = getEngine();
     const existing = this.getById(id);
     if (!existing) return null;
 
@@ -183,14 +183,14 @@ class UserLLMRepositoryImpl implements UserLLMRepository {
   }
 
   delete(id: string): boolean {
-    const db = getDatabase();
+    const db = getEngine();
     const res = db.prepare('DELETE FROM user_llm WHERE id = ?').run(id);
     return res.changes > 0;
   }
 
   /** 仅暴露 apiKey 是否配置（不返回明文），供列表展示 key 状态 */
   listApiKeysByUser(userId: string): UserLLMApiKeySummary[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db
       .prepare('SELECT id, protocol, name, api_key FROM user_llm WHERE user_id = ? ORDER BY created_at ASC')
       .all(userId) as Pick<UserLLMRow, 'id' | 'protocol' | 'name' | 'api_key'>[];

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" width="100%" height="auto" role="img" aria-labelledby="agentTitle">
+<style>
+:root{color-scheme:light;--surface:#F7F7F8;--surface-muted:#EFEFF2;--text:#171717;--text-muted:#52525B;--border:rgba(23,23,23,.12);--brand:#4B3FE3;--brand-soft:#F2F7FF;--brand-text:#1A1759;--accent:#27D2BF;--accent-soft:#EAFBF8;--accent-text:#0F766E}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--surface:#171717;--surface-muted:#262626;--text:#E5E5E5;--text-muted:#A1A1AA;--border:rgba(229,229,229,.12);--brand:#6054F1;--brand-soft:#1A1759;--brand-text:#CFD8FF;--accent:#3DE4D2;--accent-soft:#0F3A35;--accent-text:#7CE9D8}}
+.t{fill:var(--text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.ts{fill:var(--text-muted);font:400 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.thb{fill:var(--brand-text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.tsb{fill:var(--brand);font:500 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.at{fill:var(--accent-text);font:500 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.arr{stroke:var(--text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.arrb{stroke:var(--brand);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bb{fill:var(--brand-soft);stroke:var(--brand)}
+.nn{fill:var(--surface);stroke:var(--border)}
+.ac{fill:var(--accent-soft);stroke:var(--accent)}
+.lc{fill:var(--surface-muted);stroke:var(--border)}
+.bound{fill:none;stroke:var(--brand);stroke-dasharray:4 4}
+</style>
+<title id="agentTitle">Novel2Screenplay Agent 编排与质量关卡</title>
+<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="currentColor"/></marker></defs>
+
+<text class="t" x="40" y="22" style="font-weight:600">Agent 编排与质量关卡</text>
+
+<rect class="nn" x="40" y="56" width="640" height="40" rx="8"/>
+<text class="dat" x="360" y="81" text-anchor="middle" style="fill:var(--text);font:400 13px/20px 'PingFang SC',system-ui,Arial,sans-serif">/api/agent · AgentChatPanel · POST /api/agent/review（revise · instruction）</text>
+
+<rect class="bound" x="40" y="112" width="320" height="280" rx="10"/>
+<text class="ts" x="56" y="132">MultiAgentOrchestrator（agent-core 编排器）</text>
+
+<rect class="nn" x="56" y="146" width="288" height="40" rx="8"/>
+<text class="t" x="200" y="170" text-anchor="middle">任务调度 · AgentTask</text>
+
+<text class="ts" x="56" y="210">角色池</text>
+<rect class="nn" x="56" y="222" width="64" height="56" rx="8"/><text class="t" x="88" y="246" text-anchor="middle">writer</text><text class="ts" x="88" y="264" text-anchor="middle">撰写</text>
+<rect class="nn" x="132" y="222" width="64" height="56" rx="8"/><text class="t" x="164" y="246" text-anchor="middle">editor</text><text class="ts" x="164" y="264" text-anchor="middle">编辑</text>
+<rect class="nn" x="208" y="222" width="64" height="56" rx="8"/><text class="t" x="240" y="246" text-anchor="middle">analyzer</text><text class="ts" x="240" y="264" text-anchor="middle">分析</text>
+<rect class="nn" x="280" y="222" width="64" height="56" rx="8"/><text class="t" x="312" y="246" text-anchor="middle">validator</text><text class="ts" x="312" y="264" text-anchor="middle">校验</text>
+
+<path class="arrb" d="M200 186 V222" marker-end="url(#m)" style="color:var(--brand)"/>
+
+<rect class="bb" x="130" y="300" width="140" height="72" rx="8"/>
+<text class="thb" x="200" y="324" text-anchor="middle">ReviewGate</text>
+<text class="tsb" x="200" y="344" text-anchor="middle">质量关卡</text>
+<text class="ts" x="228" y="360">auto-pass / awaiting</text>
+<path class="arr" d="M200 278 V300" marker-end="url(#m)"/>
+
+<text class="ts" x="56" y="386">awaiting → 人工介入（修订建议）</text>
+
+<path class="arrb" d="M360 152 H400" marker-end="url(#m)" style="color:var(--brand)"/>
+<rect class="nn" x="400" y="128" width="280" height="48" rx="8"/>
+<text class="t" x="540" y="152" text-anchor="middle">LLM 推理引擎（抽象层）</text>
+<text class="ts" x="540" y="168" text-anchor="middle">DeepSeek / OpenAI / Custom</text>
+
+<path class="arrb" d="M540 176 V250" marker-end="url(#m)" style="color:var(--brand)"/>
+<rect class="bb" x="400" y="250" width="280" height="48" rx="8"/>
+<text class="thb" x="540" y="274" text-anchor="middle">AgentTask 持久化</text>
+<text class="tsb" x="540" y="292" text-anchor="middle">agent-task-repository · restart 恢复</text>
+
+<text class="ts" x="400" y="330">task.instruction 累积 · 终态落库</text>
+
+<path class="arr" d="M540 298 V370" marker-end="url(#m)"/>
+
+<rect class="ac" x="400" y="370" width="280" height="46" rx="8"/>
+<text class="at" x="540" y="396" text-anchor="middle">SSE 实时推送</text>
+<text class="ts" x="540" y="410">progress / phase / log / complete</text>
+
+<path class="arrb" d="M320 330 H360 V392 H400" marker-end="url(#m)" style="color:var(--brand)"/>
+<text class="ts" x="352" y="356" text-anchor="middle">revise 介入</text>
+
+<text class="ts" x="40" y="520">编排：awaiting 挂起以等待人工建议；instruction 非空 → 按建议重新生成，累积进后续阶段。重启后 awaiting 保持挂起、running 回置 pending 续跑。</text>
+</svg>

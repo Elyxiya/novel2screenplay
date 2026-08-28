@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { getDatabase } from '@/lib/store/sqlite/db';
 import { getJobRepository } from '@/lib/store/sqlite/job-repository';
 
 describe('job-repository subProgress 对象序列化', () => {
@@ -7,6 +8,8 @@ describe('job-repository subProgress 对象序列化', () => {
   let jobId: string;
 
   beforeAll(() => {
+    // 仓库走 @novel/db 引擎单例，需先注册 SQLite 引擎
+    getDatabase();
     jobId = repo.create({
       novelText: '测试文本',
       chapterTexts: ['第一章'],

@@ -6,7 +6,7 @@
  * JSON 列存储，保持上传资产结构不变。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 import type { DraftNovel, NovelVolume, NovelChapter, NovelCharacterCard, NovelWorldItem, CreateDraftParams } from '@novel/contracts/novel';
 
 export interface DraftSummary {
@@ -79,7 +79,7 @@ function countWords(text: string): number {
 
 class WriterNovelRepositoryImpl implements WriterNovelRepository {
   createDraft(params: CreateDraftParams & { userId?: string }): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `novel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
     db.prepare(`
@@ -101,14 +101,14 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   getDraft(id: string): DraftNovel | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM novels WHERE id = ? AND kind = \'draft\'').get(id) as DraftRow | undefined;
     if (!row) return null;
     return this.rowToDraft(row);
   }
 
   listDrafts(userId: string): DraftSummary[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db.prepare(
       'SELECT * FROM novels WHERE kind = \'draft\' AND user_id = ? ORDER BY updated_at DESC',
     ).all(userId) as DraftRow[];
@@ -130,7 +130,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   updateMeta(id: string, meta: { title?: string; author?: string; synopsis?: string }): void {
-    const db = getDatabase();
+    const db = getEngine();
     const current = this.getDraft(id);
     if (!current) return;
     const next = {
@@ -144,7 +144,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   saveStructure(id: string, data: { volumes?: NovelVolume[]; characters?: NovelCharacterCard[]; worldItems?: NovelWorldItem[] }): void {
-    const db = getDatabase();
+    const db = getEngine();
     const current = this.getDraft(id);
     if (!current) return;
     db.prepare(
@@ -159,7 +159,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   saveChapter(id: string, chapter: NovelChapter): NovelChapter | null {
-    const db = getDatabase();
+    const db = getEngine();
     const current = this.getDraft(id);
     if (!current) return null;
     const chapters = current.chapters;
@@ -176,7 +176,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   deleteChapter(id: string, chapterId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     const current = this.getDraft(id);
     if (!current) return;
     const chapters = current.chapters.filter((c) => c.id !== chapterId);
@@ -185,7 +185,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   materialize(id: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     const current = this.getDraft(id);
     if (!current) return;
     const chapters = [...current.chapters].sort((a, b) => {
@@ -206,7 +206,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   markConverted(id: string, chapterIds: string[], jobId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT converted_chapters FROM novels WHERE id = ?').get(id) as
       { converted_chapters: string } | undefined;
     if (!row) return;
@@ -217,7 +217,7 @@ class WriterNovelRepositoryImpl implements WriterNovelRepository {
   }
 
   delete(id: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM novels WHERE id = ? AND kind = \'draft\'').run(id);
   }
 

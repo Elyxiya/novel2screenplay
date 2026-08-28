@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 460" width="100%" height="auto" role="img" aria-labelledby="storeTitle">
+<style>
+:root{color-scheme:light;--surface:#F7F7F8;--surface-muted:#EFEFF2;--text:#171717;--text-muted:#52525B;--border:rgba(23,23,23,.12);--brand:#4B3FE3;--brand-soft:#F2F7FF;--brand-text:#1A1759}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--surface:#171717;--surface-muted:#262626;--text:#E5E5E5;--text-muted:#A1A1AA;--border:rgba(229,229,229,.12);--brand:#6054F1;--brand-soft:#1A1759;--brand-text:#CFD8FF}}
+.t{fill:var(--text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.ts{fill:var(--text-muted);font:400 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.thb{fill:var(--brand-text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.tsb{fill:var(--brand);font:500 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.dat{fill:var(--text);font:400 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.arr{stroke:var(--text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.arrb{stroke:var(--brand);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bb{fill:var(--brand-soft);stroke:var(--brand)}
+.nn{fill:var(--surface);stroke:var(--border)}
+.bound{fill:none;stroke:var(--brand);stroke-dasharray:4 4}
+</style>
+<title id="storeTitle">Novel2Screenplay 请求落库与双后端存储</title>
+<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="currentColor"/></marker></defs>
+
+<text class="t" x="40" y="22" style="font-weight:600">请求落库与双后端存储</text>
+
+<rect class="nn" x="40" y="64" width="640" height="48" rx="8"/>
+<text class="ts" x="56" y="82">API 路由层</text>
+<text class="dat" x="56" y="102">/api/pipeline · /api/drama · /api/writer · /api/agent · /api/result</text>
+
+<rect class="nn" x="40" y="128" width="640" height="48" rx="8"/>
+<text class="ts" x="56" y="146">业务引擎层</text>
+<text class="dat" x="56" y="166">pipeline 四相 · drama 分镜引擎 · multi-agent 编排 · sse 实时推送</text>
+
+<rect class="bound" x="40" y="192" width="640" height="48" rx="8"/>
+<text class="ts" x="56" y="210">存储适配层（repository）</text>
+<text class="dat" x="56" y="230">job / novel / drama / history / agent-task / user / writer-novel / user-llm</text>
+
+<text class="ts" x="56" y="262">契约校验：@novel/contracts zod-4（novel / screenplay / drama / pipeline）</text>
+
+<path class="arrb" d="M360 112 V128" marker-end="url(#m)" style="color:var(--brand)"/>
+<path class="arrb" d="M360 176 V192" marker-end="url(#m)" style="color:var(--brand)"/>
+
+<rect class="nn" x="40" y="272" width="120" height="52" rx="8"/>
+<text class="dat" x="100" y="294" text-anchor="middle">引擎探择</text>
+<text class="ts" x="100" y="310" text-anchor="middle">DATABASE_URL</text>
+<path class="arr" d="M160 298 H190" marker-end="url(#m)"/>
+
+<rect class="bb" x="190" y="272" width="340" height="52" rx="8"/>
+<text class="thb" x="360" y="300" text-anchor="middle">@novel/db · DbEngine 同步抽象</text>
+<text class="tsb" x="360" y="316" text-anchor="middle">prepare().run / get / all</text>
+<path class="arrb" d="M360 240 V272" marker-end="url(#m)" style="color:var(--brand)"/>
+
+<path class="arr" d="M300 324 V332 H205 V340" marker-end="url(#m)"/>
+<path class="arr" d="M420 324 V332 H515 V340" marker-end="url(#m)"/>
+
+<rect class="nn" x="120" y="340" width="170" height="52" rx="8"/>
+<text class="t" x="205" y="366" text-anchor="middle">SQLite</text>
+<text class="ts" x="205" y="382" text-anchor="middle">better-sqlite3 · 默认</text>
+
+<rect class="nn" x="430" y="340" width="170" height="52" rx="8"/>
+<text class="t" x="515" y="366" text-anchor="middle">PostgreSQL</text>
+<text class="ts" x="515" y="382" text-anchor="middle">pg + Atomics 桥 · 可选</text>
+
+<text class="ts" x="40" y="440">引擎探择：DATABASE_URL 存在且 healthCheck 通过 → PG（自动建表 schema-pg）；否则优雅回退 SQLite。测试经 resolveTestPgUrl 路由到 _test 库，DB 级隔离。</text>
+</svg>

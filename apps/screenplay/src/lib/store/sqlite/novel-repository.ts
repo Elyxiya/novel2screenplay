@@ -5,7 +5,7 @@
  * 支持"追加章节继续转换"的工作流。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 
 export interface NovelChapterMeta {
   index: number;
@@ -100,7 +100,7 @@ export interface NovelRepository {
 
 class NovelRepositoryImpl implements NovelRepository {
   create(params: CreateNovelParams): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `novel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -127,7 +127,7 @@ class NovelRepositoryImpl implements NovelRepository {
   }
 
   findByText(text: string, userId?: string): NovelAsset | null {
-    const db = getDatabase();
+    const db = getEngine();
     // 按开头 200 字符前缀匹配（换行符已在上传时统一为 LF）。
     // 兼容短文本：存量与新文本互为前缀即视为同一部小说，
     // 使"更新稿件后全量重传"能复用资产并自动并入新增章节。
@@ -144,13 +144,13 @@ class NovelRepositoryImpl implements NovelRepository {
   }
 
   get(novelId: string): NovelAsset | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM novels WHERE id = ?').get(novelId) as NovelRow | undefined;
     return row ? this.rowToAsset(row) : null;
   }
 
   list(userId?: string): NovelSummary[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = userId
       ? (db.prepare('SELECT * FROM novels WHERE user_id = ? ORDER BY updated_at DESC').all(userId) as NovelRow[])
       : (db.prepare('SELECT * FROM novels ORDER BY updated_at DESC').all() as NovelRow[]);
@@ -172,7 +172,7 @@ class NovelRepositoryImpl implements NovelRepository {
   }
 
   markChaptersConverted(novelId: string, chapterIndexes: number[], jobId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     const novel = this.get(novelId);
     if (!novel) return;
 
@@ -182,7 +182,7 @@ class NovelRepositoryImpl implements NovelRepository {
   }
 
   appendChapters(novelId: string, chapters: CreateNovelParams['chapters']): number {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT chapter_texts, novel_text FROM novels WHERE id = ?').get(novelId) as
       { chapter_texts: string; novel_text: string } | undefined;
     if (!row) return 0;
@@ -226,7 +226,7 @@ class NovelRepositoryImpl implements NovelRepository {
   }
 
   delete(novelId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM novels WHERE id = ?').run(novelId);
   }
 

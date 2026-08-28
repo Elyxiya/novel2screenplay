@@ -10,6 +10,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { encryptApiKey } from '../../llm/api-key-cipher';
+import { useSqlite as registerSqliteEngine, usePostgres as registerPostgresEngine, resetEngine, getEngine } from '@novel/db';
 
 // 数据库文件路径配置
 const DB_DIR = process.env.DB_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
@@ -60,7 +61,42 @@ function createDatabase(): Database.Database {
   initializeSchema(database);
   migrateLegacyLLMKeys(database);
 
+  // 向 @novel/db 注册当前引擎：repository 通过 getEngine() 拿到统一存储句柄
+  // 存在 DATABASE_URL 且 PG 可达 → 用 PostgresEngine；否则（默认）回退 SQLite。
+  registerEngine(database);
+
   return database;
+}
+
+/**
+ * 引擎选择：PG 优先（DATABASE_URL 存在且连接可用），否则 SQLite。
+ * PG 不可用时优雅回退 SQLite，不崩溃、不阻塞启动。
+ */
+function registerEngine(sqlite: Database.Database): void {
+  // 单测环境（vitest 设 NODE_ENV=test）下强制 SQLite：
+  // 单元测试走 app 级 getDatabase() 的 SQLite 底座（schema.sql/migration 均 SQLite 专用），
+  // PG 覆盖交由 dual-backend 参数化套件（setupBackend → _test 库）负责，二者互不污染。
+  if (process.env.NODE_ENV === 'test') {
+    registerSqliteEngine(sqlite);
+    return;
+  }
+  const url = process.env.DATABASE_URL;
+  if (url) {
+    try {
+      const pg = registerPostgresEngine(url);
+      if (pg.healthCheck()) {
+        // PG 接管：应用 PG schema（schema.pg.sql），SQLite 侧仍保留作为资源/初始化底座
+        pg.applySchema();
+        console.log('[DB] Storage engine: postgres');
+        return;
+      }
+      resetEngine(); // 健康检查失败 → 回退 SQLite
+    } catch (err) {
+      console.warn('[DB] Postgres unavailable, falling back to SQLite:', err instanceof Error ? err.message : err);
+    }
+  }
+  registerSqliteEngine(sqlite);
+  console.log('[DB] Storage engine: sqlite');
 }
 
 /**
@@ -324,12 +360,21 @@ function initializeSchema(database: Database.Database): void {
  * 关闭数据库连接（用于测试或优雅关闭）
  */
 export function closeDatabase(): void {
+  // 优先关闭 AND 清空 globalThis 缓存的连接（getDatabase 走的是缓存，非模块级 db）
+  if (typeof globalThis !== 'undefined') {
+    const cached = (globalThis as Record<string, unknown>).__novel2screenplay_db__;
+    if (cached && typeof (cached as Database.Database).close === 'function') {
+      try {
+        (cached as Database.Database).close();
+      } catch {
+        // 连接已关闭时忽略
+      }
+    }
+    (globalThis as Record<string, unknown>).__novel2screenplay_db__ = undefined;
+  }
   if (db) {
     db.close();
     db = null;
-    if (typeof globalThis !== 'undefined') {
-      (globalThis as Record<string, unknown>).__novel2screenplay_db__ = undefined;
-    }
   }
 }
 
@@ -359,9 +404,10 @@ export function runMigrations(): void {
  */
 export function healthCheck(): boolean {
   try {
-    const db = getDatabase();
-    db.prepare('SELECT 1').get();
-    return true;
+    // 先确保引擎已注册（getDatabase 内部触发 registerEngine）；再反映当前引擎健康状态
+    getDatabase();
+    const engine = getEngine();
+    return engine.healthCheck();
   } catch {
     return false;
   }

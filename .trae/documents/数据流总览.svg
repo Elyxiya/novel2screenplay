@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 610" width="100%" height="auto" role="img" aria-labelledby="overviewTitle">
+<style>
+:root{color-scheme:light;--surface:#F7F7F8;--surface-muted:#EFEFF2;--text:#171717;--text-muted:#52525B;--border:rgba(23,23,23,.12);--brand:#4B3FE3;--brand-soft:#F2F7FF;--brand-text:#1A1759;--accent:#27D2BF;--accent-soft:#EAFBF8;--accent-text:#0F766E}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--surface:#171717;--surface-muted:#262626;--text:#E5E5E5;--text-muted:#A1A1AA;--border:rgba(229,229,229,.12);--brand:#6054F1;--brand-soft:#1A1759;--brand-text:#CFD8FF}}
+.t{fill:var(--text);font:500 14px/20px "PingFang SC","SF Pro Text",system-ui,Arial,sans-serif}
+.ts{fill:var(--text-muted);font:400 12px/18px "PingFang SC","SF Pro Text",system-ui,Arial,sans-serif}
+.dat{fill:var(--text);font:400 13px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.thb{fill:var(--brand-text);font:500 14px/20px "PingFang SC",system-ui,Arial,sans-serif}
+.tsb{fill:var(--brand);font:400 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.at{fill:var(--accent-text);font:500 12px/18px "PingFang SC",system-ui,Arial,sans-serif}
+.arr{stroke:var(--text-muted);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.arrb{stroke:var(--brand);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bb{fill:var(--brand-soft);stroke:var(--brand)}
+.nn{fill:var(--surface);stroke:var(--border)}
+.ac{fill:var(--accent-soft);stroke:var(--accent)}
+.lc{fill:var(--surface-muted);stroke:var(--border)}
+</style>
+<title id="overviewTitle">Novel2Screenplay 数据流总览</title>
+<defs><marker id="m" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="currentColor"/></marker></defs>
+
+<text class="t" x="40" y="22" style="font-weight:600">数据流总览</text>
+
+<rect class="nn" x="40" y="72" width="640" height="44" rx="8"/>
+<text class="dat" x="360" y="99" text-anchor="middle">前端页面 → API 路由层（pipeline · drama · writer · agent · result）</text>
+<text class="ts" x="40" y="142">▲ SSE 实时推送（progress / phase / log / complete）· 心跳 · 重连</text>
+
+<path class="arrb" d="M242 116 V164" marker-end="url(#m)" style="color:var(--brand)"/>
+<rect class="lc" x="198" y="124" width="88" height="20" rx="8"/><text class="ts" x="242" y="137" text-anchor="middle">发起转换</text>
+
+<rect class="nn" x="40" y="164" width="104" height="84" rx="8"/>
+<text class="t" x="92" y="200" text-anchor="middle">小说资产</text>
+<text class="ts" x="92" y="222" text-anchor="middle">上传 / 创作台</text>
+<rect class="nn" x="172" y="164" width="140" height="84" rx="8"/>
+<text class="t" x="242" y="200" text-anchor="middle">转换流水线</text>
+<text class="ts" x="242" y="222" text-anchor="middle">Phase1→4 · 场景转换</text>
+<rect class="bb" x="340" y="164" width="104" height="84" rx="8"/>
+<text class="thb" x="392" y="200" text-anchor="middle">剧本 YAML</text>
+<text class="tsb" x="392" y="222" text-anchor="middle">编辑 · 溯源</text>
+<rect class="nn" x="472" y="164" width="96" height="84" rx="8"/>
+<text class="t" x="520" y="200" text-anchor="middle">短剧分镜</text>
+<text class="ts" x="520" y="222" text-anchor="middle">景别 · 运镜</text>
+
+<path class="arr" d="M144 206 H172" marker-end="url(#m)"/>
+<path class="arr" d="M312 206 H340" marker-end="url(#m)"/>
+<path class="arr" d="M444 206 H472" marker-end="url(#m)"/>
+<rect class="lc" x="140" y="144" width="86" height="20" rx="8"/><text class="ts" x="183" y="157" text-anchor="middle">送去转剧本</text>
+<rect class="lc" x="313" y="144" width="86" height="20" rx="8"/><text class="ts" x="356" y="157" text-anchor="middle">物化落库</text>
+<rect class="lc" x="445" y="144" width="86" height="20" rx="8"/><text class="ts" x="488" y="157" text-anchor="middle">一键转分镜</text>
+
+<path class="arrb" d="M242 248 V264" marker-end="url(#m)" style="color:var(--brand)"/>
+<path class="arrb" d="M392 248 V264" marker-end="url(#m)" style="color:var(--brand)"/>
+<rect class="ac" x="210" y="264" width="214" height="44" rx="8"/>
+<text class="at" x="317" y="291" text-anchor="middle">LLM 抽象层（推理引擎）</text>
+<text class="ts" x="432" y="282">DeepSeek / OpenAI / Custom</text>
+
+<path class="arrb" d="M520 248 V368" marker-end="url(#m)" style="color:var(--brand)"/>
+<text class="ts" x="528" y="314" text-anchor="middle">成果落库</text>
+
+<rect class="nn" x="40" y="368" width="640" height="40" rx="8"/>
+<text class="dat" x="360" y="392" text-anchor="middle">存储适配层 · repository（job / novel / drama / history / agent-task / user …）· 用户隔离</text>
+
+<path class="arrb" d="M320 408 V436" marker-end="url(#m)" style="color:var(--brand)"/>
+<rect class="bb" x="180" y="436" width="280" height="48" rx="8"/>
+<text class="thb" x="320" y="456" text-anchor="middle">@novel/db · DbEngine 同步抽象</text>
+<text class="tsb" x="320" y="474" text-anchor="middle">prepare().run / get / all</text>
+
+<path class="arr" d="M260 484 V496 H180 V516" marker-end="url(#m)"/>
+<path class="arr" d="M380 484 V496 H440 V516" marker-end="url(#m)"/>
+<text class="ts" x="150" y="509" text-anchor="middle">DATABASE_URL 探择</text>
+
+<rect class="nn" x="100" y="516" width="160" height="46" rx="8"/>
+<text class="t" x="180" y="536" text-anchor="middle">SQLite</text>
+<text class="ts" x="180" y="552" text-anchor="middle">better-sqlite3</text>
+<rect class="nn" x="360" y="516" width="160" height="46" rx="8"/>
+<text class="t" x="440" y="536" text-anchor="middle">PostgreSQL</text>
+<text class="ts" x="440" y="552" text-anchor="middle">pg + Atomics 桥</text>
+</svg>

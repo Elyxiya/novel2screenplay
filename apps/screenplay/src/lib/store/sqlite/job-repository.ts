@@ -5,7 +5,7 @@
  * 所有操作直接操作 SQLite 数据库。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 import type { PipelineJob, SceneStatus } from '../../../types/api';
 import type { StoredJob } from '../job-store';
 
@@ -75,7 +75,7 @@ class JobRepositoryImpl implements JobRepository {
    * 创建新任务
    */
   create(params: CreateJobParams): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -128,7 +128,7 @@ class JobRepositoryImpl implements JobRepository {
    * 获取单个任务
    */
   get(jobId: string): StoredJob | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM jobs WHERE id = ?').get(jobId) as JobRow | undefined;
 
     if (!row) return null;
@@ -140,7 +140,7 @@ class JobRepositoryImpl implements JobRepository {
    * 更新任务
    */
   update(jobId: string, params: UpdateJobParams): void {
-    const db = getDatabase();
+    const db = getEngine();
     const updates: string[] = [];
     const values: Record<string, unknown> = { id: jobId };
 
@@ -204,7 +204,7 @@ class JobRepositoryImpl implements JobRepository {
    * 删除任务
    */
   delete(jobId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM jobs WHERE id = ?').run(jobId);
   }
 
@@ -212,7 +212,7 @@ class JobRepositoryImpl implements JobRepository {
    * 删除某用户全部任务（清空历史），返回删除条数
    */
   deleteByUser(userId: string): number {
-    const db = getDatabase();
+    const db = getEngine();
     return db.prepare('DELETE FROM jobs WHERE user_id = ?').run(userId).changes;
   }
 
@@ -220,7 +220,7 @@ class JobRepositoryImpl implements JobRepository {
    * 按状态列出任务；传入 userId 时按用户过滤（多用户隔离）
    */
   list(status?: PipelineJob['status'], userId?: string): StoredJob[] {
-    const db = getDatabase();
+    const db = getEngine();
 
     let rows: JobRow[];
     if (status && userId) {
@@ -240,7 +240,7 @@ class JobRepositoryImpl implements JobRepository {
    * 按时间范围列出任务
    */
   listByDateRange(startTime: number, endTime: number): StoredJob[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = db.prepare(
       'SELECT * FROM jobs WHERE created_at >= ? AND created_at <= ? ORDER BY created_at DESC'
     ).all(startTime, endTime) as JobRow[];

@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import { getScreenplaySnapshot, ScreenplaySnapshotError } from '@/lib/jobs/screenplay-snapshot';
 import { getJobRepository } from '@/lib/store/sqlite/job-repository';
+import { getDatabase } from '@/lib/store/sqlite/db';
 
 /** 最小剧本：1 场景对白 */
 function makeScreenplay(): Screenplay {
@@ -47,6 +48,11 @@ function makeScreenplay(): Screenplay {
 
 describe('screenplay-snapshot · C1 快照收敛', () => {
   const repo = getJobRepository();
+
+  beforeEach(() => {
+    // 仓库走 @novel/db 引擎单例，需先注册 SQLite 引擎
+    getDatabase();
+  });
 
   it('已完成任务 → 返回含 screenplay/溯源字段的快照', () => {
     const id = repo.create({

@@ -2,7 +2,7 @@
  * User Repository - 用户账户 CRUD 操作
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 
 export interface User {
   id: string;
@@ -44,7 +44,7 @@ export interface UserRepository {
 
 class UserRepositoryImpl implements UserRepository {
   create(params: { username: string; email?: string; passwordHash: string }): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `usr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
     db.prepare(
@@ -61,31 +61,31 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   getByUsername(username: string): User | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username) as UserRow | undefined;
     return row ? this.rowToUser(row) : null;
   }
 
   getByEmail(email: string): User | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined;
     return row ? this.rowToUser(row) : null;
   }
 
   getById(id: string): User | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
     return row ? this.rowToUser(row) : null;
   }
 
   updatePassword(id: string, passwordHash: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
       .run(passwordHash, Date.now(), id);
   }
 
   updateProfile(id: string, params: { email?: string | null }): void {
-    const db = getDatabase();
+    const db = getEngine();
     if (params.email !== undefined) {
       db.prepare('UPDATE users SET email = ?, updated_at = ? WHERE id = ?')
         .run(params.email, Date.now(), id);
@@ -95,7 +95,7 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   delete(id: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM users WHERE id = ?').run(id);
   }
 

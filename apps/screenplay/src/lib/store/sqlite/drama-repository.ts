@@ -5,7 +5,7 @@
  * drama.source_job_id → job（剧本），job.novel_id → novel（小说）。
  */
 
-import { getDatabase } from './db';
+import { getEngine } from '@novel/db';
 
 export interface DramaRecord {
   id: string;
@@ -67,7 +67,7 @@ class DramaRepositoryImpl implements DramaRepository {
     dramaYaml: string;
     userId?: string | null;
   }): string {
-    const db = getDatabase();
+    const db = getEngine();
     const id = `drama_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -87,13 +87,13 @@ class DramaRepositoryImpl implements DramaRepository {
   }
 
   get(dramaId: string): DramaRecord | null {
-    const db = getDatabase();
+    const db = getEngine();
     const row = db.prepare('SELECT * FROM dramas WHERE id = ?').get(dramaId) as DramaRow | undefined;
     return row ? this.rowToRecord(row) : null;
   }
 
   list(userId?: string): DramaSummary[] {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = userId
       ? (db.prepare('SELECT * FROM dramas WHERE user_id = ? ORDER BY created_at DESC').all(userId) as DramaRow[])
       : (db.prepare('SELECT * FROM dramas ORDER BY created_at DESC').all() as DramaRow[]);
@@ -115,7 +115,7 @@ class DramaRepositoryImpl implements DramaRepository {
   }
 
   findBySourceJobId(sourceJobId: string, userId?: string): DramaRecord | null {
-    const db = getDatabase();
+    const db = getEngine();
     const rows = userId
       ? (db.prepare('SELECT * FROM dramas WHERE source_job_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1').all(sourceJobId, userId) as DramaRow[])
       : (db.prepare('SELECT * FROM dramas WHERE source_job_id = ? ORDER BY created_at DESC LIMIT 1').all(sourceJobId) as DramaRow[]);
@@ -123,7 +123,7 @@ class DramaRepositoryImpl implements DramaRepository {
   }
 
   update(dramaId: string, params: { title?: string; dramaYaml?: string }): boolean {
-    const db = getDatabase();
+    const db = getEngine();
     const existing = db.prepare('SELECT id FROM dramas WHERE id = ?').get(dramaId);
     if (!existing) return false;
 
@@ -139,7 +139,7 @@ class DramaRepositoryImpl implements DramaRepository {
   }
 
   delete(dramaId: string): void {
-    const db = getDatabase();
+    const db = getEngine();
     db.prepare('DELETE FROM dramas WHERE id = ?').run(dramaId);
   }
 

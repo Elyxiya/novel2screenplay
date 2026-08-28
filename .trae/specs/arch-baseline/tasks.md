@@ -28,7 +28,7 @@
 - [x] R2. tsc --noEmit
 - [x] R3. eslint src
 - [x] R4. prebuild 链（contracts/auth/db）
-- [ ] R5. P0 全链路 e2e 回归
+- [x] R5. P0 全链路 e2e 回归
 
 # Task Dependencies
 

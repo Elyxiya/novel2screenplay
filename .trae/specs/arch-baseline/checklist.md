@@ -25,4 +25,4 @@
 - [x] R2. tsc --noEmit 通过
 - [x] R3. eslint src 通过
 - [x] R4. contracts/auth/db 预构建链通过（CI 对齐）
-- [ ] R5. P0 全链路 e2e（novel→screenplay→drama）回归通过
+- [x] R5. P0 全链路 e2e（novel→screenplay→drama）回归通过

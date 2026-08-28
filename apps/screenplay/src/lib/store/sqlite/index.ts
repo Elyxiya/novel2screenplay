@@ -5,10 +5,11 @@
  */
 
 // 数据库管理
-export { getDatabase, closeDatabase, runMigrations, healthCheck } from './db';
+export { getDatabase, closeDatabase, runMigrations, healthCheck, getEngine } from './db';
 
 // 存储引擎（@novel/db）：repository 与后续多后端切换的入口
-export { getEngine, getStorageKind, useEngine, useSqlite, resetEngine } from '@novel/db';
+// getEngine 由 app 层导出（未注册时自动初始化），其余工具直通 @novel/db
+export { getStorageKind, useEngine, useSqlite, resetEngine } from '@novel/db';
 
 // Repository
 export { getJobRepository, type JobRepository, type CreateJobParams, type UpdateJobParams } from './job-repository';

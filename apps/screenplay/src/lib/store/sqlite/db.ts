@@ -10,7 +10,13 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { encryptApiKey } from '../../llm/api-key-cipher';
-import { useSqlite as registerSqliteEngine, usePostgres as registerPostgresEngine, resetEngine, getEngine } from '@novel/db';
+import {
+  useSqlite as registerSqliteEngine,
+  usePostgres as registerPostgresEngine,
+  resetEngine,
+  getEngine as getRegisteredEngine,
+} from '@novel/db';
+import type { DbEngine } from '@novel/db';
 
 // 数据库文件路径配置
 const DB_DIR = process.env.DB_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), 'data');
@@ -24,7 +30,9 @@ let db: Database.Database | null = null;
 export function getDatabase(): Database.Database {
   if (typeof globalThis === 'undefined') {
     // SSR 环境，直接创建
-    return createDatabase();
+    const database = createDatabase();
+    registerEngine(database);
+    return database;
   }
 
   const GLOBAL_KEY = '__novel2screenplay_db__';
@@ -33,7 +41,37 @@ export function getDatabase(): Database.Database {
     (globalThis as Record<string, unknown>)[GLOBAL_KEY] = createDatabase();
   }
 
-  return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as Database.Database;
+  const database = (globalThis as Record<string, unknown>)[GLOBAL_KEY] as Database.Database;
+  // 幂等注册引擎：连接可能已缓存（热重载 / 测试 resetEngine 后），每次调用确保引擎已注册
+  ensureEngineRegistered(database);
+  return database;
+}
+
+/**
+ * 引擎未注册时才注册（幂等）。已注册时零开销返回，避免重复 PG 健康检查。
+ */
+function ensureEngineRegistered(database: Database.Database): void {
+  try {
+    getRegisteredEngine();
+  } catch {
+    // 引擎未注册（冷启动 / resetEngine 后）→ 注册当前引擎（见 registerEngine）
+    registerEngine(database);
+  }
+}
+
+/**
+ * 获取已注册的统一存储引擎。
+ * 与 @novel/db 原生 getEngine 的唯一区别：引擎未注册时先触发 getDatabase() 完成初始化，
+ * 避免冷启动时首个访问会话/仓库的路由因引擎未注册而 500（引擎选择见 registerEngine）。
+ */
+export function getEngine(): DbEngine {
+  try {
+    return getRegisteredEngine();
+  } catch {
+    // 引擎尚未注册（冷启动首个请求）→ 初始化数据库（内部调用 registerEngine）后重试
+    getDatabase();
+    return getRegisteredEngine();
+  }
 }
 
 function createDatabase(): Database.Database {
@@ -61,10 +99,7 @@ function createDatabase(): Database.Database {
   initializeSchema(database);
   migrateLegacyLLMKeys(database);
 
-  // 向 @novel/db 注册当前引擎：repository 通过 getEngine() 拿到统一存储句柄
-  // 存在 DATABASE_URL 且 PG 可达 → 用 PostgresEngine；否则（默认）回退 SQLite。
-  registerEngine(database);
-
+  // 引擎注册统一在 getDatabase() 中完成（幂等），此处仅负责建库/迁移
   return database;
 }
 
@@ -360,6 +395,12 @@ function initializeSchema(database: Database.Database): void {
  * 关闭数据库连接（用于测试或优雅关闭）
  */
 export function closeDatabase(): void {
+  // 先清空引擎注册，避免残留引擎指向已关闭连接（测试隔离 / 热重载）
+  try {
+    resetEngine();
+  } catch {
+    // 引擎已关闭时忽略
+  }
   // 优先关闭 AND 清空 globalThis 缓存的连接（getDatabase 走的是缓存，非模块级 db）
   if (typeof globalThis !== 'undefined') {
     const cached = (globalThis as Record<string, unknown>).__novel2screenplay_db__;

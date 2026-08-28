@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getDatabase, closeDatabase } from '@/lib/store/sqlite/db';
 import { getEngine, getStorageKind, resetEngine, useEngine } from '@/lib/store/sqlite';
+import { getEngine as rawGetEngine } from '@novel/db';
 
 describe('DbEngine 引擎层', () => {
   beforeEach(() => {
@@ -56,11 +57,17 @@ describe('DbEngine 引擎层', () => {
     expect(getEngine().healthCheck()).toBe(true);
   });
 
-  it('未注入时 getEngine() 抛出明确错误', () => {
+  it('未注入时 @novel/db 原生 getEngine() 抛出明确错误', () => {
     resetEngine();
-    expect(() => getEngine()).toThrow(/No storage engine registered/);
+    expect(() => rawGetEngine()).toThrow(/No storage engine registered/);
     // 恢复：重新注册供后续用例使用
     getDatabase();
+  });
+
+  it('app 层 getEngine() 未注册时自动初始化，不抛错', () => {
+    resetEngine();
+    // app 层 facade：引擎未注册 → 内部触发 getDatabase() 完成注册
+    expect(getEngine().getKind()).toBe('sqlite');
   });
 
   it('useEngine 可注入自定义引擎覆盖后端', () => {

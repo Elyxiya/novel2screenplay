@@ -65,9 +65,11 @@ export class PipelineEngine {
     // All chapters (for result page original text display)
     const allChapterTexts = parseResult.chapters.map((c) => c.text);
     // Chapters objects filtered to selected (for Phase1/Phase2)
-    const selectedChapterObjs = input.selectedChapters
-      ? input.selectedChapters.map(i => parseResult.chapters[i]).filter(Boolean)
-      : parseResult.chapters;
+    // 注意：selectedChapters 空数组视作「未选择」→ 回退全量章节，避免空输入导致幻觉输出
+    const selectedChapterObjs =
+      input.selectedChapters && input.selectedChapters.length > 0
+        ? input.selectedChapters.map(i => parseResult.chapters[i]).filter(Boolean)
+        : parseResult.chapters;
 
     // Get LLM provider（用户导入优先，回退全局 env；modelId 缺省时用默认）
     const provider = resolveProvider(input.userId, input.modelId);
@@ -83,7 +85,9 @@ export class PipelineEngine {
       novelText: input.novelText,
       chapterTexts: allChapterTexts,
       modelId: provider.modelId,
-      selectedChapters: input.selectedChapters ?? parseResult.chapters.map((c) => c.index),
+      selectedChapters: input.selectedChapters && input.selectedChapters.length > 0
+        ? input.selectedChapters
+        : parseResult.chapters.map((c) => c.index),
       temperature: input.temperature ?? 0.7,
       novelId: input.novelId,
       title: input.title,

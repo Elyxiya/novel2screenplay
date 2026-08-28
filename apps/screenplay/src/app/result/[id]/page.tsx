@@ -613,7 +613,21 @@ function ResultPageInner() {
         <div className="max-w-7xl mx-auto space-y-4">
 
           {/* ── 场景 Tab ── */}
-          {tab === 'scenes' && (
+          {tab === 'scenes' && sp.scenes.length === 0 && (
+            <div className="glass-card flex flex-col items-center justify-center text-center py-24 px-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-cyan-50 border border-slate-200/70 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16M4 12h16M4 19h10" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700">暂无场景数据</h3>
+              <p className="text-sm text-slate-400 mt-1.5 max-w-md">
+                本次转换未生成场景。可返回工作台重新配置（角色/地点已在下方 Tab 展示），或检查小说原文与模型选择。
+              </p>
+            </div>
+          )}
+          {/* ── 场景 Tab ── */}
+          {tab === 'scenes' && sp.scenes.length > 0 && (
             <div className="flex gap-3" style={{ height: 'calc(100vh - 235px)' }}>
               {/* 场景导航（可折叠） */}
               {scenesCollapsed ? (

@@ -16,6 +16,16 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
   const isWorkbenchPage = pathname === '/workbench';
   const isShortdramaPage = pathname?.startsWith('/shortdrama');
   const isWriterPage = pathname?.startsWith('/writer');
+  // 创作台编辑页（/writer/[id]）：三栏编辑器，需要完全撑满视口
+  const isWriterEditorPage = /^\/writer\/[^/]+\/?$/.test(pathname ?? '');
+  // "卡片主页"类页面：工作台、创作台列表、短剧分镜、历史页。这类页面主要是卡片网格/列表，
+  // 不应该受 max-w-[1600px] 限制，否则宽屏右侧会出现大片空白；但保留外层 padding 做边距即可。
+  const isDashboardLikePage =
+    isWorkbenchPage ||
+    pathname === '/writer' ||
+    isShortdramaPage ||
+    pathname === '/history' ||
+    pathname === '/settings';
   const currentStep = getStepFromPath(pathname ?? '');
   // 站点导航页（首页/功能介绍/使用指南）：不显示转换步进器，改为显示站点导航
   const isLandingPage = pathname === '/' || pathname === '/features' || pathname === '/guide';
@@ -221,6 +231,16 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
 
       {isResultPage ? (
         <div className="flex-1 flex flex-col">
+          {children}
+        </div>
+      ) : isWriterEditorPage ? (
+        // 创作台编辑页：撑满视口宽度，由页面内部自行负责 padding / max-width / 历史面板占位
+        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+      ) : isDashboardLikePage ? (
+        // 工作台/创作台列表/短剧分镜/历史/设置：卡片主页，宽屏放开 max-w，仅当历史面板打开时收右内边距
+        <div className={`flex-1 w-full p-4 sm:p-6 lg:p-8 flex flex-col transition-all duration-300 ${showHistory ? 'pr-[316px]' : ''}`}>
           {children}
         </div>
       ) : (

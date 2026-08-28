@@ -98,6 +98,20 @@ export default function WriterEditorPage() {
   const [metaDraft, setMetaDraft] = useState({ title: '', author: '', synopsis: '' });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 拖拽状态：当前正在拖拽的章节 id
+  const [draggingChapterId, setDraggingChapterId] = useState<string | null>(null);
+  // dropTarget 细分为 5 种：
+  // - volume: 某卷末尾（拖到卷头）
+  // - unassigned: 未分卷末尾
+  // - chapter-before / chapter-after: 某章节之前/之后
+  // 渲染层按此类型精准显示 before/after 指示条或卷高亮
+  const [dropTarget, setDropTarget] = useState<
+    | null
+    | { type: 'volume'; volumeId: string }
+    | { type: 'unassigned' }
+    | { type: 'chapter-before' | 'chapter-after'; chapterId: string }
+  >(null);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -247,6 +261,134 @@ export default function WriterEditorPage() {
       body: JSON.stringify({ volumes }),
     });
     setNovel((prev) => (prev ? { ...prev, volumes } : prev));
+  };
+
+  /**
+   * 移动章节（统一按"快照→splice→重新编号"执行）
+   *
+   * 参数契约（from Experience 347975 成功经验：from/to 必须基于同一份操作前快照）：
+   *  - targetVolumeId  : 目标卷，null 代表"未分卷"
+   *  - anchorChapterId : 可选，锚点章节
+   *  - position        : 'before'（插到锚点之前）| 'after'（之后）| 'end'（卷末尾）
+   */
+  const moveChapter = async (
+    chapterId: string,
+    targetVolumeId: string | null,
+    anchorChapterId: string | undefined,
+    position: 'before' | 'after' | 'end',
+  ) => {
+    if (!novel) return;
+    const moving = novel.chapters.find((c) => c.id === chapterId);
+    if (!moving) return;
+
+    // 先在本地快照上排序：按 volumeId 分组、每组内按 order 升序
+    const snap = novel.chapters.slice();
+    const snapVolumeIds = Array.from(new Set(snap.map((c) => String(c.volumeId))));
+    const group = (volId: string | null) =>
+      snap.filter((c) => String(c.volumeId) === String(volId)).sort((a, b) => a.order - b.order);
+
+    const srcGroup = group(moving.volumeId);
+    const dstGroup = group(targetVolumeId);
+
+    // 1) 找到从原组中移除的 index
+    const fromIndex = srcGroup.findIndex((c) => c.id === chapterId);
+    if (fromIndex < 0) return;
+
+    // 2) 计算插入目标 dstGroup 的 index
+    let toIndex = dstGroup.length;
+    if (position === 'end') {
+      // 目标卷末尾
+      toIndex = moving.volumeId === targetVolumeId ? Math.max(0, dstGroup.length - 1) : dstGroup.length;
+    } else if (anchorChapterId) {
+      const anchorIdxInDst = dstGroup.findIndex((c) => c.id === anchorChapterId);
+      if (anchorIdxInDst < 0) return;
+      toIndex = position === 'before' ? anchorIdxInDst : anchorIdxInDst + 1;
+    }
+    // 同组 splice 修正：先 remove 后再 insert 时，如果 toIndex 位于已移除元素之后，要减 1
+    if (moving.volumeId === targetVolumeId && toIndex > fromIndex) {
+      toIndex -= 1;
+    }
+    // 同组 after 自身：相当于没动
+    if (moving.volumeId === targetVolumeId && fromIndex === toIndex) return;
+
+    // 3) 从 srcGroup 拿出 moving，放到 dstGroup 的 toIndex
+    const newSrc = srcGroup.slice();
+    const [moved] = newSrc.splice(fromIndex, 1);
+    const newDst =
+      moving.volumeId === targetVolumeId ? newSrc : dstGroup.slice();
+    newDst.splice(toIndex, 0, moved);
+
+    // 4) 应用到 chapters：先把"原组+新组"以外的 chapters 保留，然后把新组替换进去，并重编号
+    const touched = new Set<string | null>([moving.volumeId, targetVolumeId]);
+    const untouched = snap.filter((c) => !touched.has(c.volumeId));
+    // 重编号：untouched 保持 order 不动（分组内 order 自洽）
+    // 对 touched 两个分组的新集合重新填 0..N-1 的连续 order
+    const applied: NovelChapter[] = untouched.concat(
+      newSrc.map((c, i) => ({ ...c, volumeId: moving.volumeId, order: i })),
+    );
+    // 注意：当 src==dst 时 newDst 就是最新的 newSrc，避免重复拼接
+    if (moving.volumeId !== targetVolumeId) {
+      for (const c of newDst) {
+        // 已经移到 dst 了，先从 applied 里去掉旧版本（如果有）
+      }
+      // 拼接新 dst 组
+      for (let i = 0; i < newDst.length; i++) {
+        applied.push({ ...newDst[i], volumeId: targetVolumeId, order: i });
+      }
+    } else {
+      // src === dst 情况下，newSrc 已经被 splice 过一次了，上面 applied 拼的是 newSrc+order 重编号，
+      // 但要注意 applied 里不应重复包含 newDst（同一份 newSrc）；上面的 applied 已经是"新 newSrc 组 + untouched"
+      // 直接跳过第二次拼接
+    }
+
+    // 防止重复：把 applied 里 chapterId 重复的项只保留最后一条（即我们刚写入的那条）
+    const idMap = new Map<string, NovelChapter>();
+    for (const c of applied) idMap.set(c.id, c);
+    const finalChapters = Array.from(idMap.values());
+
+    const optimistic: DraftNovel = { ...novel, chapters: finalChapters };
+    setNovel(optimistic);
+    setDraggingChapterId(null);
+    setDropTarget(null);
+    showToast('正在移动章节…');
+
+    // 5) 持久化：按 touched volumeIds 的所有章节按新顺序串行 upsert，DB 端覆盖 order/volumeId
+    try {
+      const persistIds = new Set(
+        finalChapters.filter((c) => touched.has(c.volumeId)).map((c) => c.id),
+      );
+      for (const c of finalChapters) {
+        if (!persistIds.has(c.id)) continue;
+        const res = await fetch(`/api/writer/novels/${novelId}/chapter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...c, updatedAt: nowTs() }),
+        });
+        if (!res.ok) throw new Error('移动失败');
+      }
+      showToast('章节已移动');
+    } catch (e) {
+      setNovel(novel);
+      setError((e as Error).message);
+    }
+  };
+
+  /** 直接重命名章节（失焦/Enter 触发），落库 saveChapter */
+  const renameChapter = async (id: string, title: string) => {
+    if (!novel) return;
+    const ch = novel.chapters.find((c) => c.id === id);
+    if (!ch || ch.title === title) return;
+    const payload: NovelChapter = { ...ch, title: title || '未命名章节', updatedAt: nowTs() };
+    const res = await fetch(`/api/writer/novels/${novelId}/chapter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return;
+    setNovel((prev) =>
+      prev ? { ...prev, chapters: prev.chapters.map((c) => (c.id === id ? payload : c)) } : prev,
+    );
+    if (selectedId === id) setDraftTitle(payload.title);
   };
 
   // ── 元信息 ──
@@ -458,9 +600,11 @@ export default function WriterEditorPage() {
 
   return (
     <RequireAuth>
-      <div className="max-w-[1400px] mx-auto flex flex-col h-[calc(100vh-90px)]">
+      {/* 全屏宽度三栏创作台：外层去掉 max-width，让编辑器在宽屏下可用。
+          保留两侧 24px 安全边距，避免内容贴边。 */}
+      <div className="w-full h-[calc(100vh-61px)] flex flex-col px-4 sm:px-6 py-3 gap-3">
         {/* 顶部工具条 */}
-        <div className="flex items-center gap-3 flex-wrap glass-card px-4 py-2.5">
+        <div className="flex items-center gap-3 flex-wrap glass-card px-4 py-2.5 shrink-0">
           <button
             onClick={() => router.push('/writer')}
             className="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1 transition-colors"
@@ -519,10 +663,11 @@ export default function WriterEditorPage() {
           </div>
         )}
 
-        {/* 主体三栏 */}
-        <div className="relative flex flex-1 min-h-0 mt-3 gap-3">
+        {/* 主体三栏：左栏 280px（目录/人物/世界观）、中栏 flex-1（编辑器，主区域）、右栏 340px（AI 助手）。
+             用 gap-4 分隔三栏，不再受 max-w 限制。 */}
+        <div className="relative flex flex-1 min-h-0 gap-4">
           {/* 左栏：树/人物/世界观（移动端抽屉覆盖） */}
-          <div className={`${mobilePanel === 'sidebar' ? 'flex' : 'hidden'} md:flex absolute inset-y-0 left-0 z-20 w-72 md:static md:w-60 shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl md:shadow-none`}>
+          <div className={`${mobilePanel === 'sidebar' ? 'flex' : 'hidden'} lg:flex absolute inset-y-0 left-0 z-20 w-72 lg:static lg:w-[280px] shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl lg:shadow-none`}>
             <div className="flex border-b border-slate-200/70">
               {(
                 [
@@ -562,9 +707,38 @@ export default function WriterEditorPage() {
                     .sort((a, b) => a.order - b.order)
                     .map((vol) => {
                       const isCollapsed = collapsed.has(vol.id);
+                      const isTargetVol =
+                        dropTarget?.type === 'volume' && dropTarget.volumeId === vol.id;
                       return (
                         <div key={vol.id} className="pt-1">
-                          <div className="flex items-center gap-1 group">
+                          {/* 卷头整行作为可投放区：拖拽章节拖到卷名上 → 放到卷末尾 */}
+                          <div
+                            className={`flex items-center gap-1 group rounded-md px-1 -mx-1 transition-colors ${
+                              isTargetVol
+                                ? 'ring-2 ring-indigo-400 bg-indigo-50/70 ring-offset-1'
+                                : draggingChapterId
+                                  ? 'hover:bg-indigo-50/50'
+                                  : ''
+                            }`}
+                            onDragOver={(e) => {
+                              if (!draggingChapterId) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDropTarget((prev) =>
+                                prev?.type === 'volume' && prev.volumeId === vol.id
+                                  ? prev
+                                  : { type: 'volume', volumeId: vol.id },
+                              );
+                            }}
+                            onDrop={(e) => {
+                              if (!draggingChapterId) return;
+                              // 如果内层章节行已经 preventDefault 处理过这次 drop，外层不要重复追加（Bug 3）
+                              if (e.defaultPrevented) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              void moveChapter(draggingChapterId, vol.id, undefined, 'end');
+                            }}
+                          >
                             <button
                               onClick={() =>
                                 setCollapsed((prev) => {
@@ -580,6 +754,11 @@ export default function WriterEditorPage() {
                             </button>
                             <input
                               defaultValue={vol.title}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  (e.target as HTMLInputElement).blur();
+                                }
+                              }}
                               onBlur={(e) => {
                                 if (e.target.value !== vol.title) renameVolume(vol.id, e.target.value || vol.title);
                               }}
@@ -593,15 +772,50 @@ export default function WriterEditorPage() {
                               +
                             </button>
                           </div>
+                          {/* 折叠时也接受投放（通过卷头 drop），展开时列出章节并允许章节间投放 */}
                           {!isCollapsed && (
                             <div className="ml-3 mt-0.5 space-y-0.5 border-l border-slate-200/70 pl-2">
+                              {volumeChapters(vol.id).length === 0 && draggingChapterId && (
+                                <div
+                                  className="text-[10px] text-indigo-400 italic py-1 text-center border border-dashed rounded border-indigo-300/70"
+                                  onDragOver={(e) => { e.preventDefault(); setDropTarget({ type: 'volume', volumeId: vol.id }); }}
+                                  onDrop={(e) => {
+                                    if (e.defaultPrevented) return;
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggingChapterId) void moveChapter(draggingChapterId, vol.id, undefined, 'end');
+                                  }}
+                                >
+                                  将章节拖到这里
+                                </div>
+                              )}
                               {volumeChapters(vol.id).map((ch) => (
                                 <ChapterItem
                                   key={ch.id}
                                   chapter={ch}
                                   active={selectedId === ch.id}
+                                  dragging={draggingChapterId === ch.id}
+                                  dropBefore={dropTarget?.type === 'chapter-before' && dropTarget.chapterId === ch.id}
+                                  dropAfter={dropTarget?.type === 'chapter-after' && dropTarget.chapterId === ch.id}
                                   onSelect={() => selectChapter(ch.id)}
                                   onDelete={() => deleteChapter(ch.id)}
+                                  onRename={(title) => renameChapter(ch.id, title)}
+                                  onDragStart={() => setDraggingChapterId(ch.id)}
+                                  onDragEnd={() => {
+                                    setDraggingChapterId(null);
+                                    setDropTarget(null);
+                                  }}
+                                  onSetDropTarget={(pos) => {
+                                    if (!draggingChapterId || draggingChapterId === ch.id) return;
+                                    setDropTarget({
+                                      type: pos === 'before' ? 'chapter-before' : 'chapter-after',
+                                      chapterId: ch.id,
+                                    });
+                                  }}
+                                  onDrop={(pos) => {
+                                    if (!draggingChapterId || draggingChapterId === ch.id) return;
+                                    void moveChapter(draggingChapterId, ch.volumeId, ch.id, pos);
+                                  }}
                                 />
                               ))}
                             </div>
@@ -609,14 +823,62 @@ export default function WriterEditorPage() {
                         </div>
                       );
                     })}
-                  <div className="ml-3 mt-1 space-y-0.5">
+                  {/* 未分卷章节区 */}
+                  <div
+                    className={`ml-3 mt-1 space-y-0.5 rounded-md transition-colors ${
+                      dropTarget?.type === 'unassigned'
+                        ? 'ring-2 ring-indigo-400 bg-indigo-50/50 p-1 -mx-1'
+                        : draggingChapterId
+                          ? 'hover:bg-indigo-50/40'
+                          : ''
+                    }`}
+                    onDragOver={(e) => {
+                      if (!draggingChapterId) return;
+                      e.preventDefault();
+                      setDropTarget((prev) =>
+                        prev?.type === 'unassigned' ? prev : { type: 'unassigned' },
+                      );
+                    }}
+                    onDrop={(e) => {
+                      if (!draggingChapterId) return;
+                      if (e.defaultPrevented) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void moveChapter(draggingChapterId, null, undefined, 'end');
+                    }}
+                  >
+                    {volumeChapters(null).length === 0 && draggingChapterId && (
+                      <div className="text-[10px] text-indigo-400 italic py-1 text-center border border-dashed rounded border-indigo-300/70">
+                        将章节拖到这里 → 放入未分卷
+                      </div>
+                    )}
                     {volumeChapters(null).map((ch) => (
                       <ChapterItem
                         key={ch.id}
                         chapter={ch}
                         active={selectedId === ch.id}
+                        dragging={draggingChapterId === ch.id}
+                        dropBefore={dropTarget?.type === 'chapter-before' && dropTarget.chapterId === ch.id}
+                        dropAfter={dropTarget?.type === 'chapter-after' && dropTarget.chapterId === ch.id}
                         onSelect={() => selectChapter(ch.id)}
                         onDelete={() => deleteChapter(ch.id)}
+                        onRename={(title) => renameChapter(ch.id, title)}
+                        onDragStart={() => setDraggingChapterId(ch.id)}
+                        onDragEnd={() => {
+                          setDraggingChapterId(null);
+                          setDropTarget(null);
+                        }}
+                        onSetDropTarget={(pos) => {
+                          if (!draggingChapterId || draggingChapterId === ch.id) return;
+                          setDropTarget({
+                            type: pos === 'before' ? 'chapter-before' : 'chapter-after',
+                            chapterId: ch.id,
+                          });
+                        }}
+                        onDrop={(pos) => {
+                          if (!draggingChapterId || draggingChapterId === ch.id) return;
+                          void moveChapter(draggingChapterId, ch.volumeId, ch.id, pos);
+                        }}
                       />
                     ))}
                   </div>
@@ -729,8 +991,8 @@ export default function WriterEditorPage() {
             )}
           </div>
 
-          {/* 右栏：AI 助手（移动端抽屉覆盖） */}
-          <div className={`${mobilePanel === 'ai' ? 'flex' : 'hidden'} md:flex absolute inset-y-0 right-0 z-20 w-72 shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl md:shadow-none`}>
+          {/* 右栏：AI 助手（移动端抽屉覆盖）—— 桌面端加宽到 340px，输入指令更舒适 */}
+          <div className={`${mobilePanel === 'ai' ? 'flex' : 'hidden'} lg:flex absolute inset-y-0 right-0 z-20 w-72 lg:static lg:w-[340px] shrink-0 glass-card flex-col min-h-0 overflow-hidden shadow-2xl lg:shadow-none`}>
             <div className="px-4 py-2.5 border-b border-slate-200/70 font-medium text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
               AI 写作助手
@@ -891,34 +1153,172 @@ export default function WriterEditorPage() {
 function ChapterItem({
   chapter,
   active,
+  dragging,
+  dropBefore,
+  dropAfter,
   onSelect,
   onDelete,
+  onRename,
+  onDragStart,
+  onDragEnd,
+  onSetDropTarget,
+  onDrop,
 }: {
   chapter: NovelChapter;
   active: boolean;
+  dragging?: boolean;
+  dropBefore?: boolean;
+  dropAfter?: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onRename: (title: string) => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onSetDropTarget: (pos: 'before' | 'after') => void;
+  onDrop: (pos: 'before' | 'after') => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(chapter.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDraft(chapter.title);
+  }, [chapter.title]);
+  useEffect(() => {
+    if (editing) {
+      const t = setTimeout(() => inputRef.current?.focus(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [editing]);
+
+  const commit = () => {
+    if (!editing) return;
+    setEditing(false);
+    if (draft !== chapter.title) onRename(draft);
+  };
+
   return (
-    <div
-      onClick={onSelect}
-      className={`group flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer text-xs transition-colors ${
-        active ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-sm' : 'text-slate-600 hover:bg-white/70'
-      }`}
-    >
-      <span className="flex-1 truncate">{chapter.title}</span>
-      {chapter.wordCount > 0 && (
-        <span className={`text-[9px] ${active ? 'text-indigo-200' : 'text-slate-300'}`}>{chapter.wordCount}</span>
+    <div className="flex flex-col">
+      {dropBefore && (
+        <div className="h-0.5 bg-indigo-500 rounded-full mx-2 my-0.5 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]" aria-hidden />
       )}
-      <button
-        onClick={(e) => {
+      <div
+        ref={rowRef}
+        draggable
+        onDragStart={(e) => {
           e.stopPropagation();
-          onDelete();
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', chapter.id); } catch { /* ignore */ }
+          onDragStart();
         }}
-        className={`opacity-0 group-hover:opacity-100 text-[10px] ${active ? 'text-indigo-200 hover:text-white' : 'text-slate-300 hover:text-red-500'}`}
+        onDragEnd={(e) => {
+          e.stopPropagation();
+          onDragEnd();
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!rowRef.current) return;
+          // 按"章节行在鼠标的上半 or 下半"区分 before/after
+          const rect = rowRef.current.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+          const pos: 'before' | 'after' = e.clientY < mid ? 'before' : 'after';
+          onSetDropTarget(pos);
+        }}
+        onDragLeave={(e) => {
+          // 当鼠标真的离开这一行（而不是进入子元素）时，父组件的 onSetDropTarget 会被下一个 dragover 覆盖，
+          // 这里仅在真的离开章节行时清除自己贡献的 dropTarget
+          const cur = rowRef.current;
+          if (!cur) return;
+          const r = cur.getBoundingClientRect();
+          const { clientX: x, clientY: y } = e;
+          if (x < r.left - 1 || x > r.right + 1 || y < r.top - 1 || y > r.bottom + 1) {
+            // 不直接清空 state，避免抖动；交给下一个章节 onDragOver 覆盖即可
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const row = rowRef.current;
+          const pos: 'before' | 'after' = (() => {
+            if (!row) return 'after';
+            const r = row.getBoundingClientRect();
+            return e.clientY < r.top + r.height / 2 ? 'before' : 'after';
+          })();
+          onDrop(pos);
+        }}
+        onClick={(e) => {
+          if (editing) return;
+          e.stopPropagation();
+          onSelect();
+        }}
+        onDoubleClick={() => {
+          if (!editing) setEditing(true);
+        }}
+        title={dragging ? '拖动移动章节；拖到章节上半=插之前，下半=插之后；双击可重命名' : '双击章节名可重命名；按住可拖拽到其他卷/章节'}
+        className={`group relative flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer text-xs transition-all select-none ${
+          active
+            ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-sm'
+            : 'text-slate-600 hover:bg-white/70'
+        } ${dragging ? 'opacity-40 scale-[0.98]' : ''} ${dropBefore || dropAfter ? 'mt-0.5' : ''}`}
       >
-        ✕
-      </button>
+        {/* 拖拽把手（仅 hover 显示） */}
+        <span className="text-slate-300/0 group-hover:text-slate-400/70 transition-colors select-none cursor-grab">
+          ⋮⋮
+        </span>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setDraft(chapter.title);
+                setEditing(false);
+              }
+            }}
+            onBlur={commit}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className={`flex-1 min-w-0 text-xs rounded px-1 py-0.5 outline-none ${
+              active ? 'bg-white/20 text-white placeholder-indigo-200' : 'bg-white text-slate-700 ring-1 ring-indigo-300'
+            }`}
+            placeholder="章节名"
+          />
+        ) : (
+          <span className="flex-1 truncate">{chapter.title}</span>
+        )}
+        {chapter.wordCount > 0 && !editing && (
+          <span className={`text-[9px] ${active ? 'text-indigo-200' : 'text-slate-300'}`}>{chapter.wordCount}</span>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!editing) {
+              setEditing(true);
+            }
+          }}
+          className={`opacity-0 group-hover:opacity-100 text-[10px] ${active ? 'text-indigo-200 hover:text-white' : 'text-slate-300 hover:text-indigo-500'}`}
+          title="重命名章节"
+        >
+          ✎
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className={`opacity-0 group-hover:opacity-100 text-[10px] ${active ? 'text-indigo-200 hover:text-white' : 'text-slate-300 hover:text-red-500'}`}
+          title="删除章节"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }

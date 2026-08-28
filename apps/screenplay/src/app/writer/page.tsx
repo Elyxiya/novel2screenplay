@@ -185,7 +185,10 @@ export default function WriterPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            data-grid-note="窄屏1列 / md2 / lg3 / xl4"
+          >
             {novels.map((n) => (
               <div key={n.id} className="glass-card glass-card-hover p-5 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">

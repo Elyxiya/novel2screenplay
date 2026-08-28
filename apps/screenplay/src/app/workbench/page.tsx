@@ -244,7 +244,10 @@ function WorkbenchContent() {
                 <Link href="/upload" className="glow-btn text-xs">立即上传</Link>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                data-grid-note="窄屏1列 / md2 / lg3 / xl4 / 2xl5"
+              >
                 {novels.map((n) => {
                   const pct = n.totalChapters ? Math.round((n.convertedCount / n.totalChapters) * 100) : 0;
                   return (

@@ -1,0 +1,154 @@
+{
+  "schema": "identity-annotation/v1",
+  "sampleId": "xiuzhen-medium",
+  "title": "最后一个修真者（中部 20-55 章）",
+  "author": "纸上飞雪",
+  "type": "medium",
+  "sourceFile": "E:\\文档\\Downloads\\《最后一个修真者》作者：纸上飞雪.txt",
+  "originalChapterRange": [
+    20,
+    55
+  ],
+  "chapterCount": 36,
+  "inputTokensHint": 31539,
+  "_note": "诚实标注：本切片（原书 20-55 章）内真实的在篇死亡仅有王老三（东城老大，原书 27 章=切片第 8 章）与夏建仁（原书 55 章=切片第 36 章）两起；其余 deathHits 均为修辞用法；无干净的在篇身份揭示事件，reveals 如实为空。aliasIndex 待剧本产物注入后按角色表补全。",
+  "deadCharacters": [
+    { "name": "王老三", "deathChapter": 8 },
+    { "name": "夏建仁", "deathChapter": 36 }
+  ],
+  "reveals": [],
+  "aliasIndex": {},
+  "charIdToName": {},
+  "scenesRef": null,
+  "candidates": {
+    "deathHits": [
+      {
+        "chapterIndex": 2,
+        "chapterTitle": "冲动的后果",
+        "line": "那老鼠明显死去不就，而且看样子是有人故意放在他车头上的，不像是恶作剧。"
+      },
+      {
+        "chapterIndex": 3,
+        "chapterTitle": "军训",
+        "line": "在学生们得到军训的通知时候，一个个像是死了爹妈一样，那脸色要多难看有多难看，甚至当天，就有人开始请长假了。"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "格局改变",
+        "line": "白冷叶呵呵笑道：“东城老大王老三身死，底下场子被北城跟南城的老大瓜分，难道龅牙兄没有什么想法？”"
+      },
+      {
+        "chapterIndex": 17,
+        "chapterTitle": "意外之人",
+        "line": "“幸亏我当时没有跟着你，不然一定后悔死了。”张秀嘴中冷冷的说道。"
+      },
+      {
+        "chapterIndex": 17,
+        "chapterTitle": "意外之人",
+        "line": "当时他的前方出了车祸，而当时一辆大卡车速度不减朝着他撞过来，在地狱大门前走了一遭，要不是那个神秘老头，他说不定已经死了。"
+      },
+      {
+        "chapterIndex": 18,
+        "chapterTitle": "该不该打脸",
+        "line": "白冷叶差一点就被自己口水给呛死了，做这种事情不背着，难道要当着你面不成。"
+      },
+      {
+        "chapterIndex": 18,
+        "chapterTitle": "该不该打脸",
+        "line": "只不过她不知道的是，白冷叶心中已经快要笑死了，自己这个小姨子到底有多纯洁啊，貌似就是一个感情白痴。"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "不甘心",
+        "line": "“他不会死了把……”"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "不甘心",
+        "line": "“死了更好，你不是很讨厌他吗……”"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "不甘心",
+        "line": "“不会真的死了把？我为什么会替他担心……”"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "不甘心",
+        "line": "“死了就死了，你担心什么！”"
+      },
+      {
+        "chapterIndex": 25,
+        "chapterTitle": "勇往直前的心",
+        "line": "白冷叶回到迪厅时候，底下的小弟们都快要急死了，看到他没事之后，众人才是放下心来了。"
+      },
+      {
+        "chapterIndex": 26,
+        "chapterTitle": "胆儿很大",
+        "line": "“你妈从小虽然生活很好，但是自从你外公死了之后，我们白家就一代代没落，直到妈这里，彻底沦为普通农民了。”"
+      },
+      {
+        "chapterIndex": 27,
+        "chapterTitle": "再次遇到",
+        "line": "白冷叶摇头笑道：“你可是祖国未来的花朵，世界都等着你呢，现在又不是要饿死了。”"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "突破口",
+        "line": "就在他们砸的正欢的时候，街头两边走出来身穿白衣的人，速度飞快，转眼就把整个迪厅给包围住，随后一辆货车开过来，急刹车后，横在了大门前，堵死了。"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "突破口",
+        "line": "白冷叶回去之后，已经是五点多了，统计了一下伤亡，自家兄弟伤者五十四人，死亡四个，而青蛇那边的人则是要好一点，伤了二十多个，死了一个。"
+      },
+      {
+        "chapterIndex": 33,
+        "chapterTitle": "受伤",
+        "line": "又是一声枪声，另外一个外国男子倒在了地上，两人都死了之后，便是看到王瑞一步一步走了过来。"
+      },
+      {
+        "chapterIndex": 35,
+        "chapterTitle": "崛起",
+        "line": "老人目光绝望的看着那死去的夏建仁，瘦弱的身子剧烈颤抖起来。"
+      }
+    ],
+    "revealHits": [
+      {
+        "chapterIndex": 0,
+        "chapterTitle": "人善被人欺",
+        "line": "闻言，那肥胖警察面色一抖，脸上瞬间露出了笑意：“原来是这样，都是自家兄弟，这其中可能有什么误会。”"
+      },
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "坚持住",
+        "line": "“原来是晓语啊，我刚才……”"
+      },
+      {
+        "chapterIndex": 6,
+        "chapterTitle": "鬼门关走了一圈",
+        "line": "“原来是侄子冷叶啊，你看我这段时间忙的，居然把这事给忘了……”"
+      },
+      {
+        "chapterIndex": 25,
+        "chapterTitle": "勇往直前的心",
+        "line": "“哈哈，原来是王所长啊！”啸天虎立马露出了笑容，摆摆手，那些小弟立马转身离开。"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "突破口",
+        "line": "“呸！原来是高旺！”啸天虎站起身来，手中拎着一把半米长的砍刀，目光冷漠看着高旺，嘴中轻喝一声，一个箭步冲过来，手臂上青筋凸起，带着呼啸之声劈了下来。"
+      },
+      {
+        "chapterIndex": 31,
+        "chapterTitle": "新的舍友",
+        "line": "但是其实是……"
+      },
+      {
+        "chapterIndex": 31,
+        "chapterTitle": "新的舍友",
+        "line": "通过简单对话，白冷叶发现那个陈子或，也就是戴眼镜看起来比较斯文的男人，其实是一个比较猥琐跟色色的，走在街上，目光来回扫过那些露着大腿的女孩。"
+      }
+    ]
+  }
+}

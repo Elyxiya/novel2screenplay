@@ -119,6 +119,33 @@ function scanText(chapters) {
   return { deaths, reveals };
 }
 
+// ── 章区间切片（1 起闭区间，章号重编号从 1 起，供按章节造短/中样本） ──
+
+/**
+ * 按 `start:end`（1 起、闭区间）切片章节并重编号（新序列 0 起）。
+ * @param {Array<{chapterIndex:number,title:string,text:string}>} chapters
+ * @param {string|undefined} range "start:end"（1 起闭区间），未给则整本。
+ * @returns {{ sliced: Array<{chapterIndex:number,title:string,text:string}>, originalRange: [number,number]|null }}
+ */
+function sliceByRange(chapters, range) {
+  if (!range) return { sliced: chapters.slice(), originalRange: null };
+  const m = /^(\d+):(\d+)$/.exec(String(range).trim());
+  if (!m) {
+    console.error(`--range 格式须为 start:end（1 起闭区间），得到 "${range}"`);
+    process.exit(2);
+  }
+  const start = Number(m[1]);
+  const end = Number(m[2]);
+  if (start < 1 || end < start || end > chapters.length) {
+    console.error(`--range ${start}:${end} 越界（有效 1..${chapters.length}）`);
+    process.exit(2);
+  }
+  return {
+    sliced: chapters.slice(start - 1, end).map((c, i) => ({ ...c, chapterIndex: i })),
+    originalRange: [start, end],
+  };
+}
+
 // ── 主流程 ─────────────────────────────────────────────────────────────
 
 function main() {
@@ -126,7 +153,7 @@ function main() {
   const input = args.input;
   const sampleId = args.id;
   if (!input || !sampleId) {
-    console.error('用法: --input <txt> --id <sampleId> [--type short|medium|long] [--title X] [--author Y]');
+    console.error('用法: --input <txt> --id <sampleId> [--type short|medium|long] [--title X] [--author Y] [--range start:end]');
     process.exit(2);
   }
   if (!existsSync(input)) {
@@ -141,12 +168,14 @@ function main() {
 
   const raw = readFileSync(input);
   const text = decodeText(raw);
-  const chapters = splitChapters(text);
+  const allChapters = splitChapters(text);
+  const { sliced: chapters, originalRange } = sliceByRange(allChapters, args.range);
   const { deaths, reveals } = scanText(chapters);
 
   const outDir = join(SAMPLES_DIR, sampleId);
   mkdirSync(outDir, { recursive: true });
 
+  const slicedText = chapters.map((c) => c.text).join('\n');
   const annotation = {
     schema: 'identity-annotation/v1',
     sampleId,
@@ -154,8 +183,9 @@ function main() {
     author: args.author ?? null,
     type,
     sourceFile: input,
+    originalChapterRange: originalRange ?? [1, allChapters.length],
     chapterCount: chapters.length,
-    inputTokensHint: Math.ceil(text.length / 4),
+    inputTokensHint: Math.ceil(slicedText.length / 4),
     // ── 人工标注字段（eval 消费的正式输入）──
     deadCharacters: [], // [{name, deathChapter}]
     reveals: [], // [{secretName, revealChapter}]

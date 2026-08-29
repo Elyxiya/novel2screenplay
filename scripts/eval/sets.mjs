@@ -7,7 +7,12 @@
  *   由人工标注死亡/揭示章后填充；语义断言走 judge。
  */
 
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { IDENTITY_RULES } from './identity.mjs';
+
+const SAMPLES_DIR = join(dirname(fileURLToPath(import.meta.url)), 'samples');
 
 // ── fixture：合成样本（场景形状与 identity.mjs 规则消费的字段一致） ─────
 
@@ -133,28 +138,110 @@ export function buildIdentityCells(setName, opts = {}) {
       });
     }
   }
-  // identity 真实集尚未标注：注册语义格子的骨架（标注后填充）
+  // 「就绪」定义为：剧本产物（scenes + charIdToName）已注入。规则格子必须消费真实的
+  // 剧本 scenes（runIdentityRule 对空 scenes 恒 pass，产了是假绿），故未就绪只出语义占位。
   if (setName === 'identity') {
+    buildIdentityRealCells(cells, base, ruleIds);
+  }
+  return cells;
+}
+
+/**
+ * 加载真实标注样本（samples/<sampleId>/annotation.json）。scenesRef 指向剧本产物
+ * ScreenplayScene[]（由转换阶段导出），存在则一并读入。
+ */
+function loadIdentitySamples() {
+  if (!existsSync(SAMPLES_DIR)) return [];
+  const out = [];
+  for (const entry of readdirSync(SAMPLES_DIR)) {
+    const annPath = join(SAMPLES_DIR, entry, 'annotation.json');
+    if (!existsSync(annPath)) continue;
+    let ann;
+    try {
+      ann = JSON.parse(readFileSync(annPath, 'utf-8'));
+    } catch {
+      continue; // 标注文件损坏 → 跳过该样本
+    }
+    let scenes = null;
+    if (ann.scenesRef) {
+      const scenesPath = join(SAMPLES_DIR, entry, ann.scenesRef);
+      if (existsSync(scenesPath)) {
+        try {
+          scenes = JSON.parse(readFileSync(scenesPath, 'utf-8'));
+        } catch {
+          scenes = null;
+        }
+      }
+    }
+    out.push({ ...ann, sampleDir: join(SAMPLES_DIR, entry), scenes });
+  }
+  return out;
+}
+
+function buildIdentityRealCells(cells, base, ruleIds) {
+  const samples = loadIdentitySamples();
+  if (samples.length === 0) {
+    // 无任何标注样本 → 保留语义骨架占位（dry-run 可见，不实际触发 judge 空内容）
     cells.push({
       ...base,
       id: 'identity:semantic-pending',
       sampleId: 'pending-annotation',
       assertionId: IDENTITY_RULES.identityContradiction.ruleId,
       kind: 'semantic',
-      // 语义 judge 双评委默认预估 2k 输出
       outputEstimate: 2000,
       inputText: '',
-      data: { content: '' },
+      data: { content: '■ 待标注 / 待注入剧本（semantic 占位，需先 prepare-sample 并注释场景）' },
+    });
+    return;
+  }
+  for (const sample of samples) {
+    const composed =
+      Array.isArray(sample.scenes) && sample.scenes.length > 0 &&
+      Object.keys(sample.charIdToName ?? {}).length > 0;
+    if (composed) {
+      const data = {
+        scenes: sample.scenes,
+        charIdToName: sample.charIdToName,
+        aliasIndex: sample.aliasIndex ?? {},
+        deadCharacters: sample.deadCharacters ?? [],
+        reveals: sample.reveals ?? [],
+      };
+      for (const ruleId of ruleIds) {
+        cells.push({
+          ...base,
+          id: `${sample.sampleId}:${ruleId}`,
+          sampleId: sample.sampleId,
+          assertionId: ruleId,
+          kind: 'rule',
+          outputEstimate: 100,
+          inputText: '（真实样本标注，规则零 LLM）',
+          data,
+        });
+      }
+    }
+    // 语义骨架始终产（内容非空占位，避免 judge 空文本；就绪后注入剧本文本冲掉占位）
+    cells.push({
+      ...base,
+      id: `${sample.sampleId}:semantic`,
+      sampleId: sample.sampleId,
+      assertionId: IDENTITY_RULES.identityContradiction.ruleId,
+      kind: 'semantic',
+      outputEstimate: 2000,
+      inputText: '',
+      data: {
+        content: composed
+          ? sample.semanticContent ?? '（待注入剧本文本做语义 judge）'
+          : `（样本 ${sample.sampleId}：${sample.type}，${sample.chapterCount ?? '?'} 章；待 prepare-sample 标注死亡/揭示章并注入剧本产物）`,
+      },
     });
   }
-  return cells;
 }
 
 /** 列出可用 set。 */
 export function listSets() {
   return [
     { name: 'identity-fixture', description: '合成身份断言样本（零 LLM，CI 安全）', cells: 12 },
-    { name: 'identity', description: '真实标注样本集（人工标注死亡/揭示章后可用，含语义 judge）', cells: 1 },
+    { name: 'identity', description: '真实标注样本集（samples/*/annotation.json；标注死亡/揭示章 + 注入剧本产物后产规则格子）', cells: '动态' },
   ];
 }
 

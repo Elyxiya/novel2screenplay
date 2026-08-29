@@ -4,10 +4,16 @@ import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
 import { mapChapters, MAP_MAX_CHAPTERS, type ChapterInput } from './phase1-map';
 import { reduceSetting } from './phase1-reduce';
+import {
+  createPhase1Budget,
+  estimateMapPromptTokens,
+  resolveDefaultPhase1Mode,
+  type Phase1BudgetController,
+  type Phase1Mode,
+} from './phase1-budget';
 import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
 
-export type Phase1Mode = 'truncate' | 'mapreduce';
-
+export { Phase1Mode };
 export interface Phase1AnalyzeOptions {
   mode?: Phase1Mode;
 }
@@ -41,6 +47,7 @@ export class Phase1Analyzer {
   constructor(
     private provider: LLMProvider,
     private ctxManager: ContextManager,
+    private budget: Phase1BudgetController = createPhase1Budget(),
   ) {}
 
   async analyze(
@@ -48,7 +55,7 @@ export class Phase1Analyzer {
     options?: Phase1AnalyzeOptions,
   ): Promise<Phase1Output> {
     const effectiveMode: Phase1Mode =
-      options?.mode ?? (process.env.PHASE1_MODE === 'mapreduce' ? 'mapreduce' : 'truncate');
+      options?.mode ?? (process.env.PHASE1_MODE === 'mapreduce' ? 'mapreduce' : resolveDefaultPhase1Mode());
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线
@@ -82,6 +89,22 @@ export class Phase1Analyzer {
         content: `请分析以下小说文本，提取角色、地点和时间线信息。以 JSON 格式输出。\n\n${truncatedText}`,
       },
     ];
+
+    // Task 5：canRequest 守卫接到 Phase1 truncate 调用点——超限整路径降级
+    const promptTokens = estimateMapPromptTokens(fullText);
+    if (!this.budget.canCall('truncate', {
+      promptTokens,
+      completionTokens: 4096,
+      totalTokens: promptTokens + 4096,
+    })) {
+      console.log('[Phase1-truncate] 预算超限，跳过分析（降级返回空结果）');
+      return {
+        characters: [],
+        locations: [],
+        timelineHints: [],
+        rawResponse: '预算超限，Phase1 分析被跳过',
+      };
+    }
 
     let lastError: Error | null = null;
 
@@ -151,22 +174,26 @@ export class Phase1Analyzer {
       };
     }
 
-    const { results, degraded, rawResponses } = await mapChapters(
+    const { results, degraded, budgetBlocked, rawResponses } = await mapChapters(
       this.provider,
       this.ctxManager,
       chapters,
+      { budget: this.budget },
     );
 
     console.log(
-      `[Phase1-mapreduce] 抽取完成: ${results.length} 章, degraded=${degraded}, 抽取角色 ${results.reduce((n, r) => n + r.characters.length, 0)} 个`,
+      `[Phase1-mapreduce] 抽取完成: ${results.length} 章, degraded=${degraded}, budgetBlocked=${budgetBlocked}, 抽取角色 ${results.reduce((n, r) => n + r.characters.length, 0)} 个`,
     );
 
-    const reduced = await reduceSetting(this.provider, results, rawResponses);
+    const reduced = await reduceSetting(this.provider, results, rawResponses, {
+      budget: this.budget,
+    });
 
     console.log(
       `[Phase1-mapreduce] reduce 完成: ${reduced.characters.length} 个合并角色, ` +
         `${reduced.locations.length} 个地点, ` +
-        `degraded=${degraded}${degraded ? `（章节数超 cap ${MAP_MAX_CHAPTERS}，已降级处理）` : ''}`,
+        `degraded=${degraded}${degraded ? `（章节数超 cap ${MAP_MAX_CHAPTERS}，已降级处理）` : ''}` +
+        `${reduced.budgetBlocked ? `（预算超限，合并决策降级朴素 merge）` : ''}`,
     );
 
     // 仅返回 Phase1Output 结构（剥离 aliasIndex/mergeLog 辅助字段）

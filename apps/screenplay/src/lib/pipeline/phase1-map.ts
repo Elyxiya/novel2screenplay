@@ -1,6 +1,10 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
+import {
+  estimateMapPromptTokens,
+  type Phase1BudgetController,
+} from './phase1-budget';
 import type {
   OpenThread,
   RawCharacter,
@@ -83,7 +87,14 @@ export interface MapResult {
   results: ChapterExtraction[];
   /** 章节数超过 cap 时为 true（优雅降级，不抛错） */
   degraded: boolean;
+  /** 预算 guards 未通过，有至少一个 map 调用被跳过（优雅降级） */
+  budgetBlocked: boolean;
   rawResponses: string[];
+}
+
+export interface MapOptions {
+  /** Phase1 预算守卫（Task 5：canRequest 接到 Phase1 map 调用点） */
+  budget?: Phase1BudgetController;
 }
 
 /** 每章抽取的 LLM 返回结构（sourceChapterIndex 字段由 map 层忽略并覆盖） */
@@ -127,6 +138,7 @@ export async function mapChapters(
   provider: LLMProvider,
   ctxManager: ContextManager,
   chapters: ChapterInput[],
+  options?: MapOptions,
 ): Promise<MapResult> {
   const degraded = chapters.length > MAP_MAX_CHAPTERS;
   const active = degraded ? chapters.slice(0, MAP_MAX_CHAPTERS) : chapters;
@@ -136,11 +148,16 @@ export async function mapChapters(
     );
   }
 
-  const extracted = await Promise.all(active.map((ch) => extractChapter(provider, ctxManager, ch)));
+  const budget = options?.budget;
+  const budgetBefore = budget?.blockedCount ?? 0;
+  const extracted = await Promise.all(
+    active.map((ch) => extractChapter(provider, ctxManager, ch, budget)),
+  );
 
   return {
     results: extracted.map((e) => e.result),
     degraded,
+    budgetBlocked: (budget?.blockedCount ?? 0) > budgetBefore,
     rawResponses: extracted.flatMap((e) => e.rawResponses),
   };
 }
@@ -149,6 +166,7 @@ async function extractChapter(
   provider: LLMProvider,
   ctxManager: ContextManager,
   chapter: ChapterInput,
+  budget?: Phase1BudgetController,
 ): Promise<{ result: ChapterExtraction; rawResponses: string[] }> {
   const tokenEstimate = estimateTokensByChars(chapter.text);
   if (tokenEstimate > MAP_CHAPTER_TOKEN_THRESHOLD) {
@@ -157,7 +175,7 @@ async function extractChapter(
       `[Phase1-map] 章节 #${chapter.index} "${chapter.title}" token 预估 ${tokenEstimate} 超过 ${MAP_CHAPTER_TOKEN_THRESHOLD}，二次分块为 ${chunks.length} 块`,
     );
     const perChunk = await Promise.all(
-      chunks.map((chunk, ci) => extractSingle(provider, chapter, chunk, ci)),
+      chunks.map((chunk, ci) => extractSingle(provider, chapter, chunk, ci, budget)),
     );
     return {
       result: mergeChapterExtractions(chapter.index, perChunk.map((p) => p.result)),
@@ -165,7 +183,7 @@ async function extractChapter(
     };
   }
 
-  const single = await extractSingle(provider, chapter, chapter.text, 0);
+  const single = await extractSingle(provider, chapter, chapter.text, 0, budget);
   return { result: single.result, rawResponses: single.rawResponses };
 }
 
@@ -175,6 +193,7 @@ async function extractSingle(
   chapter: ChapterInput,
   text: string,
   chunkIndex: number,
+  budget?: Phase1BudgetController,
 ): Promise<{ result: ChapterExtraction; rawResponses: string[] }> {
   const messages: LLMMessage[] = [
     { role: 'system', content: MAP_SYSTEM_PROMPT },
@@ -183,6 +202,17 @@ async function extractSingle(
       content: `请分析以下章节，提取角色、地点、时间线、摘要与开放线索，以 JSON 输出。\n\n[章节 #${chapter.index} ${chapter.title}${chunkIndex > 0 ? ` · 分块${chunkIndex + 1}` : ''}]\n${text}`,
     },
   ];
+
+  // Task 5：canRequest 守卫接到 Phase1 map 调用点——预算超限优雅降级（跳过本次调用）
+  const promptTokens = estimateMapPromptTokens(text);
+  if (budget && !budget.canCall('map', {
+    promptTokens,
+    completionTokens: 4096,
+    totalTokens: promptTokens + 4096,
+  })) {
+    console.log(`[Phase1-map] 预算超限，跳过章节 #${chapter.index}${chunkIndex > 0 ? ` 分块${chunkIndex + 1}` : ''}（降级）`);
+    return { result: emptyExtraction(chapter.index), rawResponses: [] };
+  }
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {

@@ -13,6 +13,7 @@ import {
 } from '@/lib/pipeline/phase1-reduce';
 import { Phase1Analyzer } from '@/lib/pipeline/Phase1Analyzer';
 import { buildAliasIndex, resolveNameToCharId } from '@/lib/pipeline/setting-card';
+import type { Phase1BudgetController } from '@/lib/pipeline/phase1-budget';
 import { buildOversizeChapter, buildMultiChapterPiece } from '@/lib/pipeline/__fixtures__/mapreduce';
 import { autoFixScreenplay } from '@novel/contracts/validator';
 import type { Screenplay } from '@novel/contracts/screenplay';
@@ -364,6 +365,88 @@ describe('Phase1Analyzer - mode 双路径', () => {
     expect(idxs).toContain(5);
     expect(idxs).toContain(12);
     expect(output.settingCard?.openThreads.length).toBeGreaterThan(0);
+  });
+
+  it('无 mode 无 env → 走默认 truncate（resolveDefaultPhase1Mode 尚未翻默认）', async () => {
+    const analyzer = new Phase1Analyzer(provider, ctxManager);
+    const output = await analyzer.analyze([{ index: 0, title: '第一章', text: '林墨从山里来。' }]);
+    expect(output.settingCard).toBeUndefined();
+    expect(output.characters).toHaveLength(1);
+    expect(output.characters[0].name).toBe('林墨');
+  });
+});
+
+// ── Task 5 预算守卫：canRequest 接到 Phase1 ───────────────────────────────
+
+/** 恒拦截的守卫（模拟预算超限） */
+function blockingGuard(onBlocked?: (site: string, reason?: string) => void): Phase1BudgetController {
+  let count = 0;
+  return {
+    canCall: (site) => {
+      count++;
+      onBlocked?.(site, '测试预算超限');
+      return false;
+    },
+    get blockedCount() {
+      return count;
+    },
+    reset() {
+      count = 0;
+    },
+  };
+}
+
+describe('Phase1 预算守卫 - map 阶段拦截降级', () => {
+  it('守卫拦截 → budgetBlocked=true，跳过一次 map 调用，不崩', async () => {
+    const { provider, chatCalls } = createStubProvider();
+    const guard = blockingGuard();
+    const before = chatCalls();
+    const result = await mapChapters(
+      provider,
+      ctxManager,
+      buildMultiChapterPiece(),
+      { budget: guard },
+    );
+    expect(result.budgetBlocked).toBe(true);
+    expect(result.degraded).toBe(false);
+    expect(result.results[0].characters).toHaveLength(0); // 被跳过 → 空抽取
+    expect(chatCalls()).toBe(before); // 未触发任何 map chat
+    expect(guard.blockedCount).toBeGreaterThan(0);
+  });
+});
+
+describe('Phase 1 预算守卫 - reduce 阶段拦截降级', () => {
+  it('守卫拦截 → budgetBlocked=true，走朴素 merge，不调 LLM', async () => {
+    const { provider, chatCalls } = createStubProvider();
+    const before = chatCalls();
+    const guard = blockingGuard();
+    const results = [
+      extractionFor(1, [{ name: '老秦' }]),
+      extractionFor(2, [{ name: '老秦' }]), // 同 name 两章 → 朴素 merge 并组
+    ];
+    const reduced = await reduceSetting(provider, results, [], { budget: guard });
+
+    expect(reduced.budgetBlocked).toBe(true);
+    expect(reduced.characters).toHaveLength(1); // 朴素 merge 按 name 归并
+    expect(chatCalls()).toBe(before); // 未触发 reduce 合并 LLM
+  });
+});
+
+describe('Phase1Analyzer - 预算守卫接入双路径', () => {
+  it('mapreduce 模式带拦截守卫 → 空输出降级，不崩管线', async () => {
+    const { provider } = createStubProvider();
+    const analyzer = new Phase1Analyzer(provider, ctxManager, blockingGuard());
+    const output = await analyzer.analyze(buildMultiChapterPiece(), { mode: 'mapreduce' });
+    expect(output.characters).toHaveLength(0);
+    expect(output.locations).toHaveLength(0);
+  });
+
+  it('truncate 模式带拦截守卫 → 空输出降级', async () => {
+    const { provider } = createStubProvider();
+    const analyzer = new Phase1Analyzer(provider, ctxManager, blockingGuard());
+    const output = await analyzer.analyze([{ index: 0, title: '第一章', text: '林墨从山里来。' }]);
+    expect(output.characters).toHaveLength(0);
+    expect(output.rawResponse).toContain('预算超限');
   });
 });
 

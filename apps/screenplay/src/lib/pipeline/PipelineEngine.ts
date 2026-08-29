@@ -3,6 +3,7 @@ import { resolveProvider, resolveDefaultProvider } from '../llm/llm-gateway';
 import { jobStore } from '../store/job-store';
 import { parseNovel } from '../novel/parser';
 import { ContextManager } from './ContextManager';
+import { createPhase1Budget } from './phase1-budget';
 import { Phase1Analyzer } from './Phase1Analyzer';
 import { Phase2Segmenter } from './Phase2Segmenter';
 import { Phase3SceneConverter } from './Phase3SceneConverter';
@@ -280,7 +281,23 @@ export class PipelineEngine {
       return updated;
     });
 
-    const phase1 = new Phase1Analyzer(provider, this.ctxManager);
+    const phase1 = new Phase1Analyzer(
+      provider,
+      this.ctxManager,
+      createPhase1Budget({
+        modelId: provider.modelId,
+        enabled: true,
+        onBlocked: (site, reason) => {
+          console.log(`[${jobId}] Phase1 预算守卫拦截（${site}）: ${reason}`);
+          jobStore.update(jobId, (job) => {
+            const meta = { ...(job.metadata || {}) } as Record<string, unknown>;
+            const prev = (meta.budgetBlocked as number) || 0;
+            meta.budgetBlocked = prev + 1;
+            return { ...job, metadata: meta };
+          });
+        },
+      }),
+    );
     const phase1Output = await phase1.analyze(
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
     );

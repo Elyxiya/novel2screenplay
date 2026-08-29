@@ -114,21 +114,42 @@ export async function reviseScene(
   instruction: string,
   options: ReviseSceneOptions = {},
 ): Promise<Scene> {
+  for await (const out of reviseSceneStream(sourceText, currentScene, instruction, options)) {
+    if ('full' in out) return out.full;
+  }
+  throw new Error('场景重生成失败：未获得最终结果');
+}
+
+/** reviseSceneStream 产出的事件：生成中逐段 delta，末尾产出归一化后的完整场景 */
+export type ReviseSceneStreamOut = { delta: string } | { full: Scene };
+
+export async function *reviseSceneStream(
+  sourceText: string,
+  currentScene: Scene,
+  instruction: string,
+  options: ReviseSceneOptions = {},
+): AsyncGenerator<ReviseSceneStreamOut> {
   const provider = options.provider ?? resolveDefaultProvider(options.userId);
   if (!provider) throw new Error('未配置 LLM Provider，无法重生成场景');
-  const res = await provider.chat(
+  let full = '';
+  for await (const ch of provider.chatStream(
     [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: buildReviseScenePrompt(sourceText, currentScene, instruction) },
     ],
     { temperature: options.temperature ?? 0.7 },
-  );
-  const parsed = safeJsonParse(res.content);
+  )) {
+    if (ch.type === 'text' && ch.content) {
+      full += ch.content;
+      yield { delta: ch.content };
+    }
+  }
+  const parsed = safeJsonParse(full);
   if (
     parsed == null ||
     (typeof parsed === 'object' && !Array.isArray(parsed) && (parsed as Record<string, unknown>)._parseError === true)
   ) {
     throw new Error('场景重生成结果解析失败');
   }
-  return normalizeScene(currentScene, parsed, options.nameToCharacterId);
+  yield { full: normalizeScene(currentScene, parsed, options.nameToCharacterId) };
 }

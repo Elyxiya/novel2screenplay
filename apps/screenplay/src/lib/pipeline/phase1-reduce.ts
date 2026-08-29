@@ -1,5 +1,6 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { safeJsonParse } from '../utils/safe-json';
+import { estimateReducePromptTokens, type Phase1BudgetController } from './phase1-budget';
 import type {
   ChapterSummary,
   OpenThread,
@@ -42,6 +43,13 @@ export interface MergeLogEntry {
 export interface ReduceResult extends Phase1Output {
   aliasIndex: Map<string, string>;
   mergeLog: MergeLogEntry[];
+  /** 预算 guards 未通过，LLM 合并决策被跳过（降级为朴素 merge） */
+  budgetBlocked?: boolean;
+}
+
+export interface ReduceOptions {
+  /** Phase1 预算守卫（Task 5：canRequest 接到 Phase1 reduce 调用点） */
+  budget?: Phase1BudgetController;
 }
 
 /** 扁平化的单条角色抽取记录（跨章合并的输入单位） */
@@ -99,6 +107,7 @@ export async function reduceSetting(
   provider: LLMProvider,
   results: ChapterExtraction[],
   rawResponses: string[],
+  options?: ReduceOptions,
 ): Promise<ReduceResult> {
   const flatChars = flattenCharacters(results);
   const flatLocs = flattenLocations(results);
@@ -106,11 +115,27 @@ export async function reduceSetting(
   const chapterSummaries = flattenChapterSummaries(results);
   const flatThreads = flattenOpenThreads(results);
 
+  const budget = options?.budget;
+  let budgetBlocked = false;
+
   // LLM 合并决策（尝试 1 次 + 重试 2 次），失败回退朴素 merge
   let groups: MergeGroup[] | null = null;
   let reduceRaw = '';
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
+    // Task 5：canRequest 守卫接到 Phase1 reduce 调用点——超限直接回退朴素 merge
+    const promptTokens = estimateReducePromptTokens(
+      flatChars.map((f) => `${f.sourceChapterIndex}|${f.name}`).join('\n'),
+    );
+    if (budget && !budget.canCall('reduce', {
+      promptTokens,
+      completionTokens: 8192,
+      totalTokens: promptTokens + 8192,
+    })) {
+      console.log('[Phase1-reduce] 预算超限，跳过 LLM 合并决策（降级为朴素 merge）');
+      budgetBlocked = true;
+      break;
+    }
     try {
       const decision = await requestMergeDecision(provider, flatChars);
       groups = decision.groups;
@@ -125,7 +150,7 @@ export async function reduceSetting(
 
   if (!groups) {
     console.log(
-      `[Phase1-reduce] LLM 合并全部失败，回退为按 name 精确匹配的朴素 merge。最后错误: ${lastError?.message}`,
+      `[Phase1-reduce] LLM 合并${budgetBlocked ? '被预算拦截' : '全部失败'}，回退为按 name 精确匹配的朴素 merge。${lastError ? `最后错误: ${lastError.message}` : ''}`,
     );
     groups = naiveMergeDecision(flatChars);
   }
@@ -150,7 +175,9 @@ export async function reduceSetting(
   const rawResponse =
     rawResponses.length > 0
       ? rawResponses.join('\n---\n')
-      : reduceRaw || (lastError ? `reduce 合并失败，已降级朴素 merge: ${lastError.message}` : '');
+      : budgetBlocked
+        ? 'reduce 合并决策被预算拦截，已降级朴素 merge'
+        : reduceRaw || (lastError ? `reduce 合并失败，已降级朴素 merge: ${lastError.message}` : '');
 
   return {
     characters,
@@ -160,6 +187,7 @@ export async function reduceSetting(
     rawResponse,
     aliasIndex,
     mergeLog,
+    ...(budgetBlocked ? { budgetBlocked: true } : {}),
   };
 }
 

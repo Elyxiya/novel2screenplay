@@ -13,6 +13,7 @@ import {
 } from '@/lib/pipeline/phase1-reduce';
 import { Phase1Analyzer } from '@/lib/pipeline/Phase1Analyzer';
 import { buildAliasIndex, resolveNameToCharId } from '@/lib/pipeline/setting-card';
+import type { Phase1BudgetController } from '@/lib/pipeline/phase1-budget';
 import { buildOversizeChapter, buildMultiChapterPiece } from '@/lib/pipeline/__fixtures__/mapreduce';
 import { autoFixScreenplay } from '@novel/contracts/validator';
 import type { Screenplay } from '@novel/contracts/screenplay';
@@ -364,6 +365,153 @@ describe('Phase1Analyzer - mode 双路径', () => {
     expect(idxs).toContain(5);
     expect(idxs).toContain(12);
     expect(output.settingCard?.openThreads.length).toBeGreaterThan(0);
+  });
+
+  it('无 mode 无 env → 走默认 truncate（resolveDefaultPhase1Mode 尚未翻默认）', async () => {
+    const analyzer = new Phase1Analyzer(provider, ctxManager);
+    const output = await analyzer.analyze([{ index: 0, title: '第一章', text: '林墨从山里来。' }]);
+    expect(output.settingCard).toBeUndefined();
+    expect(output.characters).toHaveLength(1);
+    expect(output.characters[0].name).toBe('林墨');
+  });
+
+  it('truncate 路径 LLM 输出被截断（非法 JSON）→ 触发重试而非静默空卡【1b 回归】', async () => {
+    // safeJsonParse 对截断响应返回 { _parseError } 哨兵且不抛错；此前会被当作合法解析返回空卡。
+    // 修复后哨兵应触发既有 3 次重试，第二次合法响应被采纳。
+    let call = 0;
+    const chat = vi.fn(async (messages: LLMMessage[]) => {
+      call++;
+      const user = messages.find((m) => m.role === 'user')?.content ?? '';
+      if (user.startsWith('请分析以下小说文本')) {
+        if (call === 1) {
+          // 第一次：timelineHints 单引号未闭合 → JSON.parse 抛错 → safeJsonParse 返回哨兵
+          return { content: '{"characters":[{bad}\n  "timelineHints": [{"timeCue": "第xx...未闭合', model: 'test' };
+        }
+        return {
+          content: JSON.stringify({
+            characters: [{ name: '林墨', aliases: [], personalityTags: [], description: '主角', isMajor: true }],
+            locations: [],
+            timelineHints: [],
+          }),
+          model: 'test',
+        };
+      }
+      throw new Error(`未知的 LLM 调用: ${user.slice(0, 40)}`);
+    });
+    const retryProvider: LLMProvider = {
+      name: 'test',
+      modelId: 'test-model',
+      description: 'test',
+      contextWindow: 32000,
+      supportsJSONMode: () => true,
+      estimateTokens: async (t: string) => Math.ceil(t.length * 0.5),
+      chat,
+      chatStream: vi.fn(async function* () {}),
+    };
+    const analyzer = new Phase1Analyzer(retryProvider, ctxManager);
+    const output = await analyzer.analyze(
+      [{ index: 0, title: '第一章', text: '林墨从山里来。' }],
+      { mode: 'truncate' },
+    );
+    expect(call).toBeGreaterThanOrEqual(2); // 确系重试过
+    expect(output.characters).toHaveLength(1); // 采纳重试后的合法响应，而非空卡
+    expect(output.characters[0].name).toBe('林墨');
+  });
+
+  it('truncate 路径连续截断 → 3 次重试后显式降级（rawResponse 带失败信息，非静默空卡）【1b 回归】', async () => {
+    const chat = vi.fn(async () => ({ content: '{"characters":[{bad}', model: 'test' }));
+    const failProvider: LLMProvider = {
+      name: 'test',
+      modelId: 'test-model',
+      description: 'test',
+      contextWindow: 32000,
+      supportsJSONMode: () => true,
+      estimateTokens: async (t: string) => Math.ceil(t.length * 0.5),
+      chat,
+      chatStream: vi.fn(async function* () {}),
+    };
+    const analyzer = new Phase1Analyzer(failProvider, ctxManager);
+    const output = await analyzer.analyze(
+      [{ index: 0, title: '第一章', text: '林墨从山里来。' }],
+      { mode: 'truncate' },
+    );
+    expect(chat).toHaveBeenCalledTimes(3); // 重试满 3 次
+    expect(output.characters).toHaveLength(0); // 仍然降级为空
+    expect(output.rawResponse).toContain('分析失败'); // 但带显式失败信息，不静默
+  }, 15000);
+});
+
+// ── Task 5 预算守卫：canRequest 接到 Phase1 ───────────────────────────────
+
+/** 恒拦截的守卫（模拟预算超限） */
+function blockingGuard(onBlocked?: (site: string, reason?: string) => void): Phase1BudgetController {
+  let count = 0;
+  return {
+    canCall: (site) => {
+      count++;
+      onBlocked?.(site, '测试预算超限');
+      return false;
+    },
+    get blockedCount() {
+      return count;
+    },
+    reset() {
+      count = 0;
+    },
+  };
+}
+
+describe('Phase1 预算守卫 - map 阶段拦截降级', () => {
+  it('守卫拦截 → budgetBlocked=true，跳过一次 map 调用，不崩', async () => {
+    const { provider, chatCalls } = createStubProvider();
+    const guard = blockingGuard();
+    const before = chatCalls();
+    const result = await mapChapters(
+      provider,
+      ctxManager,
+      buildMultiChapterPiece(),
+      { budget: guard },
+    );
+    expect(result.budgetBlocked).toBe(true);
+    expect(result.degraded).toBe(false);
+    expect(result.results[0].characters).toHaveLength(0); // 被跳过 → 空抽取
+    expect(chatCalls()).toBe(before); // 未触发任何 map chat
+    expect(guard.blockedCount).toBeGreaterThan(0);
+  });
+});
+
+describe('Phase 1 预算守卫 - reduce 阶段拦截降级', () => {
+  it('守卫拦截 → budgetBlocked=true，走朴素 merge，不调 LLM', async () => {
+    const { provider, chatCalls } = createStubProvider();
+    const before = chatCalls();
+    const guard = blockingGuard();
+    const results = [
+      extractionFor(1, [{ name: '老秦' }]),
+      extractionFor(2, [{ name: '老秦' }]), // 同 name 两章 → 朴素 merge 并组
+    ];
+    const reduced = await reduceSetting(provider, results, [], { budget: guard });
+
+    expect(reduced.budgetBlocked).toBe(true);
+    expect(reduced.characters).toHaveLength(1); // 朴素 merge 按 name 归并
+    expect(chatCalls()).toBe(before); // 未触发 reduce 合并 LLM
+  });
+});
+
+describe('Phase1Analyzer - 预算守卫接入双路径', () => {
+  it('mapreduce 模式带拦截守卫 → 空输出降级，不崩管线', async () => {
+    const { provider } = createStubProvider();
+    const analyzer = new Phase1Analyzer(provider, ctxManager, blockingGuard());
+    const output = await analyzer.analyze(buildMultiChapterPiece(), { mode: 'mapreduce' });
+    expect(output.characters).toHaveLength(0);
+    expect(output.locations).toHaveLength(0);
+  });
+
+  it('truncate 模式带拦截守卫 → 空输出降级', async () => {
+    const { provider } = createStubProvider();
+    const analyzer = new Phase1Analyzer(provider, ctxManager, blockingGuard());
+    const output = await analyzer.analyze([{ index: 0, title: '第一章', text: '林墨从山里来。' }]);
+    expect(output.characters).toHaveLength(0);
+    expect(output.rawResponse).toContain('预算超限');
   });
 });
 

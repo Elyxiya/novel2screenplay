@@ -118,6 +118,60 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     { role: 'user', content: prompt },
   ];
 
+  const streamed = request.nextUrl ? new URL(request.url).searchParams.get('stream') === '1' : false;
+
+  // 流式路径：POST .../ai?stream=1 → NDJSON（每行一个 JSON），逐 delta 透传，done 才 cleanModelOutput
+  if (streamed) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const enqueue = (obj: Record<string, unknown>) => {
+          try {
+            controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+          } catch {
+            /* 已关闭，忽略 */
+          }
+        };
+        try {
+          const router = getModelRouter();
+          let full = '';
+          for await (const ch of router.chatStream(messages, { temperature: 0.8 }, modelId)) {
+            if (ch.type === 'error') {
+              enqueue({ error: ch.error ?? 'AI 生成失败' });
+              return;
+            }
+            if (ch.type === 'text' && ch.content) {
+              full += ch.content;
+              enqueue({ delta: ch.content });
+            }
+          }
+          const resolvedModel = modelId ?? router.getDefaultModel();
+          enqueue({ done: true, full: cleanModelOutput(full), model: resolvedModel });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'AI 生成失败';
+          const friendly =
+            message.includes('No adapter found') || message.includes('API key') || message.includes('401')
+              ? 'AI 模型未配置或密钥无效，请检查环境变量后重试'
+              : message;
+          enqueue({ error: friendly });
+        } finally {
+          try {
+            controller.close();
+          } catch {
+            /* 已关闭 */
+          }
+        }
+      },
+    });
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  }
+
   try {
     const router = getModelRouter();
     const response = await router.chat(messages, { temperature: 0.8 }, modelId);

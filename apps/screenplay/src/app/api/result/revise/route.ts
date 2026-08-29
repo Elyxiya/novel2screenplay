@@ -8,7 +8,7 @@ import { serializeToYaml, safeParseFromYaml } from '@novel/contracts/serializers
 import { getCurrentUser, authError } from '@/lib/auth';
 import { initializeProviders } from '@/lib/llm/registry';
 import { resolveProvider } from '@/lib/llm/llm-gateway';
-import { reviseScene } from '@/lib/result/revise-scene';
+import { reviseScene, reviseSceneStream } from '@/lib/result/revise-scene';
 import type { Scene, Screenplay } from '@novel/contracts/screenplay';
 
 // 模块级初始化 LLM Provider 注册表（与其他 pipeline/agent route 一致，幂等）
@@ -66,6 +66,60 @@ export async function POST(request: NextRequest) {
     for (const alias of c.aliases) nameToCharacterId[alias] = c.characterId;
   }
 
+  // 单场景 + ?stream=1：NDJSON 流式（逐 delta 预览，done 原子落库）
+  const streamed = new URL(request.url).searchParams.get('stream') === '1';
+  if (streamed && scope === 'scene') {
+    const scene = targets[0];
+    const sourceText = deriveSourceText(job.chapterTexts ?? [], scene);
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const enqueue = (obj: Record<string, unknown>) => {
+          try {
+            controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+          } catch {
+            /* 已关闭，忽略 */
+          }
+        };
+        try {
+          let hasFull = false;
+          for await (const out of reviseSceneStream(sourceText, scene, instruction, { provider, nameToCharacterId })) {
+            if ('delta' in out) {
+              enqueue({ delta: out.delta });
+              continue;
+            }
+            const updated = JSON.parse(JSON.stringify(screenplay)) as Screenplay;
+            const idx = updated.scenes.findIndex((s) => s.sceneNumber === scene.sceneNumber);
+            if (idx >= 0) updated.scenes[idx] = out.full;
+            const yaml = serializeToYaml(updated);
+            const parsed = safeParseFromYaml(yaml);
+            if (!parsed.success) throw new Error(`校验失败: ${parsed.error}`);
+            jobStore.update(jobId, (j) => ({ ...j, pipelineState: { ...j.pipelineState, phase4Output: parsed.data } }));
+            enqueue({ done: true, message: `场景 ${scene.sceneNumber} 已按建议更新`, scene: out.full });
+            hasFull = true;
+          }
+          if (!hasFull) enqueue({ error: '场景重生成失败' });
+        } catch (err) {
+          enqueue({ error: err instanceof Error ? err.message : '场景重生成失败' });
+        } finally {
+          try {
+            controller.close();
+          } catch {
+            /* 已关闭 */
+          }
+        }
+      },
+    });
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  }
+
+  // 非流式路径：单场景走 reviseScene，scope:'all' 走全量（逐场景更新）
   const updated = JSON.parse(JSON.stringify(screenplay)) as Screenplay;
   const changed: Scene[] = [];
   for (const scene of targets) {

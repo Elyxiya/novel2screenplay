@@ -1,0 +1,83 @@
+{
+  "schema": "identity-annotation/v1",
+  "sampleId": "xiuzhen-short",
+  "title": "最后一个修真者（首部 1-15 章）",
+  "author": "纸上飞雪",
+  "type": "short",
+  "sourceFile": "E:\\文档\\Downloads\\《最后一个修真者》作者：纸上飞雪.txt",
+  "originalChapterRange": [
+    1,
+    15
+  ],
+  "chapterCount": 15,
+  "inputTokensHint": 14771,
+  "_note": "诚实标注：本切片（原书 1-15 章）内无干净的在篇死亡/身份揭示事件（deathHits/revealHits 均为修辞或语气用法），deadCharacters/reveals 如实为空。aliasIndex 仅收录主角化名 韩晓龙→白冷叶；其余别名待剧本产物注入后按角色表补全。",
+  "deadCharacters": [],
+  "reveals": [],
+  "aliasIndex": {
+    "韩晓龙": "白冷叶"
+  },
+  "charIdToName": {},
+  "scenesRef": null,
+  "candidates": {
+    "deathHits": [
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "初入京城",
+        "line": "出门后，白冷叶并没有开车，因为他这次要去京城，几百公里呢，开车就累死了，还不如做火车。"
+      },
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "初入京城",
+        "line": "韩夫人眼神平静看着白冷叶，语气冷漠道：“老爷子已经死去多年了，那婚约的事情自然就是作废了。”"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "十二中老大",
+        "line": "李方法被白冷叶拉起来，嘴中直抽冷气：“下手真重啊，痛死了。”"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "十二中老大",
+        "line": "“怎么回事，难道人死了不成，麻了个几把的……”"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "不服气单挑",
+        "line": "而白冷叶只要是一下了可，就会去方晓语的班级之中，两人一起吃饭，一起出去，一起回来，不知道羡慕死了多少男女学生。"
+      },
+      {
+        "chapterIndex": 12,
+        "chapterTitle": "方晓语身份",
+        "line": "“那叫什么人，我完全不放在眼里，为了你，哪怕得罪整个十二中又如何，除非我死了，不然没有人能够抢走你。”"
+      },
+      {
+        "chapterIndex": 14,
+        "chapterTitle": "面对结果",
+        "line": "对面的无香有些失神，眼前的白冷叶跟她死去的老公多么相像，想当年，他也是这么说的，而多年之后，却已经是物是人非了。"
+      },
+      {
+        "chapterIndex": 14,
+        "chapterTitle": "面对结果",
+        "line": "“傻瓜，我说过的，你不离我不弃，除非我死了。”"
+      }
+    ],
+    "revealHits": [
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "衣锦回乡",
+        "line": "白冷叶嘴角抽搐，刚才他还以为是给的钱太低了，原来是他给的太高了。"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "十二中老大",
+        "line": "“呵呵，原来是高老大啊，不知道方法他做错了什么事，居然这么大张旗鼓的让同学们过来。”"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "再次相见已是过去",
+        "line": "双方经过交谈，白冷叶才是知道，原来对方之所以把酒吧的价格压得那么低，其实是有事要出国了，段时间回不来，这就把也就没人照顾，所以就想要给转让了。"
+      }
+    ]
+  }
+}

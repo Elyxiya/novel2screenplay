@@ -4,10 +4,23 @@ import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
 import { mapChapters, MAP_MAX_CHAPTERS, type ChapterInput } from './phase1-map';
 import { reduceSetting } from './phase1-reduce';
+import {
+  createPhase1Budget,
+  estimateMapPromptTokens,
+  resolveDefaultPhase1Mode,
+  type Phase1BudgetController,
+  type Phase1Mode,
+} from './phase1-budget';
 import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
 
-export type Phase1Mode = 'truncate' | 'mapreduce';
+/**
+ * Phase1 分析 LLM 的输出 token 上限。此前 4096 对长篇（截断后最多 ~30k token 输入）
+ * 过小：LLM 常把响应截断在 timelineHints 单元中途，safeJsonParse 静默返回空卡。
+ * 提升到 8192 给 characters/locations 留足空间（deepseek-chat 输出上限即 8192）。
+ */
+export const MAX_ANALYSIS_MAX_TOKENS = 8192;
 
+export { Phase1Mode };
 export interface Phase1AnalyzeOptions {
   mode?: Phase1Mode;
 }
@@ -41,6 +54,7 @@ export class Phase1Analyzer {
   constructor(
     private provider: LLMProvider,
     private ctxManager: ContextManager,
+    private budget: Phase1BudgetController = createPhase1Budget(),
   ) {}
 
   async analyze(
@@ -48,7 +62,7 @@ export class Phase1Analyzer {
     options?: Phase1AnalyzeOptions,
   ): Promise<Phase1Output> {
     const effectiveMode: Phase1Mode =
-      options?.mode ?? (process.env.PHASE1_MODE === 'mapreduce' ? 'mapreduce' : 'truncate');
+      options?.mode ?? (process.env.PHASE1_MODE === 'mapreduce' ? 'mapreduce' : resolveDefaultPhase1Mode());
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线
@@ -83,6 +97,22 @@ export class Phase1Analyzer {
       },
     ];
 
+    // Task 5：canRequest 守卫接到 Phase1 truncate 调用点——超限整路径降级
+    const promptTokens = estimateMapPromptTokens(fullText);
+    if (!this.budget.canCall('truncate', {
+      promptTokens,
+      completionTokens: 4096,
+      totalTokens: promptTokens + 4096,
+    })) {
+      console.log('[Phase1-truncate] 预算超限，跳过分析（降级返回空结果）');
+      return {
+        characters: [],
+        locations: [],
+        timelineHints: [],
+        rawResponse: '预算超限，Phase1 分析被跳过',
+      };
+    }
+
     let lastError: Error | null = null;
 
     // Retry up to 3 times for JSON parse failures
@@ -93,15 +123,22 @@ export class Phase1Analyzer {
         const response = await this.provider.chat(messages, {
           responseFormat: 'json_object',
           temperature: 0.3,
-          maxTokens: 4096,
+          maxTokens: MAX_ANALYSIS_MAX_TOKENS,
         });
         const t1 = Date.now();
         console.log(`[Phase1] LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
 
-        const parsed = safeJsonParse(response.content) as Phase1LLMResponse;
-        console.log(`[Phase1] 解析结果: ${parsed.characters?.length ?? 0} 角色, ${parsed.locations?.length ?? 0} 地点`);
+        const parsed = safeJsonParse(response.content);
+        // 安全解析的失败哨兵：LLM 输出被截断/畸形时 safeJsonParse 返回
+        // { _parseError:true, originalText } 而非抛错——若不拦截，会作为"合法解析"
+        // 返回空角色卡（重试永远不触发），造成大长篇静默丢卡（见 1b 实测）。
+        if (parsed === null || (typeof parsed === 'object' && '_parseError' in (parsed as Record<string, unknown>))) {
+          throw new Error('Phase1 JSON 解析失败（LLM 输出被截断或非 JSON）——触发重试');
+        }
+        const struct = parsed as Phase1LLMResponse;
+        console.log(`[Phase1] 解析结果: ${struct.characters?.length ?? 0} 角色, ${struct.locations?.length ?? 0} 地点`);
         return {
-          characters: (parsed.characters || []).map((c) => ({
+          characters: (struct.characters || []).map((c) => ({
             name: c.name,
             aliases: c.aliases ?? [],
             personalityTags: c.personalityTags ?? [],
@@ -109,13 +146,13 @@ export class Phase1Analyzer {
             isMajor: c.isMajor ?? true,
             sourceChapterIndex: c.sourceChapterIndex ?? 0,
           })),
-          locations: (parsed.locations || []).map((l) => ({
+          locations: (struct.locations || []).map((l) => ({
             name: l.name ?? '',
             description: l.description ?? '',
             type: (l.type ?? 'interior') as 'interior' | 'exterior' | 'abstract',
             sourceChapterIndex: l.sourceChapterIndex ?? 0,
           })),
-          timelineHints: (parsed.timelineHints || []) as TimelineHint[],
+          timelineHints: (struct.timelineHints || []) as TimelineHint[],
           rawResponse: response.content,
         };
       } catch (err) {
@@ -151,22 +188,26 @@ export class Phase1Analyzer {
       };
     }
 
-    const { results, degraded, rawResponses } = await mapChapters(
+    const { results, degraded, budgetBlocked, rawResponses } = await mapChapters(
       this.provider,
       this.ctxManager,
       chapters,
+      { budget: this.budget },
     );
 
     console.log(
-      `[Phase1-mapreduce] 抽取完成: ${results.length} 章, degraded=${degraded}, 抽取角色 ${results.reduce((n, r) => n + r.characters.length, 0)} 个`,
+      `[Phase1-mapreduce] 抽取完成: ${results.length} 章, degraded=${degraded}, budgetBlocked=${budgetBlocked}, 抽取角色 ${results.reduce((n, r) => n + r.characters.length, 0)} 个`,
     );
 
-    const reduced = await reduceSetting(this.provider, results, rawResponses);
+    const reduced = await reduceSetting(this.provider, results, rawResponses, {
+      budget: this.budget,
+    });
 
     console.log(
       `[Phase1-mapreduce] reduce 完成: ${reduced.characters.length} 个合并角色, ` +
         `${reduced.locations.length} 个地点, ` +
-        `degraded=${degraded}${degraded ? `（章节数超 cap ${MAP_MAX_CHAPTERS}，已降级处理）` : ''}`,
+        `degraded=${degraded}${degraded ? `（章节数超 cap ${MAP_MAX_CHAPTERS}，已降级处理）` : ''}` +
+        `${reduced.budgetBlocked ? `（预算超限，合并决策降级朴素 merge）` : ''}`,
     );
 
     // 仅返回 Phase1Output 结构（剥离 aliasIndex/mergeLog 辅助字段）

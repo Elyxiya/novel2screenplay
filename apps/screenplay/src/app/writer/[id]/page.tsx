@@ -86,8 +86,11 @@ export default function WriterEditorPage() {
   const [aiAction, setAiAction] = useState<AiAction>('continue');
   const [aiInstruction, setAiInstruction] = useState('');
   const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiStreamBuf, setAiStreamBuf] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const aiAbortRef = useRef<AbortController | null>(null);
+  const aiBusyRef = useRef(false);
 
   // 新建/编辑面板
   const [editingCharacter, setEditingCharacter] = useState<CharacterCard | null>(null);
@@ -135,6 +138,11 @@ export default function WriterEditorPage() {
     };
   }, [novelId]);
 
+  // 卸载时中止进行中的 AI 流
+  useEffect(() => {
+    return () => aiAbortRef.current?.abort();
+  }, []);
+
   const showToast = (msg: string) => {
     setToast(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -153,7 +161,9 @@ export default function WriterEditorPage() {
     setDraftTitle(ch.title);
     setDraftContent(ch.content);
     setAiResult(null);
+    setAiStreamBuf('');
     setAiError(null);
+    aiAbortRef.current?.abort();
   };
 
   // ── 章节操作 ──
@@ -474,16 +484,23 @@ export default function WriterEditorPage() {
   // ── AI 写作 ──
 
   const runAi = async () => {
+    // in-flight 防重入：已有流在跑则忽略二次点击
+    if (aiBusyRef.current) return;
     if (!selectedId) return;
     if (!draftContent.trim() && aiAction !== 'continue') {
       setAiError('请先输入正文内容');
       return;
     }
+    aiBusyRef.current = true;
     setAiLoading(true);
     setAiError(null);
     setAiResult(null);
+    setAiStreamBuf('');
+    const controller = new AbortController();
+    aiAbortRef.current = controller;
+    let streamBuf = '';
     try {
-      const res = await fetch(`/api/writer/novels/${novelId}/ai`, {
+      const res = await fetch(`/api/writer/novels/${novelId}/ai?stream=1`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -491,18 +508,51 @@ export default function WriterEditorPage() {
           content: draftContent,
           instruction: aiInstruction || undefined,
         }),
+        signal: controller.signal,
       });
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? 'AI 生成失败');
       }
-      const data = await res.json();
-      setAiResult(data.result);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          const obj = JSON.parse(trimmed) as { delta?: string; done?: boolean; full?: string; error?: string };
+          if (obj.error) throw new Error(obj.error);
+          if (obj.done === true && typeof obj.full === 'string') {
+            setAiResult(obj.full);
+            setAiStreamBuf('');
+            return;
+          }
+          if (typeof obj.delta === 'string') {
+            streamBuf += obj.delta;
+            setAiStreamBuf(streamBuf);
+          }
+        }
+      }
     } catch (e) {
-      setAiError((e as Error).message);
+      const aborted = (e as Error).name === 'AbortError';
+      // 失败/中止：保留已生成的预览 + 输入框原样，错误提示可重试（原子提交≠原子丢失）
+      setAiStreamBuf(streamBuf);
+      setAiError(aborted ? '已停止生成' : (e as Error).message);
     } finally {
+      aiBusyRef.current = false;
+      aiAbortRef.current = null;
       setAiLoading(false);
     }
+  };
+
+  const stopAi = () => {
+    aiAbortRef.current?.abort();
   };
 
   const applyAi = () => {
@@ -1005,6 +1055,7 @@ export default function WriterEditorPage() {
                     onClick={() => {
                       setAiAction(a);
                       setAiResult(null);
+                      setAiStreamBuf('');
                     }}
                     className={`py-1.5 text-xs rounded-lg border transition-colors ${
                       aiAction === a
@@ -1038,7 +1089,31 @@ export default function WriterEditorPage() {
                 {aiLoading ? 'AI 生成中...' : `开始${AI_ACTION_LABEL[aiAction]}`}
               </button>
 
+              {aiLoading && (
+                <button
+                  onClick={stopAi}
+                  className="w-full py-1.5 text-xs rounded-lg border border-slate-300 text-slate-500 hover:bg-white/70"
+                >
+                  停止生成
+                </button>
+              )}
+
               {aiError && <p className="text-xs text-red-500 bg-red-50/80 border border-red-100 rounded-lg px-3 py-2">{aiError}</p>}
+
+              {/* 流式预览：生成中实时刷新；失败/中止时保留已生成内容（原子提交≠原子丢失） */}
+              {aiStreamBuf && !aiResult && (
+                <div className="border border-cyan-200/70 rounded-lg overflow-hidden bg-white/60">
+                  <div className="flex items-center justify-between bg-cyan-50/80 px-3 py-1.5 border-b border-cyan-200/70">
+                    <span className="text-[10px] text-cyan-600 font-medium">
+                      {aiLoading ? '生成中...（打字机预览）' : '已保留预览（上次生成未提交）'}
+                    </span>
+                  </div>
+                  <div className="p-3 text-xs leading-6 max-h-48 overflow-y-auto whitespace-pre-wrap text-slate-600">
+                    {aiStreamBuf}
+                    {aiLoading && <span className="inline-block w-1.5 h-3.5 bg-cyan-400 animate-pulse align-text-bottom ml-0.5" />}
+                  </div>
+                </div>
+              )}
 
               {aiResult && (
                 <div className="border border-slate-200/70 rounded-lg overflow-hidden bg-white/60">

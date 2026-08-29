@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Agent Workbench · iframe 宿主（跨域 3004↔3003）</title>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+    #topbar { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box;
+      background: #1e293b; color: #e2e8f0; font-size: 13px; }
+    #topbar .dot { width: 9px; height: 9px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    #topbar b { color: #38bdf8; }
+    #topbar .muted { color: #94a3b8; font-size: 12px; }
+    #btn-forge { margin-left: auto; font-size: 12px; padding: 5px 10px; border-radius: 6px; border: 1px solid #475569;
+      background: transparent; color: #e2e8f0; cursor: pointer; }
+    #btn-forge:hover { background: #334155; }
+    #wrap { height: calc(100% - 48px); padding: 12px; box-sizing: border-box; background: #f8fafc; }
+    iframe { width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; display: block; }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <span class="dot"></span> iframe 宿主 <b>:3004</b>
+    <span class="muted">→ 面板文档 <b>:3003</b>（不同 origin，postMessage 真跨域 + origin 白名单）</span>
+    <button id="btn-forge">注入伪造 origin（应被拒绝）</button>
+  </div>
+  <div id="wrap">
+    <!-- 真跨域嵌入：panel 文档 origin = :3003 ≠ 宿主 :3004。
+         面板向 window.parent（本页 :3004）上报意图；本页 HostBridge 校验 origin=:3003 后回推事件。 -->
+    <iframe id="frame" src="http://localhost:3003/" title="agent-workbench panel (cross-origin)"></iframe>
+  </div>
+
+  <script src="/lib/agent-workbench.umd.js"></script>
+  <script src="/host-bridge.js"></script>
+  <script>
+    // 宿主注册桥：目标 = iframe.contentWindow(:3003)，targetOrigin 必须是面板 origin。
+    const PANEL_ORIGIN = 'http://localhost:3003';
+    const frame = document.getElementById('frame');
+    frame.addEventListener('load', () => {
+      const setup = window.setupEmbedHost({ target: frame.contentWindow, targetOrigin: PANEL_ORIGIN });
+      window.__hostBridge = setup.bridge;
+      console.log('[embed-host:3004] HostBridge 就绪，目标 iframe origin=', PANEL_ORIGIN);
+    });
+
+    // 伪造 origin 拒绝演示：构造非白名单消息，宿主桥(接收 面板意图)与面板(接收回推事件)都应拒绝。
+    document.getElementById('btn-forge').addEventListener('click', () => {
+      const forged = new MessageEvent('message', {
+        origin: 'http://attacker.local:9999',
+        data: { type: 'workbench:start', refId: 'forge', _v: 1,
+          payload: { novelText: '伪造内容', title: '', author: '', instruction: '' } },
+      });
+      window.dispatchEvent(forged);
+      console.warn('%c[embed-host:3004] dispatched forged start (http://attacker.local:9999). ' +
+        'Host origin guard must reject — no agent run should be triggered.', 'color:#f59e0b');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+// apps/embed-hosts/web 为静态宿主（端口 3002，same-origin 代理 /api/agent/*）。
+// 由 web-host.mjs 提供静态服务。index.html 引入：
+//   <script src="/dist/agent-workbench.umd.js"></script>
+// 本目录在构建后从 packages/agent-workbench/dist 拷贝 UMD 到本地 dist/ 供 <script> 直廉。
+{
+  "scripts": {
+    "start": "node web-host.mjs"
+  }
+}

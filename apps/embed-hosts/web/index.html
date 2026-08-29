@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Agent Workbench · Web 宿主（同源直嵌, :3002）</title>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+    #topbar { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box;
+      background: #1e293b; color: #e2e8f0; font-size: 13px; }
+    #topbar .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; }
+    #topbar b { color: #38bdf8; }
+    #topbar .muted { color: #94a3b8; font-size: 12px; }
+    #btn-forge { margin-left: auto; font-size: 12px; padding: 5px 10px; border-radius: 6px; border: 1px solid #475569;
+      background: transparent; color: #e2e8f0; cursor: pointer; }
+    #btn-forge:hover { background: #334155; }
+    #wrap { height: calc(100% - 48px); padding: 12px; box-sizing: border-box; background: #f8fafc; }
+    #stage { height: 100%; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; }
+    agent-workbench { display: block; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <span class="dot"></span> web 宿主 <b>:3002</b> <span class="muted">· 同源直嵌（面板与宿主同一窗口，postMessage self 桥）</span>
+    <button id="btn-forge">注入伪造 origin（应被拒绝）</button>
+  </div>
+  <div id="wrap"><div id="stage"><agent-workbench id="wb"></agent-workbench></div></div>
+
+  <!-- bundle 先于 host-bridge 加载；host-bridge 用 window.NovelAgentWorkbench 注册桥。 -->
+  <script src="/lib/agent-workbench.umd.js"></script>
+  <script src="/host-bridge.js"></script>
+  <script>
+    // 宿主注册桥：目标 = 当前窗口自身（same-origin 直嵌场景）。
+    const { bridge } = window.setupEmbedHost({ target: window, targetOrigin: window.location.origin });
+    window.__hostBridge = bridge;
+
+    // 顺带把 bundle 注册为自定义元素（index.html 直嵌）。
+    NovelAgentWorkbench.defineAgentWorkbench();
+
+    // 伪造 origin 拒绝演示：构造一个不来自白名单的 message（origin 伪造为 evil），
+    // 宿主桥与面板的 origin 守卫都应静默丢弃——UI 不会被污染。
+    document.getElementById('btn-forge').addEventListener('click', () => {
+      const forged = new MessageEvent('message', {
+        origin: 'https://evil.example.com',
+        data: { type: 'workbench:event', refId: 'forge', _v: 1,
+          payload: { event: 'task_complete', taskId: 'x', success: true, durationMs: 0, phases: [] } },
+      });
+      window.dispatchEvent(forged);
+      console.warn('%c[embed-host:3004] dispatched forged badge (https://evil.example.com). ' +
+        'Host & panel origin guards should reject it — UI must stay unchanged.', 'color:#f59e0b');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "@novel/agent-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent 工作台可嵌入包：web component + postMessage 桥 + 跨域 iframe（托管无关）",
+  "type": "module",
+  "main": "./dist/agent-workbench.umd.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/agent-workbench.umd.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge/protocol.d.ts",
+      "default": "./dist/bridge/protocol.js"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.24.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}

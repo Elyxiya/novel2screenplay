@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <!-- 面板文档：origin = http://localhost:3003（与宿主页 3002 不同源，真跨域桥）。 -->
+  <title>Agent Workbench · Panel (iframe 面板, :3003)</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #f1f5f9; }
+    #banner { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+      background: #0f172a; color: #e2e8f0; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; }
+    #banner b { color: #38bdf8; }
+    #banner .origin { color: #94a3b8; }
+    aw-host { display: block; height: calc(100% - 34px); }
+  </style>
+</head>
+<body>
+  <!-- 说明：这是被宿主页以 iframe 跨域嵌入的面板文档；真实业务调用仍由宿主(3002)执行。 -->
+  <div id="banner">🧩 agent-workbench 面板 <b>origin :3003</b>
+    <span class="origin">（仅上报意图，业务调用随宿主）</span></div>
+
+  <!-- web component：React 挂进 shadow DOM，宿主页 CSS 不影响面板。 -->
+  <agent-workbench id="wb"></agent-workbench>
+
+  <script src="/lib/agent-workbench.umd.js"></script>
+  <script>
+    // 定义自定义元素。connectedCallback 后面板自动向 window.parent 建立 PanelBridge。
+    NovelAgentWorkbench.defineAgentWorkbench();
+    // 冒泡面包屑：让用户在宿主控制台里能观察到桥一端的 message。
+    window.addEventListener('message', (ev) => {
+      const t = ev.data && ev.data.type;
+      if (t && t.startsWith('workbench:')) {
+        console.log('[panel:3003] ←', t, ev.origin, ev.data.payload ?? '');
+      }
+    }, { passive: true });
+  </script>
+</body>
+</html>

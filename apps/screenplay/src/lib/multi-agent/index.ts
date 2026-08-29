@@ -11,3 +11,7 @@ export * from './handoff-protocol';
 export * from './handoff-manager';
 export * from './review-gate';
 export * from './orchestrator';
+export * from './reconvert-decision';
+export * from './reconvert-bridge';
+export * from './agent-pipeline-bridge';
+export * from './supervisor-reconvert';

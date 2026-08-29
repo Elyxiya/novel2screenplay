@@ -26,6 +26,12 @@ import {
   type GateConfig,
   type GateDecision,
 } from './review-gate';
+import {
+  makeReconvertDecision,
+  type ReconvertDecision,
+  type ReconvertRequest,
+} from './reconvert-decision';
+import type { IdentitySignal, QualityAssessment } from './handoff-protocol';
 import { getSSEClientManager } from '../sse/index';
 import type { SSEEvent } from '../sse/index';
 import {
@@ -58,6 +64,8 @@ export interface OrchestratorTask {
     /** 挂起阶段的可视输出摘要（供人工介入参考） */
     outputSummary?: string;
   };
+  /** Task 4.2：身份外科式重转请求历史（escalation 预算 K 的依据，随任务 JSON 持久化） */
+  reconvertHistory?: ReconvertRequest[];
 }
 
 export interface OrchestratorPhase {
@@ -111,6 +119,10 @@ export interface OrchestratorConfig {
   provider?: LLMProvider;
   /** 任务持久化适配器（P-记忆）；不注入则纯内存运行 */
   persistence?: AgentTaskPersistence;
+  /** Task 4.2：是否启用身份外科式重转决策（默认关，主链行为零变化） */
+  enableIdentityReconvert?: boolean;
+  /** Task 4.2：单场景外科重转 escalation 预算 K（默认 3，超了落 manual_review） */
+  maxIdentityReconvertPerScene?: number;
 }
 
 const DEFAULT_CONFIG: OrchestratorConfig = {
@@ -118,6 +130,8 @@ const DEFAULT_CONFIG: OrchestratorConfig = {
   enableAutoRetry: true,
   maxConcurrentScenes: 3,
   defaultQualityThreshold: 75,
+  enableIdentityReconvert: false,
+  maxIdentityReconvertPerScene: 3,
 };
 
 const DEFAULT_PHASES: Array<Omit<OrchestratorPhase, 'id' | 'status' | 'retryCount'>> = [
@@ -316,6 +330,36 @@ export class MultiAgentOrchestrator {
           let gate = await this.evaluateGate(task, phase, output);
           this.emit('gate_result', { taskId, phaseId: phase.id, gate });
 
+          // Task 4.2 决策层：identity 未达标 → 外科式重转决策（只决策不执行；默认关）
+          const identitySignal = gate.assessment.identity;
+          if (
+            identitySignal &&
+            !identitySignal.passed &&
+            this.config.enableIdentityReconvert
+          ) {
+            const reconvert = this.decideReconvert(task.id, identitySignal);
+            if (reconvert) {
+              if (reconvert.shouldEscalate) {
+                // 超出 escalation 预算 → 落 manual_review 人工介入
+                this.parkAwaiting(
+                  task,
+                  phase,
+                  gate,
+                  `身份一致性超出外科介入预算，需人工介入（升级场景: #${reconvert.escalatedScenes.join(', #')}）`,
+                );
+                break;
+              }
+              // 只决策：记录请求后挂起，等待执行层（Task 4.3）外科式重转并重跑断言
+              this.parkAwaiting(
+                task,
+                phase,
+                gate,
+                `身份不一致，等待外科式重转（场景: #${reconvert.reconvertScenes.join(', #')}）`,
+              );
+              break;
+            }
+          }
+
           const isBelow = () => gate.decision === 'fail' || gate.decision === 'review';
           while (
             isBelow() &&
@@ -340,31 +384,7 @@ export class MultiAgentOrchestrator {
           if (isBelow()) {
             if (gateConfig.onFail === 'manual_review') {
               // 挂起等待人工介入（不判失败，任务保持可恢复）
-              const outputSummary = formatOutputSummary(phase.output);
-              phase.status = 'awaiting';
-              phase.error = `质量未达标（待人工介入）: ${gate.reason}`;
-              phase.completedAt = Date.now();
-              task.awaiting = {
-                phaseId: phase.id,
-                phaseName: phase.name,
-                reason: gate.reason,
-                decision: gate.decision,
-                outputSummary,
-              };
-              this.emit('phase_awaiting_manual', {
-                taskId,
-                phaseId: phase.id,
-                name: phase.name,
-                reason: gate.reason,
-                gate,
-                outputSummary,
-              });
-              this.emit('log', {
-                taskId,
-                level: 'warning',
-                message: `阶段 ${phase.name} 质量未达标，等待人工介入: ${gate.reason}`,
-              });
-              this.persistTask(task);
+              this.parkAwaiting(task, phase, gate, `质量未达标（待人工介入）: ${gate.reason}`);
               break;
             } else if (gateConfig.onFail === 'skip') {
               phase.status = 'skipped';
@@ -690,7 +710,7 @@ export class MultiAgentOrchestrator {
     task: OrchestratorTask,
     phase: OrchestratorPhase,
     output: unknown,
-  ): Promise<{ decision: GateDecision; reason: string }> {
+  ): Promise<{ decision: GateDecision; reason: string; assessment: QualityAssessment }> {
     const provider = this.getPhaseProvider(task, phase);
     const gateConfig = this.getGateConfig(phase.name);
 
@@ -714,7 +734,84 @@ export class MultiAgentOrchestrator {
       message: `[Gate:${phase.name}] 质量评分 ${assessment.score}/100`,
     });
 
-    return makeGateDecision(assessment, gateConfig);
+    return { ...makeGateDecision(assessment, gateConfig), assessment };
+  }
+
+  /**
+   * Task 4.2 决策层：identity 未达标 → 生成 re-convert 请求（只标记场景，不执行转换）。
+   * - 请求累积进 task.reconvertHistory（escalation 预算 K 的依据，随任务 JSON 持久化）
+   * - 推送 SSE reconvert_decision 事件（供 4.4 supervisor / 前端消费）
+   * - 返回决策供调用方路由：reconvertScenes → 等待执行层（Task 4.3）外科式重转；
+   *   escalatedScenes → 人工介入 manual_review
+   * - flag 关闭 / identity 通过 → 返回 null（主链零变化）
+   */
+  decideReconvert(
+    taskId: string,
+    identity: IdentitySignal,
+  ): ReconvertDecision | null {
+    const task = this.tasks.get(taskId);
+    if (!task || !this.config.enableIdentityReconvert) return null;
+
+    const { decision, requests } = makeReconvertDecision(
+      taskId,
+      identity,
+      task.reconvertHistory ?? [],
+      { maxEscalationsPerScene: this.config.maxIdentityReconvertPerScene },
+    );
+    if (!decision.shouldReconvert && !decision.shouldEscalate) return null;
+
+    if (requests.length > 0) {
+      task.reconvertHistory = [...(task.reconvertHistory ?? []), ...requests];
+      this.persistTask(task);
+    }
+
+    this.emit('reconvert_decision', { taskId, decision, requests });
+    this.emit('log', {
+      taskId,
+      level: 'warning',
+      message:
+        `身份一致性未达标（${identity.score}/100）：` +
+        `待重转场景 #${decision.reconvertScenes.join(', #') || '无'}，` +
+        `升级人工场景 #${decision.escalatedScenes.join(', #') || '无'}`,
+    });
+    return decision;
+  }
+
+  /**
+   * 将阶段挂起等待人工介入/执行层（awaiting），复用质量关卡挂起机制。
+   * 供 manual_review 与 Task 4.2 重转/升级决策共用。
+   */
+  private parkAwaiting(
+    task: OrchestratorTask,
+    phase: OrchestratorPhase,
+    gate: { decision: GateDecision; reason: string },
+    reason: string,
+  ): void {
+    const outputSummary = formatOutputSummary(phase.output);
+    phase.status = 'awaiting';
+    phase.error = reason;
+    phase.completedAt = Date.now();
+    task.awaiting = {
+      phaseId: phase.id,
+      phaseName: phase.name,
+      reason,
+      decision: gate.decision,
+      outputSummary,
+    };
+    this.emit('phase_awaiting_manual', {
+      taskId: task.id,
+      phaseId: phase.id,
+      name: phase.name,
+      reason,
+      gate,
+      outputSummary,
+    });
+    this.emit('log', {
+      taskId: task.id,
+      level: 'warning',
+      message: `阶段 ${phase.name} ${reason}`,
+    });
+    this.persistTask(task);
   }
 
   private getGateConfig(phaseName: string): GateConfig {
@@ -787,6 +884,7 @@ function toSSEEventType(event: string): SSEEvent['type'] {
       return 'phase';
     case 'gate_result':
     case 'phase_awaiting_manual':
+    case 'reconvert_decision':
       return 'progress';
     case 'task_awaiting':
       return 'complete';

@@ -11,7 +11,14 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { LLMProvider, LLMMessage, LLMChatOptions, LLMChatResponse } from '@/lib/llm/types';
-import { MultiAgentOrchestrator, type OrchestratorTask } from '@/lib/multi-agent/orchestrator';
+import {
+  MultiAgentOrchestrator,
+  type OrchestratorTask,
+  type OrchestratorPhase,
+  type AgentTaskPersistence,
+} from '@/lib/multi-agent/orchestrator';
+import type { IdentitySignal, QualityAssessment } from '@/lib/multi-agent/handoff-protocol';
+import type { GateDecision } from '@/lib/multi-agent/review-gate';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -130,6 +137,44 @@ async function waitForCompletion(
     await new Promise((r) => setTimeout(r, 25));
   }
   throw new Error(`Task ${taskId} did not complete within ${timeoutMs}ms`);
+}
+
+// ── Task 4.2 helpers ──────────────────────────────────────────────────────────
+
+function failingIdentity(sceneNumbers: number[]): IdentitySignal {
+  return {
+    passed: false,
+    score: Math.max(0, 100 - sceneNumbers.length * 20),
+    failures: sceneNumbers.map((sceneNumber) => ({
+      ruleId: 'dead-character-no-speak',
+      sceneNumber,
+      message: `已死角色在场景 #${sceneNumber} 仍有对白`,
+    })),
+  };
+}
+
+const passingIdentity: IdentitySignal = { passed: true, score: 100, failures: [] };
+
+type EvaluateGateFn = (
+  task: OrchestratorTask,
+  phase: OrchestratorPhase,
+  output: unknown,
+) => Promise<{ decision: GateDecision; reason: string; assessment: QualityAssessment }>;
+
+/** 覆写私有 evaluateGate，让质量关卡直接返回带 identity 信号的评估（注入身份失败场景）。 */
+function withIdentityGate(orch: MultiAgentOrchestrator, identity: IdentitySignal): void {
+  (orch as unknown as { evaluateGate: EvaluateGateFn }).evaluateGate = async () => ({
+    decision: 'fail',
+    reason: `身份一致性不达标（${identity.score}/100）`,
+    assessment: {
+      score: 60,
+      passed: false,
+      dimensions: { format: 60, consistency: 60, coherence: 60, drama: 60 },
+      issues: ['身份不一致'],
+      suggestions: [],
+      identity,
+    },
+  });
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -419,6 +464,164 @@ describe('MultiAgentOrchestrator', () => {
       const task = await waitForCompletion(orch, taskId);
       const analyze = task.phases.find((p) => p.name === 'analyze');
       expect(orch.resolveManualReview(taskId, analyze?.id ?? '', 'approve')).toBe(false);
+    });
+  });
+});
+
+describe('identity reconvert 决策层（Task 4.2）', () => {
+  describe('decideReconvert', () => {
+    it('flag 默认关闭时返回 null（主链零变化）', () => {
+      const orch = new MultiAgentOrchestrator({ provider: new MockLLMProvider() });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      expect(orch.decideReconvert(taskId, failingIdentity([3]))).toBeNull();
+      const task = orch.getTask(taskId);
+      expect(task?.reconvertHistory).toBeUndefined();
+    });
+
+    it('identity 通过时返回 null，不产生请求', () => {
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+      });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      expect(orch.decideReconvert(taskId, passingIdentity)).toBeNull();
+      expect(orch.getTask(taskId)?.reconvertHistory).toBeUndefined();
+    });
+
+    it('identity 未达标 → 返回决策并记录 re-convert 请求（只决策，不执行转换）', () => {
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+      });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      const decision = orch.decideReconvert(taskId, failingIdentity([3]));
+      expect(decision).not.toBeNull();
+      expect(decision?.shouldReconvert).toBe(true);
+      expect(decision?.shouldEscalate).toBe(false);
+      expect(decision?.reconvertScenes).toEqual([3]);
+
+      const task = orch.getTask(taskId);
+      expect(task?.reconvertHistory).toHaveLength(1);
+      expect(task?.reconvertHistory?.[0].sceneNumbers).toEqual([3]);
+      expect(task?.reconvertHistory?.[0].escalated).toBe(false);
+      // 决策层不触碰任何阶段状态/输出（执行留给 Task 4.3 桥接器）
+      expect(task?.phases.every((p) => ['pending', 'running', 'completed'].includes(p.status))).toBe(true);
+    });
+
+    it('同一场景请求重转 K=3 次后第 4 次升级 manual_review', () => {
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+      });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      for (let i = 0; i < 3; i++) {
+        const d = orch.decideReconvert(taskId, failingIdentity([3]));
+        expect(d?.shouldEscalate).toBe(false);
+        expect(d?.shouldReconvert).toBe(true);
+      }
+      const d4 = orch.decideReconvert(taskId, failingIdentity([3]));
+      expect(d4?.shouldEscalate).toBe(true);
+      expect(d4?.shouldReconvert).toBe(false);
+      expect(d4?.escalatedScenes).toEqual([3]);
+
+      const task = orch.getTask(taskId);
+      expect(task?.reconvertHistory).toHaveLength(4);
+      expect(task?.reconvertHistory?.[3].escalated).toBe(true);
+    });
+
+    it('自定义 escalation 预算（K=1）生效', () => {
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+        maxIdentityReconvertPerScene: 1,
+      });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      expect(orch.decideReconvert(taskId, failingIdentity([1]))?.shouldEscalate).toBe(false);
+      expect(orch.decideReconvert(taskId, failingIdentity([1]))?.shouldEscalate).toBe(true);
+    });
+
+    it('reconvertHistory 随任务 JSON 序列化（持久化安全）', () => {
+      const persisted: OrchestratorTask[] = [];
+      const persistence: AgentTaskPersistence = {
+        upsert: (task) => {
+          persisted.push(JSON.parse(JSON.stringify(task)) as OrchestratorTask);
+        },
+        loadActive: () => [],
+      };
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+        persistence,
+      });
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+
+      orch.decideReconvert(taskId, failingIdentity([2]));
+      const last = persisted[persisted.length - 1];
+      expect(last.reconvertHistory).toHaveLength(1);
+      expect(last.reconvertHistory?.[0].sceneNumbers).toEqual([2]);
+    });
+  });
+
+  describe('质量关卡 identity 未达标 → 决策路由', () => {
+    it('身份不一致（未超预算）→ 阶段挂起等待外科式重转，请求落库', async () => {
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+      });
+      withIdentityGate(orch, failingIdentity([3]));
+
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+      const task = await waitForCompletion(orch, taskId);
+
+      const analyze = task.phases.find((p) => p.name === 'analyze');
+      expect(analyze?.status).toBe('awaiting');
+      expect(analyze?.error).toContain('外科式重转');
+      expect(analyze?.error).toContain('#3');
+      expect(task.awaiting).toBeDefined();
+      expect(task.awaiting?.phaseName).toBe('analyze');
+      expect(task.reconvertHistory).toHaveLength(1);
+      expect(task.reconvertHistory?.[0].escalated).toBe(false);
+      // 未失败、未完成
+      expect(task.phases.some((p) => p.status === 'failed')).toBe(false);
+    });
+
+    it('超出 escalation 预算 → 阶段挂起 manual_review 人工介入', async () => {
+      // maxIdentityReconvertPerScene=0 → 首次身份失败即升级人工（预算耗尽）
+      const orch = new MultiAgentOrchestrator({
+        provider: new MockLLMProvider(),
+        enableIdentityReconvert: true,
+        maxIdentityReconvertPerScene: 0,
+      });
+      withIdentityGate(orch, failingIdentity([3]));
+
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+      const task = await waitForCompletion(orch, taskId);
+
+      const analyze = task.phases.find((p) => p.name === 'analyze');
+      expect(analyze?.status).toBe('awaiting');
+      expect(analyze?.error).toContain('人工介入');
+      expect(task.awaiting).toBeDefined();
+      expect(task.reconvertHistory).toHaveLength(1);
+      expect(task.reconvertHistory?.[0].escalated).toBe(true);
+    });
+
+    it('flag 关闭时 identity 不达标走既有重试/人工介入逻辑（主链零变化）', async () => {
+      const orch = new MultiAgentOrchestrator({ provider: new MockLLMProvider() });
+      withIdentityGate(orch, failingIdentity([3]));
+
+      const taskId = orch.startConversion({ novelText: '第一章 风起' });
+      const task = await waitForCompletion(orch, taskId);
+
+      // analyze 的 gateConfig.onFail=manual_review：不触发重转决策，直接挂起人工
+      const analyze = task.phases.find((p) => p.name === 'analyze');
+      expect(analyze?.status).toBe('awaiting');
+      expect(task.reconvertHistory).toBeUndefined();
+      expect(task.awaiting?.reason).toContain('身份一致性不达标');
     });
   });
 });

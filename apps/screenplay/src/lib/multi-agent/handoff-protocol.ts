@@ -10,6 +10,8 @@ import type { AgentRole } from './roles';
 export type HandoffStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
 
 export interface HandoffContext {
+  /** 交接 ID（requestHandoff 创建后回填，供 completeHandoff/cancelHandoff 定位；可选以保持兼容） */
+  id?: string;
   /** 任务 ID */
   taskId: string;
   /** 来源 Agent */
@@ -50,6 +52,26 @@ export interface HandoffPayload {
   metadata?: Record<string, unknown>;
 }
 
+/** 身份一致性失败（具体到场景与规则） */
+export interface IdentityFailure {
+  ruleId: string;
+  sceneNumber: number;
+  message: string;
+}
+
+/**
+ * identity 信号：身份一致性评估结果（Task 4.1 增补）。
+ * 由确定性身份断言（复用 Task 2 规则）产出，判定「身份不一致」的具体场景。
+ */
+export interface IdentitySignal {
+  /** 是否通过（所有参与的确定性规则零失败） */
+  passed: boolean;
+  /** 0-100 身份一致性得分 */
+  score: number;
+  /** 判定为身份不一致的具体场景（携带 sceneNumber 供外科式重转定位） */
+  failures: IdentityFailure[];
+}
+
 export interface QualityAssessment {
   score: number; // 0-100
   passed: boolean;
@@ -61,6 +83,8 @@ export interface QualityAssessment {
   };
   issues: string[];
   suggestions: string[];
+  /** identity 信号（可选；仅当调用方注入身份评估时存在，主链默认缺省保持零变化） */
+  identity?: IdentitySignal;
 }
 
 /**

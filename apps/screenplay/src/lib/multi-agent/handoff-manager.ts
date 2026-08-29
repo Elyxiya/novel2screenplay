@@ -74,6 +74,7 @@ class HandoffManager implements HandoffProtocol {
       request.payload,
     );
     handoff.toInstanceId = targetInstanceId;
+    handoff.id = handoffId;
 
     // 存储交接
     this.handoffs.set(handoffId, handoff);

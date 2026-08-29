@@ -5,7 +5,12 @@
  * 在关键阶段进行质量评估，决定是否通过或需要返工。
  */
 
-import type { QualityAssessment } from './handoff-protocol';
+import type { IdentitySignal, QualityAssessment } from './handoff-protocol';
+import {
+  runIdentityAssessment,
+  type IdentityAssessmentOptions,
+  type IdentityRuleData,
+} from '../eval/identity-rules';
 
 export type GateDecision = 'pass' | 'fail' | 'review' | 'skip' | 'manual_review';
 
@@ -203,12 +208,35 @@ export async function evaluateQuality(
 }
 
 /**
+ * 运行身份一致性评估（确定性规则优先），产出 identity 信号。
+ * 复用 Task 2 身份断言（identity-rules），判定「身份不一致」的具体场景
+ * （failures 携带 sceneNumber，供 orchestrator 决策层定位外科式重转目标）。
+ */
+export function evaluateIdentity(
+  data: IdentityRuleData,
+  options?: IdentityAssessmentOptions,
+): IdentitySignal {
+  return runIdentityAssessment(data, options);
+}
+
+/**
  * 根据质量评估做出关卡决策
  */
 export function makeGateDecision(
   assessment: QualityAssessment,
   config: GateConfig,
 ): { decision: GateDecision; reason: string } {
+  // 身份一致性信号（可选）：仅当调用方注入了 identity 评估时生效，主链默认缺省保持零变化
+  if (assessment.identity && !assessment.identity.passed) {
+    const scenes = [...new Set(assessment.identity.failures.map((f) => f.sceneNumber))]
+      .sort((a, b) => a - b)
+      .join(', ');
+    return {
+      decision: 'fail',
+      reason: `身份一致性不达标（${assessment.identity.score}/100）：场景 #${scenes} 存在身份不一致`,
+    };
+  }
+
   // 检查必须通过的维度
   if (config.criteria.requiredDimensions) {
     for (const dim of config.criteria.requiredDimensions) {

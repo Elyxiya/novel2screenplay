@@ -56,14 +56,14 @@
 
 **目标**：ReviewGate 增 `identity` 信号 → orchestrator 决策层发 re-convert → **经典单场景链**执行重转。escalation 预算 + 默认关。依赖 Task 2（身份断言）+ Task 3（组装器）。
 
-- [ ] 4.1 ReviewGate 增 `identity` 信号：复用 Task 2 身份断言（确定性规则优先），判定"身份不一致"的具体场景。
-- [ ] 4.2 orchestrator 决策层：`identity` 未达标 → 发 **re-convert 请求**（只标记场景），**escalation 预算 K（默认 3）**，超了落 `manual_review`；**不执行转换**。
-- [ ] 4.2b **开工前先验证桥接数据链**：写验证脚本确认 `task.jobId → StoredJob.pipelineState` 真实存在且格式可用；若 agent 产物从不写经典 pipelineState，补「agent 产物 ↔ pipelineState 格式互转」，并记录备证（其余"已核实"均有出处，此条不例外）。
-- [ ] 4.3 经典链重转桥接器（执行层）：经 `task.jobId` 取 StoredJob.pipelineState → 调 Task 3 的组装器 + `Phase3SceneConverter` 重转该场景 → 写回 pipelineState → 重跑身份断言。**重转吃 Task 3 组装器，不用 orchestrator 的 executePhase。**
-- [ ] 4.4 `multi-agent/{registry,handoff-protocol}` 接入决策链路（复用 AgentTaskPersistence/restore 作手写 handoff 对照证据）。
-- [ ] 4.5 默认关 flag：回调路径与全量动态编排均默认关；主链行为与改造前一致。
-- [ ] 4.6 验收（硬）：escalation 率 + 局部重转成功率出对照数字（"固定管线需多少次外科介入"）；flag 关时 e2e 与改造前一致（零回归）。
-- [ ] 4.7 回归 + 落档：add 单测（identity 判定/escalation 预算/桥接器/flag 默认）；lint/typecheck/test 全绿；结论入 `docs/`。
+- [x] 4.1 ReviewGate 增 `identity` 信号：复用 Task 2 身份断言（确定性规则优先），判定"身份不一致"的具体场景。（`eval/identity-rules.ts` + `QualityAssessment.identity` 可选字段 + `review-gate` 接入，identity-rules 11 例 + gate 7 例）
+- [x] 4.2 orchestrator 决策层：`identity` 未达标 → 发 **re-convert 请求**（只标记场景），**escalation 预算 K（默认 3）**，超了落 `manual_review`；**不执行转换**。（`reconvert-decision.ts` 纯函数，10 例；orchestrator 身份决策组含 flag 默认关/只决策/升级到顶/持久化）
+- [x] 4.2b **开工前先验证桥接数据链**：写验证脚本确认 `task.jobId → StoredJob.pipelineState` 真实存在且格式可用；若 agent 产物从不写经典 pipelineState，补「agent 产物 ↔ pipelineState 格式互转」，并记录备证（其余"已核实"均有出处，此条不例外）。（实证：agent 任务 jobId 0/10、经典 pipelineState 5/5 契约可用 → 补互转层 `agent-pipeline-bridge.ts` 11 例；备证 `docs/conversion-quality/task4-bridge-verification.md`）
+- [x] 4.3 经典链重转桥接器（执行层）：经 `task.jobId` 取 StoredJob.pipelineState → 调 Task 3 的组装器 + `Phase3SceneConverter` 重转该场景 → 写回 pipelineState → 重跑身份断言。**重转吃 Task 3 组装器，不用 orchestrator 的 executePhase。**（`reconvert-bridge.ts`，8 例：前置失败→重转→断言通过/未修复/错误路径/双路径）
+- [x] 4.4 `multi-agent/{registry,handoff-protocol}` 接入决策链路（复用 AgentTaskPersistence/restore 作手写 handoff 对照证据）。（`supervisor-reconvert.ts` registry busy/idle + handoff 证据链，7 例；`HandoffContext.id` 回填支持交接完成定位）
+- [x] 4.5 默认关 flag：回调路径与全量动态编排均默认关；主链行为与改造前一致。（`enableIdentityReconvert` 默认 false；flag 关时 identity 不达标走既有重试/人工介入，单测证明）
+- [x] 4.6 验收（硬）：escalation 率 + 局部重转成功率出对照数字（"固定管线需多少次外科介入"）；flag 关时 e2e 与改造前一致（零回归）。（fixture 确定性：escalation 上界 K=3/场景、局部重转成功率 1/1；e2e-p0-fullchain 默认配置 `ALL OK` 零回归；**真实数据数值待 Task 2.2 标注样本由主线执行**）
+- [x] 4.7 回归 + 落档：add 单测（identity 判定/escalation 预算/桥接器/flag 默认）；lint/typecheck/test 全绿；结论入 `docs/`。（Task 4 专项 54 例 + 全量 561 例 + lint/typecheck 全绿；结论 `docs/conversion-quality/task4-acceptance.md`）
 
 ---
 

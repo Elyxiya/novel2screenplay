@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Screenplay, Scene, Character, Location } from '@novel/contracts/screenplay';
@@ -56,6 +56,8 @@ function ResultPageInner() {
   const [reviseInputs, setReviseInputs] = useState<Record<number, string>>({});
   const [reviseLoading, setReviseLoading] = useState(false);
   const [reviseMsg, setReviseMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [reviseStreamBuf, setReviseStreamBuf] = useState('');
+  const reviseAbortRef = useRef<AbortController | null>(null);
 
   // ── 全局套用（L3：scope=all 批量重写全部场景）──
   const [reviseAllOpen, setReviseAllOpen] = useState(false);
@@ -317,26 +319,61 @@ function ResultPageInner() {
     if (!instruction || reviseLoading) return;
     setReviseLoading(true);
     setReviseMsg(null);
+    setReviseStreamBuf('');
+    const controller = new AbortController();
+    reviseAbortRef.current = controller;
+    let streamBuf = '';
     try {
-      const res = await fetch('/api/result/revise', {
+      const res = await fetch('/api/result/revise?stream=1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId, sceneNumber: scene.sceneNumber, instruction, scope: 'scene' }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (data.success) {
-        setReviseMsg({ type: 'ok', text: data.message ?? '场景已更新' });
-        setReviseInputs(prev => ({ ...prev, [scene.sceneNumber]: '' }));
-        await fetchScreenplay();
-      } else {
-        setReviseMsg({ type: 'err', text: data.error ?? '修改失败' });
+      if (!res.body) throw new Error('无响应流');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t) continue;
+          const obj = JSON.parse(t) as { delta?: string; done?: boolean; message?: string; scene?: Scene; error?: string };
+          if (obj.error) throw new Error(obj.error);
+          if (obj.done === true) {
+            // 原子提交：只在此刻清输入 + 重新拉取剧本
+            setReviseMsg({ type: 'ok', text: obj.message ?? '场景已更新' });
+            setReviseInputs(prev => ({ ...prev, [scene.sceneNumber]: '' }));
+            setReviseStreamBuf('');
+            await fetchScreenplay();
+            return;
+          }
+          if (typeof obj.delta === 'string') {
+            streamBuf += obj.delta;
+            setReviseStreamBuf(streamBuf);
+          }
+        }
       }
-    } catch {
-      setReviseMsg({ type: 'err', text: '修改失败，请重试' });
+    } catch (e) {
+      const aborted = (e as Error).name === 'AbortError';
+      // 失败/中止：保留预览 + 输入框原样，错误提示可重试（原子提交≠原子丢失）
+      setReviseStreamBuf(streamBuf);
+      setReviseMsg({ type: 'err', text: aborted ? '已停止修改' : `修改失败: ${(e as Error).message}` });
     } finally {
+      reviseAbortRef.current = null;
       setReviseLoading(false);
     }
   };
+
+  const stopSceneRevise = () => reviseAbortRef.current?.abort();
+
+  // 卸载时中止进行中的 revise 流
+  useEffect(() => () => reviseAbortRef.current?.abort(), []);
 
   // ── 全局套用（L3：scope=all 按一条指令重写全部场景）──
   const submitReviseAll = async () => {
@@ -757,7 +794,27 @@ function ResultPageInner() {
                         )}
                         {reviseLoading ? '修改中...' : '应用修改'}
                       </button>
+                      {reviseLoading && (
+                        <button
+                          onClick={stopSceneRevise}
+                          className="!px-2.5 !py-1.5 text-xs border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-50 shrink-0"
+                        >
+                          停止
+                        </button>
+                      )}
                     </div>
+                    {/* 流式预览：生成中实时刷新；失败/中止时保留已生成内容（原子提交≠原子丢失） */}
+                    {reviseStreamBuf && (
+                      <div className="mt-2 border border-amber-200/80 rounded-lg bg-white/70 px-2.5 py-2">
+                        <p className="text-[10px] font-medium text-amber-600 mb-1">
+                          {reviseLoading ? '生成中...（JSON 预览）' : '已保留预览（上次修改未提交）'}
+                        </p>
+                        <pre className="text-[10px] leading-4 text-slate-500 whitespace-pre-wrap max-h-32 overflow-y-auto m-0">
+                          {reviseStreamBuf}
+                          {reviseLoading && <span className="inline-block w-1 h-3 bg-amber-400 animate-pulse align-text-bottom ml-0.5" />}
+                        </pre>
+                      </div>
+                    )}
                     {reviseMsg && (
                       <p className={`mt-1.5 text-xs ${reviseMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
                         {reviseMsg.text}

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { LLMMessage, LLMProvider, LLMStreamChunk } from '@/lib/llm/types';
-import { buildReviseScenePrompt, reviseScene, MAX_SOURCE_CHARS } from '@/lib/result/revise-scene';
+import {
+  buildReviseScenePrompt,
+  reviseScene,
+  reviseSceneStream,
+  MAX_SOURCE_CHARS,
+  type ReviseSceneStreamOut,
+} from '@/lib/result/revise-scene';
 import type { Scene } from '@novel/contracts/screenplay';
 
 class MockProvider implements LLMProvider {
@@ -20,7 +26,13 @@ class MockProvider implements LLMProvider {
     return { content: this.response, model: this.modelId };
   }
 
-  async *chatStream(): AsyncGenerator<LLMStreamChunk> {
+  async *chatStream(messages: LLMMessage[]): AsyncGenerator<LLMStreamChunk> {
+    this.messages = messages;
+    // 把完整响应切成多段 delta，模拟真实流式
+    const step = Math.max(1, Math.ceil(this.response.length / 3));
+    for (let i = 0; i < this.response.length; i += step) {
+      yield { type: 'text', content: this.response.slice(i, i + step) };
+    }
     yield { type: 'done' };
   }
 
@@ -117,5 +129,39 @@ describe('reviseScene', () => {
   it('缺少有效 content 时抛错', async () => {
     const provider = new MockProvider(JSON.stringify({ content: [{ type: 'dialogue', line: '' }] }));
     await expect(reviseScene('原文', baseScene, '改', { provider })).rejects.toThrow('缺少有效场景内容');
+  });
+});
+
+describe('reviseSceneStream（流式）', () => {
+  it('依次 yield delta，末尾 yield full；delta 拼接等于模型响应', async () => {
+    const provider = new MockProvider(okResponse);
+    const events: ReviseSceneStreamOut[] = [];
+    for await (const out of reviseSceneStream('原文', baseScene, '对白更口语化', { provider })) {
+      events.push(out);
+    }
+    const deltas = events.filter((e) => 'delta' in e).map((e) => (e as { delta: string }).delta);
+    expect(deltas.length).toBeGreaterThan(0);
+    expect(deltas.join('')).toBe(okResponse);
+
+    const last = events[events.length - 1] as { full: Scene };
+    expect(last.full).toBeTruthy();
+    expect(last.full.summary).toBe('重生成摘要');
+    expect(last.full.content[0]).toMatchObject({ type: 'action', description: '林晚推门而入' });
+  });
+
+  it('reviseScene 与 reviseSceneStream 结果一致', async () => {
+    const provider = new MockProvider(okResponse);
+    const next = await reviseScene('原文', baseScene, '对白更口语化', { provider });
+    expect(next.summary).toBe('重生成摘要');
+    expect(next.content).toHaveLength(2);
+  });
+
+  it('坏 JSON 时抛错且未产出 full', async () => {
+    const provider = new MockProvider('这不是 JSON');
+    const events: ReviseSceneStreamOut[] = [];
+    await expect(async () => {
+      for await (const out of reviseSceneStream('原文', baseScene, '改', { provider })) events.push(out);
+    }).rejects.toThrow('解析失败');
+    expect(events.every((e) => 'delta' in e)).toBe(true); // 已产出的 delta 保留，无 full
   });
 });

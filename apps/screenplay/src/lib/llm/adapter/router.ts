@@ -6,7 +6,7 @@
  */
 
 import type { LLMAdapter, LLMAdapterHealth } from './types';
-import type { LLMMessage, LLMChatOptions, LLMChatResponse } from '../types';
+import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from '../types';
 import { getDeepSeekAdapter } from './deepseek-adapter';
 import { getOpenAIAdapter } from './openai-adapter';
 import { getCustomOpenAIProvider } from '../CustomOpenAIProvider';
@@ -118,6 +118,26 @@ export class ModelRouter {
       this.stats.failedRequests++;
       throw error;
     }
+  }
+
+  /**
+   * 发送流式聊天请求（自动路由）
+   * 复用 chat 的 adapter 选择逻辑；错误向上抛，由调用方转错误帧。
+   */
+  async *chatStream(
+    messages: LLMMessage[],
+    options?: LLMChatOptions,
+    modelId?: string
+  ): AsyncGenerator<LLMStreamChunk> {
+    const model = modelId || this.getDefaultModel();
+    const adapter = this.getAdapterForModel(model);
+
+    if (!adapter) {
+      throw new Error(`No adapter found for model: ${model}`);
+    }
+
+    this.stats.totalRequests++;
+    yield* adapter.chatStream(messages, options, model);
   }
 
   /**

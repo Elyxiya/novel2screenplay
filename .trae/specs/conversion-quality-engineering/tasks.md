@@ -37,7 +37,7 @@
 
 **目标**：把 map-reduce 从"仅实验分支"翻为主链默认——唯一触发器是数据门槛，不是"写完了就切"。
 
-- [ ] 5.1 先写决策规则（**出数前**）：尾段（tail 1/3）断面通过率差 ≥ **Δ_tail** 且总分不劣 → 才允许翻默认；**Δ_tail = f(T2-C4 《judge 稳定性报告》方差)**——须大于 judge 复跑噪声带（2×SD 或置信区间宽度），否则差值落进噪声内无从裁决；规则定后不临时改口径。
+- [x] 5.1 先写决策规则（**出数前**）：尾段（tail 1/3）断面通过率差 ≥ **Δ_tail** 且总分不劣 → 才允许翻默认；**Δ_tail = f(T2-C4 《judge 稳定性报告》方差)**——须大于 judge 复跑噪声带（2×SD 或置信区间宽度），否则差值落进噪声内无从裁决；规则定后不临时改口径。（`lib/eval/flip-decision.ts` 决策谓词 R1/R2/R3 + 9 例单测 + 口径固化 `docs/conversion-quality/task5-flip-decision.md`；Δ_tail 数值由 `scripts/eval/stability.mjs` deltaTailThreshold 注入，职责分离，实跑落档待 2.4 稳定性报告）
 - [ ] 5.2 依 Task 2.5 分层曲线 + Task 1.6 代理/floor 判定通过 → 翻 `Phase1Analyzer` 默认路径为 map-reduce，**并把 `canRequest`（BudgetController）接到 Phase1 调用点**（堵住翻默认→Task3 无守卫窗口）。
 - [ ] 5.3 验收 + 回归：翻默认后 e2e 全绿；`docs/` 落"为什么切默认"决策记录（呼应 ADR 纪律）。
 - [ ] 5.4（后续独立 PR）清理旧截断 flag：翻默认稳定后再整体删 baseline 路径。

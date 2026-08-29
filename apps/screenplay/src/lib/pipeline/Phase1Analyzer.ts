@@ -13,6 +13,13 @@ import {
 } from './phase1-budget';
 import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
 
+/**
+ * Phase1 分析 LLM 的输出 token 上限。此前 4096 对长篇（截断后最多 ~30k token 输入）
+ * 过小：LLM 常把响应截断在 timelineHints 单元中途，safeJsonParse 静默返回空卡。
+ * 提升到 8192 给 characters/locations 留足空间（deepseek-chat 输出上限即 8192）。
+ */
+export const MAX_ANALYSIS_MAX_TOKENS = 8192;
+
 export { Phase1Mode };
 export interface Phase1AnalyzeOptions {
   mode?: Phase1Mode;
@@ -116,15 +123,22 @@ export class Phase1Analyzer {
         const response = await this.provider.chat(messages, {
           responseFormat: 'json_object',
           temperature: 0.3,
-          maxTokens: 4096,
+          maxTokens: MAX_ANALYSIS_MAX_TOKENS,
         });
         const t1 = Date.now();
         console.log(`[Phase1] LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
 
-        const parsed = safeJsonParse(response.content) as Phase1LLMResponse;
-        console.log(`[Phase1] 解析结果: ${parsed.characters?.length ?? 0} 角色, ${parsed.locations?.length ?? 0} 地点`);
+        const parsed = safeJsonParse(response.content);
+        // 安全解析的失败哨兵：LLM 输出被截断/畸形时 safeJsonParse 返回
+        // { _parseError:true, originalText } 而非抛错——若不拦截，会作为"合法解析"
+        // 返回空角色卡（重试永远不触发），造成大长篇静默丢卡（见 1b 实测）。
+        if (parsed === null || (typeof parsed === 'object' && '_parseError' in (parsed as Record<string, unknown>))) {
+          throw new Error('Phase1 JSON 解析失败（LLM 输出被截断或非 JSON）——触发重试');
+        }
+        const struct = parsed as Phase1LLMResponse;
+        console.log(`[Phase1] 解析结果: ${struct.characters?.length ?? 0} 角色, ${struct.locations?.length ?? 0} 地点`);
         return {
-          characters: (parsed.characters || []).map((c) => ({
+          characters: (struct.characters || []).map((c) => ({
             name: c.name,
             aliases: c.aliases ?? [],
             personalityTags: c.personalityTags ?? [],
@@ -132,13 +146,13 @@ export class Phase1Analyzer {
             isMajor: c.isMajor ?? true,
             sourceChapterIndex: c.sourceChapterIndex ?? 0,
           })),
-          locations: (parsed.locations || []).map((l) => ({
+          locations: (struct.locations || []).map((l) => ({
             name: l.name ?? '',
             description: l.description ?? '',
             type: (l.type ?? 'interior') as 'interior' | 'exterior' | 'abstract',
             sourceChapterIndex: l.sourceChapterIndex ?? 0,
           })),
-          timelineHints: (parsed.timelineHints || []) as TimelineHint[],
+          timelineHints: (struct.timelineHints || []) as TimelineHint[],
           rawResponse: response.content,
         };
       } catch (err) {

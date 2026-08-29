@@ -374,6 +374,71 @@ describe('Phase1Analyzer - mode 双路径', () => {
     expect(output.characters).toHaveLength(1);
     expect(output.characters[0].name).toBe('林墨');
   });
+
+  it('truncate 路径 LLM 输出被截断（非法 JSON）→ 触发重试而非静默空卡【1b 回归】', async () => {
+    // safeJsonParse 对截断响应返回 { _parseError } 哨兵且不抛错；此前会被当作合法解析返回空卡。
+    // 修复后哨兵应触发既有 3 次重试，第二次合法响应被采纳。
+    let call = 0;
+    const chat = vi.fn(async (messages: LLMMessage[]) => {
+      call++;
+      const user = messages.find((m) => m.role === 'user')?.content ?? '';
+      if (user.startsWith('请分析以下小说文本')) {
+        if (call === 1) {
+          // 第一次：timelineHints 单引号未闭合 → JSON.parse 抛错 → safeJsonParse 返回哨兵
+          return { content: '{"characters":[{bad}\n  "timelineHints": [{"timeCue": "第xx...未闭合', model: 'test' };
+        }
+        return {
+          content: JSON.stringify({
+            characters: [{ name: '林墨', aliases: [], personalityTags: [], description: '主角', isMajor: true }],
+            locations: [],
+            timelineHints: [],
+          }),
+          model: 'test',
+        };
+      }
+      throw new Error(`未知的 LLM 调用: ${user.slice(0, 40)}`);
+    });
+    const retryProvider: LLMProvider = {
+      name: 'test',
+      modelId: 'test-model',
+      description: 'test',
+      contextWindow: 32000,
+      supportsJSONMode: () => true,
+      estimateTokens: async (t: string) => Math.ceil(t.length * 0.5),
+      chat,
+      chatStream: vi.fn(async function* () {}),
+    };
+    const analyzer = new Phase1Analyzer(retryProvider, ctxManager);
+    const output = await analyzer.analyze(
+      [{ index: 0, title: '第一章', text: '林墨从山里来。' }],
+      { mode: 'truncate' },
+    );
+    expect(call).toBeGreaterThanOrEqual(2); // 确系重试过
+    expect(output.characters).toHaveLength(1); // 采纳重试后的合法响应，而非空卡
+    expect(output.characters[0].name).toBe('林墨');
+  });
+
+  it('truncate 路径连续截断 → 3 次重试后显式降级（rawResponse 带失败信息，非静默空卡）【1b 回归】', async () => {
+    const chat = vi.fn(async () => ({ content: '{"characters":[{bad}', model: 'test' }));
+    const failProvider: LLMProvider = {
+      name: 'test',
+      modelId: 'test-model',
+      description: 'test',
+      contextWindow: 32000,
+      supportsJSONMode: () => true,
+      estimateTokens: async (t: string) => Math.ceil(t.length * 0.5),
+      chat,
+      chatStream: vi.fn(async function* () {}),
+    };
+    const analyzer = new Phase1Analyzer(failProvider, ctxManager);
+    const output = await analyzer.analyze(
+      [{ index: 0, title: '第一章', text: '林墨从山里来。' }],
+      { mode: 'truncate' },
+    );
+    expect(chat).toHaveBeenCalledTimes(3); // 重试满 3 次
+    expect(output.characters).toHaveLength(0); // 仍然降级为空
+    expect(output.rawResponse).toContain('分析失败'); // 但带显式失败信息，不静默
+  }, 15000);
 });
 
 // ── Task 5 预算守卫：canRequest 接到 Phase1 ───────────────────────────────

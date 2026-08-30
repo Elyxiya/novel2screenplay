@@ -27,15 +27,17 @@
 **目标**：身份断言集（确定性 + 语义）+ eval runner（git-hash 复现 + manifest 缓存）+ judge 稳定性报告。为 Task 1/3 的可信底座，可与 Task 1 并行（标注是纯人力活）。
 
 - [x] 2.1 eval runner：`npm run eval -- --set <name> --model <id> [--stages analyze|convert]`；manifest=`(prompt 文件 hash, model id, 参数, 数据集 hash, judge prompt hash)` → JSONL；**按 hash 缓存**结果；**提供 `--dry-run`** 输出总 token 预算（manifest 各格预估值求和），跑前先见账。（已实现并验证：`scripts/eval-runner.mjs` + `scripts/eval/*.mjs`；dry-run 账单与零 LLM 规则集实跑均通过）
-- [ ] 2.2 身份断言集：**按入选标准筛样本**（3–5 短 + 3–5 中，须"别名密集、多线叙事、有清晰章节边界切分"，标注 1–2h/本）；确定性断言（已死角色不再开口、称谓揭示章前不出现——**依赖标注的死亡/揭示章，非输出推导**）+ 语义断言（身份陈述矛盾，只兜规则查不到的）。（规则与合成 fixture 已实现；**真实样本标注为纯人力活**，标注后填充 `identity` 集）
+- [x] 2.2 身份断言集：**按入选标准筛样本**（3–5 短 + 3–5 中，须"别名密集、多线叙事、有清晰章节边界切分"，标注 1–2h/本）；确定性断言（已死角色不再开口、称谓揭示章前不出现——**依赖标注的死亡/揭示章，非输出推导**）+ 语义断言（身份陈述矛盾，只兜规则查不到的）。（规则与合成 fixture 已实现；**真实样本标注已成**：short 5 + medium 7 + long 2，含 6 本真断言金样本，`task2-2-annotation-guide.md` §7 状态表与 §8 验收明细）
 - [x] 2.3 确定性断言走规则检查（零成本）；语义断言走 judge（双评委）；评委成本被 manifest 缓存控住。（已实现并 24 例单测全绿）
-- [ ] 2.4 《judge 稳定性报告》：**方差研究限成本**（每类抽 1 本 × 复跑 k=5 × 双评委）→ 用**方差数据**定阈值（不拍脑袋）；该方差同时供 T5-C1 推导 `Δ_tail`。（`stability.mjs` 噪声带/阈值推导 + `--stability` 已实现并单测；**实跑报告待 2.2 标注样本就绪**）
-- [ ] 2.5 分层对比：新旧 Phase1 断言通过率按章节**前/中/后三段**出曲线（截断损伤集中尾段，新管线应压平尾段）。（依赖 Task 1 双路径 + 2.2 样本，后置）
-- [ ] 2.6 回归 + 落档：runner 可复现执行；报告入 `docs/`。（单测/lint/typecheck/全量 test 已绿；docs 落档待 2.4/2.5 出数后执行）
+- [x] 2.4 《judge 稳定性报告》：**方差研究限成本**（每类抽 1 本 × 复跑 k=5 × 双评委）→ 用**方差数据**定阈值（不拍脑袋）；该方差同时供 T5-C1 推导 `Δ_tail`。（已实跑落档 `task2-4-stability.md`：合成贴线内容 × k=5 双评委，clean/boundary 噪声≈0、contradiction sd=17 → **Δ_tail=35**；`stability.test.mjs` 13 例全绿）
+- [x] 2.5 分层对比：新旧 Phase1 断言通过率按章节**前/中/后三段**出曲线（截断损伤集中尾段，新管线应压平尾段）。（实跑两样本：贴线 `xiuzhen-medium` 31.5k + 超限 `zhanlan-long` 58.8k；两条曲线均**尾段不降反升** → `1b-layered-curve.md` + `1b-layered-curve-zhanlan-long.md`）
+- [x] 2.6 回归 + 落档：runner 可复现执行；报告入 `docs/`。（全链路实测出数已落档：`1b-chain-measurement.md`、`1b-layered-curve.md`、`1b-layered-curve-zhanlan-long.md`、`task2-4-stability.md`；回归全绿）
 
 ## Task 5（插序）· 翻 Phase1 默认（数据门槛驱动，独立小 PR）
 
 **目标**：把 map-reduce 从"仅实验分支"翻为主链默认——唯一触发器是数据门槛，不是"写完了就切"。
+
+> **最终判定（2026-08-30）：flip = `false`（首页不翻默认）。** 两份超限样本（`zhanlan-long` 58.8k + `xiuzhen-medium` 31.5k）分层曲线均**尾段占位率不降反升**，R3 不满足（尾段差远 < Δ_tail=35 且方向劣化）；mapreduce 收益=识别面扩容（改善前/中段），未修复尾部截断损伤。决策记录 `docs/conversion-quality/flip-decision-record.md`；5.2 翻默认触发条件未达成，**保持旧截断默认**。
 
 - [x] 5.1 先写决策规则（**出数前**）：尾段（tail 1/3）断面通过率差 ≥ **Δ_tail** 且总分不劣 → 才允许翻默认；**Δ_tail = f(T2-C4 《judge 稳定性报告》方差)**——须大于 judge 复跑噪声带（2×SD 或置信区间宽度），否则差值落进噪声内无从裁决；规则定后不临时改口径。（`lib/eval/flip-decision.ts` 决策谓词 R1/R2/R3 + 9 例单测 + 口径固化 `docs/conversion-quality/task5-flip-decision.md`；Δ_tail 数值由 `scripts/eval/stability.mjs` deltaTailThreshold 注入，职责分离，实跑落档待 2.4 稳定性报告）
 - [ ] 5.2 依 Task 2.5 分层曲线 + Task 1.6 代理/floor 判定通过 → 翻 `Phase1Analyzer` 默认路径为 map-reduce，**并把 `canRequest`（BudgetController）接到 Phase1 调用点**（堵住翻默认→Task3 无守卫窗口）。（**数据无关承重件已落地**：`phase1-budget.ts` 守卫已接 Phase1 map/reduce/truncate 三个调用点 + PipelineEngine 记 `metadata.budgetBlocked`，map/reduce 超限优雅降级+8 例新建单测；默认模式收敛为 `resolveDefaultPhase1Mode()` 单一决策点，**翻默认仍受 Task 2.4/2.5 数据门槛约束，未触发**）

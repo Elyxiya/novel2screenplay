@@ -1,0 +1,136 @@
+{
+  "schema": "identity-annotation/v1",
+  "sampleId": "xiuzhen-short2",
+  "title": "最后一个修真者（中段180-195章）",
+  "author": "纸上飞雪",
+  "type": "short",
+  "sourceFile": "E:\\文档\\Downloads\\《最后一个修真者》作者：纸上飞雪.txt",
+  "originalChapterRange": [
+    180,
+    195
+  ],
+  "chapterCount": 16,
+  "inputTokensHint": 14501,
+  "deadCharacters": [],
+  "reveals": [],
+  "aliasIndex": {},
+  "charIdToName": {},
+  "scenesRef": null,
+  "_note": "诚实标注（与 xiuzhen 系列一致）：本切片（原书 180-195 章）内无有名有姓角色的个体死亡——deathHits 多为无名打斗/背景（黑蜥蜴甩死、尸体插刀、群殴死三个、黑衣人），ch11「尊者」被倒毙黑衣人偷袭杀死，但该角色全文未命名，不构成稳定可断言身份；reveals 为「魔道之人」身份类别与常规认人，属主线/修辞，故均在断言集外。aliasIndex 待剧本产物注入。",
+  "candidates": {
+    "deathHits": [
+      {
+        "chapterIndex": 0,
+        "chapterTitle": "吞服内丹",
+        "line": "倒吸冷气之声响起，一名武宗高手一把尾巴就给甩死了，吓得他们面色大变，急忙闪身开始后退。"
+      },
+      {
+        "chapterIndex": 0,
+        "chapterTitle": "吞服内丹",
+        "line": "因为剧痛，那黑蜥蜴凄厉的咆哮，凶悍的尾巴又是敲死了两个，而他因为躲的快，没有打中他。"
+      },
+      {
+        "chapterIndex": 0,
+        "chapterTitle": "吞服内丹",
+        "line": "“管他呢，等他死了，我们就抢过来那把剑……”"
+      },
+      {
+        "chapterIndex": 0,
+        "chapterTitle": "吞服内丹",
+        "line": "进入那魔窟的人都死了，就他们两个出来，而先前离开的人，也都是死在了半路，也不知道那个魔窟到底是谁建立的，还有那个金棺为什么会出现在那里。"
+      },
+      {
+        "chapterIndex": 2,
+        "chapterTitle": "往日已经过去",
+        "line": "白冷叶苦笑道：“应该不会把，毕竟他都死了，只是一条手臂而已。”"
+      },
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "领悟剑法",
+        "line": "“也可能是死了。”马年哈哈笑出声。"
+      },
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "领悟剑法",
+        "line": "“怎么，马兄似乎希望我死了一样。”"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "相爱不能相见",
+        "line": "还有那个发出惊天一剑的老者，那种实力，他至今都是心有余悸，那种威力，绝对是超越武王的攻击了，要不是他有麒麟臂，就死的不能在死了。"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "相爱不能相见",
+        "line": "瞬时间，刺骨寒气涌入心口，嘴中扑的就是一口血喷出，而在天火燃烧之下，他才是没有被冻死，不然换做别人，刚才你一击，他已经死了。"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "相爱不能相见",
+        "line": "眼看着她就要被抓走，方晓宇绝望闭上眼睛，但是就在这时，耳边传来嗤嗤的声音，感觉到有温热的东西滴在额头上，睁开眼睛后，却是发现那是血，而刚才偷袭他的人，已经死了。"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "要对付的人",
+        "line": "几分钟后，双方分出了胜负，先前的那批人战败，被打的体无完肤，仓皇间逃窜，而剩下那批人也不好受，一起的八个人，死了三个，重伤三个，还剩下两个是轻伤。"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "要对付的人",
+        "line": "嗖嗖几声后，整个森林都是寂静下来了，片刻后，几具死去的尸体倒地，而他们的心脏上，都是查着一把短刀，整根都是没入进去。"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "要对付的人",
+        "line": "走出没几步后，便是停下，眼角瞄了一眼那些死去的人，有些无奈，这些人都是因为贪婪，最后招引到了杀身之祸。"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "反击杀",
+        "line": "老头有些惊讶，而那黑衣人被打的早就是躺在地上了，一动不动的，明显是死了。"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "反击杀",
+        "line": "“你想怎么着，我也是被他蛊惑过来的。”白冷叶紧咬着牙说道，此刻，他只能把责任推到那死去的黑衣人身上了。"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "反击杀",
+        "line": "目光扫过四周，并没有发现那老头的踪迹，相比是炸死了，心中有些窃喜，最后还是他活下来了。"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "反击杀",
+        "line": "白冷叶吓得瘫软在地上，目光震惊看着那原本死去的黑衣人，对方居然又活过来，还用剑从背后偷袭杀了那尊者！"
+      },
+      {
+        "chapterIndex": 14,
+        "chapterTitle": "事情原因",
+        "line": "他老爸被修法者给打伤，是因为公司的事情，若不是他留下过法器，说不定就已经死了。"
+      },
+      {
+        "chapterIndex": 14,
+        "chapterTitle": "事情原因",
+        "line": "“是我来找死了。”白冷叶冷冷说了一句，一拳头对着隔壁打了过去，同时间，那里一道人影出现，面对白冷叶的一拳，他面色大变，顾不上许多，转身就跑。"
+      },
+      {
+        "chapterIndex": 14,
+        "chapterTitle": "事情原因",
+        "line": "想到这一点，白冷叶才是没有着急杀对方，他要问清楚前后经过，不能白白让对方这么死了。"
+      }
+    ],
+    "revealHits": [
+      {
+        "chapterIndex": 2,
+        "chapterTitle": "往日已经过去",
+        "line": "“原来是魔道之人，今日正好为民除害！”"
+      },
+      {
+        "chapterIndex": 7,
+        "chapterTitle": "相爱不能相见",
+        "line": "“原来是你，连我的侄儿都敢欺负，果真是不怕死！”"
+      }
+    ]
+  }
+}

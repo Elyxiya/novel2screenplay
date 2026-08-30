@@ -1,0 +1,275 @@
+{
+  "schema": "identity-annotation/v1",
+  "sampleId": "zhanlan-medium",
+  "title": "湛蓝之誓（中段118-160章）",
+  "author": "苍岚",
+  "type": "medium",
+  "sourceFile": "e:\\文档\\Downloads\\湛蓝之誓.txt",
+  "originalChapterRange": [
+    118,
+    160
+  ],
+  "chapterCount": 43,
+  "inputTokensHint": 32284,
+  "_note": "诚实标注（与 zhanlan-short 同锚点扩充 43 章）：#4 揭黎恩·怀特真名（此前用化名通了）/'琼斯·博诺佛尔'，视作揭示＋可解析别名；#6 维克托·莫特森去世；#41 平底跌去世系黎恩讲述长辈的背景轶事（促其保重），非本片当下死亡；#37 安德烈皆议论性'牺牲/冻死'，#31 魔兽为其怪物，均非个体死亡事件；#35 娜塔莉/娜塔莎为名字辨析非身份揭示；故均在断言集外。aliasIndex：琼斯·博诺佛尔（黎恩化名）→ 黎恩·怀特；完整别名索引待剧本产物注入。",
+  "deadCharacters": [
+    { "name": "维克托·莫特森", "deathChapter": 6 }
+  ],
+  "reveals": [
+    { "secretName": "黎恩·怀特", "revealChapter": 4 }
+  ],
+  "aliasIndex": { "琼斯·博诺佛尔": "黎恩·怀特" },
+  "charIdToName": {},
+  "scenesRef": null,
+  "candidates": {
+    "deathHits": [
+      {
+        "chapterIndex": 1,
+        "chapterTitle": "帝国的后裔",
+        "line": "而之后伴随着白之王的陨落，魔力的不断退散下，那些需要魔力才能驱动的神奇铠甲也变成了毫无价值大道废品。"
+      },
+      {
+        "chapterIndex": 2,
+        "chapterTitle": "钢铁之门",
+        "line": "原本正在被慢慢解除着的机关突然发出了“当”的一声，像是撞上了什么东西似的卡死了，下个瞬间，齿轮与链条高速地反向运转起来，很明显出了问题。"
+      },
+      {
+        "chapterIndex": 3,
+        "chapterTitle": "秘库之中",
+        "line": "“白之王与十二骑士的故事家喻户晓，而大多数人都不清楚的是，当白之王陨落之后，这十二位神圣骑士深入无人知晓的黑森林中完成白之王最后的任务。"
+      },
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "一族的使命",
+        "line": "特别是白之王封神失败陨落之后，世界上发生了一系列的巨大变化，超乎所有人的想象。"
+      },
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "一族的使命",
+        "line": "这是白之王在陨落之时，所遗留下的预言。"
+      },
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "一族的使命",
+        "line": "矮人之王从他陨落的土地上读取到了这一幕场景，也亲身体验到了那个预言的恐怖。他因见证了末日而双目溃烂，疯癫而死。但他临死之前却将这个秘密告诉了自己的六个儿子，也就是中古时期六位矮人贤者。"
+      },
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "尼斯的背叛",
+        "line": "带着无尽的遗憾，维克托·莫特森死去了。"
+      },
+      {
+        "chapterIndex": 5,
+        "chapterTitle": "尼斯的背叛",
+        "line": "那些死去贵族的领地继承问题也让那个地区陷入了十几年的动乱，间接让上万平民受尽了苦难。"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "机关",
+        "line": "那个海盗急匆匆地跑了回来，一边呼哧着，一边面如死灰地说着：“老、老大，我们来的那条路，已经…完全被堵死了啊！”"
+      },
+      {
+        "chapterIndex": 9,
+        "chapterTitle": "机关",
+        "line": "然而，即便是坑死了贪婪的闯入者，那些宝藏就真的可以放弃吗？"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "尼斯，五十岁",
+        "line": "不过，他却不打算让尼斯这么简单就死掉。谁犯了错都可以一死了之，这种事还是让人很讨厌的。而且，这个骗子对他的作用在短期内恐怕还要比那位艾瑞克船长强得多。"
+      },
+      {
+        "chapterIndex": 12,
+        "chapterTitle": "传奇的一员",
+        "line": "高等精灵施放的魔法让森林化为了树人参加战争，英勇的骑士一剑就斩下了巨龙的头颅，牧羊人用石头砸死了巨人，被神所祝福的大力士在岩浆中与一条巨蟒厮杀三天三夜……这都是这片大陆上耳熟能详的故事。"
+      },
+      {
+        "chapterIndex": 16,
+        "chapterTitle": "回银石城去",
+        "line": "反正死了不少贵族，我可不信他们的卫兵还会誓死保护庄园和产业。"
+      },
+      {
+        "chapterIndex": 16,
+        "chapterTitle": "回银石城去",
+        "line": "没了那群动不动就可以喊着口号去牺牲的疯子，那场战斗无疑会艰难许多。"
+      },
+      {
+        "chapterIndex": 17,
+        "chapterTitle": "立威（上）",
+        "line": "“老爷昨天晚上还没有回来，许多人都猜他已经去世，尤其是那些商人和勋爵们……”"
+      },
+      {
+        "chapterIndex": 18,
+        "chapterTitle": "威慑",
+        "line": "就算没有当场毙命，受了这样的伤，一时间也难以剧烈活动了。"
+      },
+      {
+        "chapterIndex": 18,
+        "chapterTitle": "威慑",
+        "line": "为这些勋爵服务，为的就是钱。但是一旦丧命，钱再多也没什么意义了啊。"
+      },
+      {
+        "chapterIndex": 20,
+        "chapterTitle": "遗书",
+        "line": "“我们敬爱的维克托·莫特森城主先生在之前所发生的动乱中，为了维护广大贵族的利益和平民的生命而奋战，最后英勇地牺牲了自己，保护了大家。”"
+      },
+      {
+        "chapterIndex": 20,
+        "chapterTitle": "遗书",
+        "line": "在混乱中死去的贵族领土的继承与分配、对犯有过错的贵族的惩戒……"
+      },
+      {
+        "chapterIndex": 23,
+        "chapterTitle": "开拓骑士",
+        "line": "如今前任城主维克托已经去世，新的城主克兰沃还是个小孩子，又十分地信任他。"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "底线",
+        "line": "可是他死了，就连尸体在何处在遗嘱里都不肯说明，想必也是有苦衷的吧……”"
+      },
+      {
+        "chapterIndex": 24,
+        "chapterTitle": "底线",
+        "line": "找个机会让小家伙意外身亡，你就能成为子爵……有你重生的眼光加上我的帮助，成为伯爵乃至侯爵都指日可待。"
+      },
+      {
+        "chapterIndex": 25,
+        "chapterTitle": "上路",
+        "line": "“因为我的骗局而丧命的人，和被我施舍救活的人都有上百了吧。”"
+      },
+      {
+        "chapterIndex": 27,
+        "chapterTitle": "立威 上",
+        "line": "“老爷昨天晚上还没有回来，许多人都猜他已经去世，尤其是那些商人和勋爵们……”"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "exterminate",
+        "line": "“而包括魔兽跟死去的万物之中所存在的魔力都是偏向混沌，也就是狂暴并且充满破坏性的。”"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "exterminate",
+        "line": "一击毙命！"
+      },
+      {
+        "chapterIndex": 30,
+        "chapterTitle": "exterminate",
+        "line": "当最后一头腐化魔兽被消灭的时候，那个黑影终于停下来，转过身死死的看着黎恩一行人。"
+      },
+      {
+        "chapterIndex": 36,
+        "chapterTitle": "安德烈",
+        "line": "一切的一切，都在此刻揭开的谜底，引发这一场兽灾的根源，导致数座城镇被破坏，导致成千上万的平民流离失所，导致不知多少佣兵牺牲在异域他乡的罪魁祸首。"
+      },
+      {
+        "chapterIndex": 36,
+        "chapterTitle": "安德烈",
+        "line": "“你知不知道，我为了把这一份生命之泉从黑森林里带出来，花了多少钱么，牺牲了多少人么？"
+      },
+      {
+        "chapterIndex": 36,
+        "chapterTitle": "安德烈",
+        "line": "“但那么多的人，为了你的目的死了……他们至死都还将你当做朋友，当做一个好人！”"
+      },
+      {
+        "chapterIndex": 36,
+        "chapterTitle": "安德烈",
+        "line": "安德烈的神情狂热：“那些只要求你品德高尚的圣人做得到么？他们早就冻死了！他们连自己都救不了！而我这样的人能做的比十个圣人加起来还要多的多！只是暂时的牺牲而已，黎恩，只要你帮我，我们就能够令比今天多无数倍的人得救！”"
+      },
+      {
+        "chapterIndex": 40,
+        "chapterTitle": "乌鸦嘴",
+        "line": "又过了七年，他在平地摔了一跤，当天晚上就去世了。”"
+      },
+      {
+        "chapterIndex": 42,
+        "chapterTitle": "萧条的红河谷",
+        "line": "偏偏还傻到能被地精埋伏到，两百多士兵死了一小半，屁滚尿流地跑了回来。”"
+      }
+    ],
+    "revealHits": [
+      {
+        "chapterIndex": 3,
+        "chapterTitle": "秘库之中",
+        "line": "“琼斯·博诺佛尔……这应该不是你的真名吧？”"
+      },
+      {
+        "chapterIndex": 3,
+        "chapterTitle": "秘库之中",
+        "line": "瞟了一眼似乎不知所措的尼斯，黎恩决定开口回答：“我的本名是黎恩·怀特。”"
+      },
+      {
+        "chapterIndex": 4,
+        "chapterTitle": "一族的使命",
+        "line": "我因此才看到了过去和未来的片段，因此才得知你的存在。简直像是奇迹一样的……从‘那里’归来……竟然是真的。”"
+      },
+      {
+        "chapterIndex": 11,
+        "chapterTitle": "尼斯，五十岁",
+        "line": "没错，刚才的说辞其实是黎恩灵机一动想出来糊弄尼斯的，如果换个时候这位传奇骗子可能不会这么容易上当，但刚才大悲大喜之余，他根本就没有多余的分辨能力。"
+      },
+      {
+        "chapterIndex": 16,
+        "chapterTitle": "回银石城去",
+        "line": "“如果我告诉你，我其实是个身经百战的黄金级强者呢？”"
+      },
+      {
+        "chapterIndex": 19,
+        "chapterTitle": "勒索",
+        "line": "一帮海盗都还穿着之前的衣服，有的勋爵已经认出了他们的真实身份，结果立马变得惊慌失措起来。"
+      },
+      {
+        "chapterIndex": 19,
+        "chapterTitle": "勒索",
+        "line": "可恨的是，他们竟然是自己跳进这个圈套里来的……"
+      },
+      {
+        "chapterIndex": 22,
+        "chapterTitle": "顺服",
+        "line": "虽然金迪尔这种金币其实是纯度不高的合金，重量也颇小，但三百金迪尔也足以支撑普通人家一年的开销。"
+      },
+      {
+        "chapterIndex": 22,
+        "chapterTitle": "顺服",
+        "line": "虽然他们的真实身份是海盗，但兔子不吃窝边草。"
+      },
+      {
+        "chapterIndex": 23,
+        "chapterTitle": "开拓骑士",
+        "line": "只要取得一定信任，说服小城主其实是十分容易的事。"
+      },
+      {
+        "chapterIndex": 25,
+        "chapterTitle": "上路",
+        "line": "莫非，这股莫名的反感其实是嫉妒吗？"
+      },
+      {
+        "chapterIndex": 25,
+        "chapterTitle": "上路",
+        "line": "“就算你说你其实是白之王那个老鬼投胎，也拦不住我跟上来看热闹啊。”"
+      },
+      {
+        "chapterIndex": 28,
+        "chapterTitle": "佛兰肯之剑",
+        "line": "“竟然是矮人的手艺。”"
+      },
+      {
+        "chapterIndex": 35,
+        "chapterTitle": "浣熊人",
+        "line": "“原来是这样，我觉着如果用焖煮****更好，而且李叔叔，我是娜塔莉，不是娜塔莎。”"
+      },
+      {
+        "chapterIndex": 38,
+        "chapterTitle": "兰姆·弗格斯（第一更）",
+        "line": "“原来你喜欢雕刻嘛？这其实是一个很不错的爱好……”"
+      },
+      {
+        "chapterIndex": 38,
+        "chapterTitle": "兰姆·弗格斯（第一更）",
+        "line": "“所以……野性之剑的核心其实是超乎常人的战斗直觉。”"
+      }
+    ]
+  }
+}

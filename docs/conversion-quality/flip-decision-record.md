@@ -108,6 +108,24 @@
 - "31.5k 贴线预期无显著差"：**基本证实**——规则格无差异、后段占位率不降反升，无证据支持"改进显著"。
 - "语义格可能为零则不注入"：成立，语义格未注入。
 
+### T2.5 决胜结论（2026-08-30 · zhanlan-long 58.8k 超限长样本实测）
+
+在贴线 medium（xiuzhen-medium 31.5k）之外，补跑了**真实超限长样本** `zhanlan-long`（58.8k token / 90 章 / 远超 30k 截断上限；标注含 4 死 + 1 揭示），产出完整分层曲线 `docs/conversion-quality/1b-layered-curve-zhanlan-long.md`。这是 T2.5 尾部决胜数据：
+
+| 段 | 旧 truncate | 新 mapreduce | Δ(新−旧) |
+|---|---|---|---|
+| 前段 | 10.3% | 3.3% | −7.0pt |
+| 中段 | 20.4% | 5.3% | −15.1pt |
+| **后段(tail)** | **24.8%** | **29.3%** | **+4.5pt** |
+| 全段 | 18.0% | 12.5% | −5.5pt |
+
+- **识别面扩容显著**：charIdSet 20 → 73，前/中段占位率骤降（截断不损伤尾部之前的角色）；
+- **但尾段未压平**：后段占位率不降反升（+4.5pt），mapreduce **未修复 toc 尾部截断损伤**，方向不利于 mapreduce；
+- **规则格确定性差异 = 0**（两路径同漏 `reveal-before-chapter` 于 ch89，与截断无关）；
+- **R1/R2/R3 判定**：语义断言为零 → 判据退化；尾段差 +4.5pt（新劣于旧）远 < Δ_tail(71/35)、且总分尾段劣化 → **R3 不满足**；**最终 flip = `false`**。
+
+结论：mapreduce 收益集中于「识别面扩容」，**未带来尾部截断损伤的修复**；叠加 medium 贴线样本（后段 +6.4pt 同样反向），**两份超限样本均未见支持翻转的方向性证据**，flip 稳固保持 `false`。
+
 ### Δ_tail 回填（2026-08-30 · judge 稳定性基线，合成贴线内容）
 
 `flip-decision-record.md` 此前 `Δ_tail 无实值`；现以 `scripts/eval/run-stability.mjs`（合成贴线语义片段 × k=5 双评委，temp 0.2/0.7）跑出 judge 复跑方差基线，报告见 `docs/conversion-quality/task2-4-stability.md`：

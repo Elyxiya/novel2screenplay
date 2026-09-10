@@ -82,6 +82,13 @@ export const SceneBoundarySchema = z.object({
 export const Phase2OutputSchema = z.object({
   scenes: z.array(SceneBoundarySchema),
   rawResponses: z.array(z.string()),
+  /** 后处理事件统计（FIX-03）：合并/重叠修正次数——属过程信息、读时不可复现，随产物落库 */
+  stats: z
+    .object({
+      mergedPairs: z.number().int().min(0),
+      overlapFixes: z.number().int().min(0),
+    })
+    .optional(),
 });
 
 // ── Phase 3: converted scene ──
@@ -101,6 +108,12 @@ export const Phase3ContentBlockSchema = z.object({
   ),
 });
 
+export const Phase3SceneErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  attempts: z.number().int().optional(),
+});
+
 export const Phase3OutputSchema = z.object({
   sceneNumber: z.number().int(),
   slugline: z.string(),
@@ -110,6 +123,8 @@ export const Phase3OutputSchema = z.object({
   content: z.array(Phase3ContentBlockSchema),
   summary: z.string(),
   confidence: z.number().min(0).max(1),
+  /** 场景级失败明细（FIX-03/FIX-22）：降级场景携带，供聚合与人工定位 */
+  error: Phase3SceneErrorSchema.optional(),
 });
 
 // ── Pipeline job state (persisted JSON, consumed by shared store) ──
@@ -133,5 +148,6 @@ export type Phase1Output = z.infer<typeof Phase1OutputSchema>;
 export type SceneBoundary = z.infer<typeof SceneBoundarySchema>;
 export type Phase2Output = z.infer<typeof Phase2OutputSchema>;
 export type Phase3ContentBlock = z.infer<typeof Phase3ContentBlockSchema>;
+export type Phase3SceneError = z.infer<typeof Phase3SceneErrorSchema>;
 export type Phase3Output = z.infer<typeof Phase3OutputSchema>;
 export type PipelineJobState = z.infer<typeof PipelineJobStateSchema>;

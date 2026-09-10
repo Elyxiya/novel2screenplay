@@ -13,6 +13,7 @@ import {
   buildOpenThreadContext,
 } from './phase3-context';
 import type { MetricsSink } from './metrics';
+import { classifyJobError } from '../errors';
 
 /** Task 3 convertScenes 可选增强上下文（向后兼容，未传则行为与改造前一致） */
 export interface Phase3ConvertOptions {
@@ -315,7 +316,7 @@ export class Phase3SceneConverter {
     jobStore.update(jobId, j => ({
       ...j, scenesStatus: (j.scenesStatus || []).map(s => s.sceneIndex === scene.sceneIndex ? { ...s, status: 'failed' as const } : s),
     }));
-    return this.degradedScene(scene, `转换失败: ${lastError?.message}`);
+    return this.degradedScene(scene, `转换失败: ${lastError?.message}`, 3);
   }
 
   /**
@@ -542,12 +543,18 @@ export class Phase3SceneConverter {
     });
   }
 
-  private degradedScene(scene: SceneBoundary, reason: string): Phase3Output {
+  private degradedScene(scene: SceneBoundary, reason: string, attempts?: number): Phase3Output {
     return {
       sceneNumber: scene.sceneIndex, slugline: scene.draftSlugline, timeOfDay: 'unknown',
       locationId: 'loc_00', characterIds: [],
       content: [{ type: 'action', description: `[场景转换失败: ${reason}]`, sourceRefs: [] }],
       summary: scene.summary, confidence: 0.1,
+      // FIX-03/FIX-22：场景级失败明细（供聚合与人工定位）
+      error: {
+        code: classifyJobError(new Error(reason)),
+        message: reason,
+        ...(attempts !== undefined ? { attempts } : {}),
+      },
     };
   }
 }

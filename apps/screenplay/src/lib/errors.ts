@@ -15,10 +15,11 @@ export type JobErrorCode =
   | 'rate_limit'        // 429 / 限流
   | 'auth'              // 401/403 / key 无效
   | 'timeout'           // 请求超时（消息级识别）
-  | 'aborted'           // 中断（含超时触发的 AbortError，两者无法可靠区分）
+  | 'aborted'           // 中断/取消（含超时触发的 AbortError，两者无法可靠区分）
   | 'provider_5xx'      // 提供方 5xx
   | 'provider_4xx'      // 提供方 4xx（除 401/403/429）
   | 'insufficient_context' // LLM 报告原文信息不足
+  | 'budget_blocked'    // 预算守卫拦截（未调用 LLM 的本地拒绝）
   | 'internal';         // 其余一律归此码
 
 export interface JobErrorPayload {
@@ -72,7 +73,9 @@ export function classifyJobError(err: unknown): JobErrorCode {
   if (status !== undefined && status >= 500 && status < 600) return 'provider_5xx';
   if (status !== undefined && status >= 400 && status < 500) return 'provider_4xx';
   if (/insufficient_context|信息不足/.test(message)) return 'insufficient_context';
+  if (/预算超限|budget.?blocked/i.test(message)) return 'budget_blocked';
   if (/timeout|timed?\s*out|超时|ETIMEDOUT/i.test(message)) return 'timeout';
+  if (/取消|cancell?ed|aborted/i.test(message)) return 'aborted';
   return 'internal';
 }
 

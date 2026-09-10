@@ -11,6 +11,9 @@ export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts
  * Phase 2: Segment chapters into scenes based on time/location/character changes.
  */
 export class Phase2Segmenter {
+  /** FIX-03：后处理事件计数（每次 segment() 开始时重置） */
+  private postProcessStats = { mergedPairs: 0, overlapFixes: 0 };
+
   constructor(
     private provider: LLMProvider,
     private ctxManager: ContextManager,
@@ -114,11 +117,13 @@ export class Phase2Segmenter {
     // Post-processing: run within each chapter independently to avoid cross-chapter offset collision.
     // Each chapter's offsets start from 0, so we must NOT run resolveOverlappingBoundaries
     // on the global flat list. Instead, group by chapter and resolve per-chapter.
+    // FIX-03：后处理事件计数（过程信息，读时不可复现 → 随产物落库）
+    this.postProcessStats = { mergedPairs: 0, overlapFixes: 0 };
     let scenes = allScenes.filter(s => s.originalEndOffset > s.originalStartOffset);
     scenes = this.mergeAdjacentScenes(scenes);
     scenes = this.resolveOverlappingPerChapter(scenes);
-    console.log(`[Phase2] 场景后处理完成, 最终 ${scenes.length} 个场景`);
-    return { scenes, rawResponses };
+    console.log(`[Phase2] 场景后处理完成, 最终 ${scenes.length} 个场景（合并 ${this.postProcessStats.mergedPairs}、重叠修正 ${this.postProcessStats.overlapFixes}）`);
+    return { scenes, rawResponses, stats: { ...this.postProcessStats } };
   }
 
   /**
@@ -183,6 +188,8 @@ export class Phase2Segmenter {
   private mergeAdjacentScenes(scenes: SceneBoundary[]): SceneBoundary[] {
     if (scenes.length <= 1) return scenes;
 
+    const before = scenes.length;
+
     const MIN_MERGE_CHARS = 800;
     const merged: SceneBoundary[] = [scenes[0]];
 
@@ -216,6 +223,8 @@ export class Phase2Segmenter {
         merged.push(current);
       }
     }
+
+    this.postProcessStats.mergedPairs += before - merged.length;
 
     return merged.map((s, i) => ({ ...s, sceneIndex: i + 1 }));
   }
@@ -253,6 +262,7 @@ export class Phase2Segmenter {
 
         if (start < currentEnd) {
           // Overlap detected — truncate this scene to start from where the previous one ended
+          this.postProcessStats.overlapFixes += 1;
           if (end > currentEnd) {
             resolved.push({ ...scene, sceneIndex: ++globalIndex });
             currentEnd = end;

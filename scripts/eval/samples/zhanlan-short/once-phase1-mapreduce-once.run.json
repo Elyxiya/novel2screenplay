@@ -1,0 +1,16 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "once-phase1-mapreduce-once",
+  "model": "deepseek-chat",
+  "actualModelId": "deepseek-chat",
+  "jobId": "job_1789066893149_qx1khu",
+  "finalStatus": "completed",
+  "elapsedMs": 66553,
+  "scenes": 26,
+  "characters": 15,
+  "charIdSet": 13,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T19:02:39.651Z"
+}

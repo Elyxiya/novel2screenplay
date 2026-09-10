@@ -1,0 +1,16 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "once-phase1-longctx-once",
+  "model": "deepseek-chat",
+  "actualModelId": "deepseek-chat",
+  "jobId": "job_1789066784739_llbqpx",
+  "finalStatus": "completed",
+  "elapsedMs": 71544,
+  "scenes": 29,
+  "characters": 12,
+  "charIdSet": 7,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T19:00:56.233Z"
+}

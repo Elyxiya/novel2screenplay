@@ -173,11 +173,12 @@ function actionCameraMove(part: string): CameraMove {
 
 // ── 时长 ──
 
-function estimateDialogueDuration(line: string): number {
+/** FIX-12/B-13：时长估算导出供分集规划复用（避免公式双源） */
+export function estimateDialogueDuration(line: string): number {
   return Math.max(3, Math.ceil(line.length / DIALOGUE_CHARS_PER_SECOND));
 }
 
-function estimateActionDuration(description: string): number {
+export function estimateActionDuration(description: string): number {
   return clamp(3 + Math.ceil(description.length / ACTION_SECONDS_PER_25_CHARS), 3, 15);
 }
 

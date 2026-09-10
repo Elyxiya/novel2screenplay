@@ -1,7 +1,7 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as CONVERT_PROMPT } from '../llm/prompts/convert-scene';
 import { ContextManager } from './ContextManager';
-import type { SceneBoundary, RawCharacter, RawLocation, Phase3Output, SettingCard, UserProfile } from '@novel/contracts/pipeline';
+import type { SceneBoundary, RawCharacter, RawLocation, Phase3Output, SettingCard, UserProfile, StyleProfile } from '@novel/contracts/pipeline';
 import { TokenBucket } from '../llm/rate-limiter';
 import type { JobStore } from '../store/job-store';
 import { safeJsonParse, looksTruncated } from '../utils/safe-json';
@@ -16,6 +16,7 @@ import {
 import type { MetricsSink } from './metrics';
 import { classifyJobError } from '../errors';
 import { formatUserProfileBlock } from './user-profile';
+import { formatStyleBlock } from './style-profile';
 
 /** Task 3 convertScenes 可选增强上下文（向后兼容，未传则行为与改造前一致） */
 export interface Phase3ConvertOptions {
@@ -25,6 +26,8 @@ export interface Phase3ConvertOptions {
   metrics?: MetricsSink;
   /** FIX-13：用户自定义设定（常驻注入，≤500 字符；未传零变化） */
   userProfile?: UserProfile;
+  /** FIX-12：风格五轴（常驻注入，≤400 字符；未传零变化） */
+  styleProfile?: StyleProfile;
 }
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
@@ -235,6 +238,7 @@ export class Phase3SceneConverter {
     summaries?: string, threads?: string,
     metrics?: MetricsSink,
     profileBlock?: string,
+    styleBlock?: string,
   ): Promise<Phase3Output> {
     const contextParts = [
       `角色: ${charContext}`,
@@ -245,6 +249,7 @@ export class Phase3SceneConverter {
     if (summaries) contextParts.push(`前情摘要:\n${summaries}`);
     if (threads) contextParts.push(`伏笔线索:\n${threads}`);
     if (profileBlock) contextParts.push(profileBlock); // FIX-13：用户设定常驻注入
+    if (styleBlock) contextParts.push(styleBlock); // FIX-12：风格五轴常驻注入
     contextParts.push('', partText);
     const messages: LLMMessage[] = [
       { role: 'system', content: CONVERT_PROMPT },
@@ -475,6 +480,7 @@ export class Phase3SceneConverter {
     const charIdMap = this.buildCharIdMap(characters);
     // FIX-13：用户设定块（每场景常驻；空 profile 为空串不拼接）
     const profileBlock = formatUserProfileBlock(opts?.userProfile);
+    const styleBlock = formatStyleBlock(opts?.styleProfile);
     console.log(`[Phase3] 开始转换 ${scenes.length} 个场景, semaphore=3, rateLimit=50/min`);
 
     // Initialize job progress
@@ -527,7 +533,7 @@ export class Phase3SceneConverter {
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, profileBlock);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, profileBlock, styleBlock);
         convResults.push(result);
       }
 

@@ -12,7 +12,7 @@ import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
-import type { Phase1Output, UserProfile } from '@novel/contracts/pipeline';
+import type { Phase1Output, StyleProfile, UserProfile } from '@novel/contracts/pipeline';
 import { cleanNovelText } from '../preprocess/clean';
 import { applyUserProfile } from './user-profile';
 
@@ -69,6 +69,8 @@ export class PipelineEngine {
     reusePhase1FromJobId?: string;
     /** FIX-13：用户自定义设定（意图通道；路由层已按 UserProfileSchema 校验） */
     userProfile?: UserProfile;
+    /** FIX-12：风格五轴（路由层已完成预设解析 + StyleProfileSchema 校验） */
+    styleProfile?: StyleProfile;
   }): Promise<string> {
     // FIX-11：章节解析前清洗噪声行（盗版水印/广告/章尾引导/乱码）；留痕进 pipelineState.preprocess
     const { text: cleanedNovelText, report: preprocessReport } = cleanNovelText(input.novelText);
@@ -162,6 +164,19 @@ export class PipelineEngine {
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `已载入用户设定（角色覆盖 ${p.characters?.length ?? 0} / 称谓锁定 ${p.appellations?.length ?? 0} / 约束 ${p.constraints?.length ?? 0}）` },
+        ],
+      }));
+    }
+
+    // FIX-12：风格五轴载入（落库；Phase3 常驻注入 + 分集/序列化按 preset 消费）
+    if (input.styleProfile) {
+      const s = input.styleProfile;
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, styleProfile: s },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `已载入风格五轴（${s.channel}/${s.dialoguePolicy}/vo=${s.voPolicy}/${s.artifactForm}，集长 ${s.rhythmUnit.episodeTargetMinutes}min·${s.rhythmUnit.hookPolicy}）` },
         ],
       }));
     }
@@ -260,7 +275,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         undefined,
-        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile },
+        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile },
       );
 
       // Merge old + new results
@@ -427,6 +442,7 @@ export class PipelineEngine {
 
     // FIX-13：融合用户设定（用户 > 原文；差异记 conflict，不静默覆盖；profile hash 留痕）
     const activeProfile = jobStore.get(jobId)?.pipelineState.userProfile;
+    const activeStyle = jobStore.get(jobId)?.pipelineState.styleProfile;
     if (activeProfile) {
       const { phase1: mergedPhase1, report: profileReport } = applyUserProfile(phase1Output, activeProfile);
       phase1Output = mergedPhase1;
@@ -505,7 +521,7 @@ export class PipelineEngine {
       jobStore,
       jobId,
       undefined,
-      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile },
+      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle },
     );
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;

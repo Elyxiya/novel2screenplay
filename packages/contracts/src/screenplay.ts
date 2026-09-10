@@ -48,6 +48,22 @@ export const DialogueBlockSchema = z.object({
   sourceRefs: z.array(SourceRefSchema).default([]),
 });
 
+/**
+ * FIX-12（C6，A 案第一阶段）：内心独白/旁白块的独立 schema——为 audio 通道风格提供载体定义。
+ *
+ * **分阶段迁移（B-22）**：暂未并入 ContentBlockSchema 并集——UI 消费端
+ * （SceneCompare/SceneEditor 等）尚未适配第三类型，强行并入会让未迁移消费端类型爆炸。
+ * 并入时机：前端消费端适配随 B-18 批完成后，一行式并入并集。
+ */
+export const MonologueBlockSchema = z.object({
+  type: z.literal('monologue'),
+  /** 说话声部（缺省 = 叙述者/NV） */
+  speaker: z.string().optional(),
+  line: z.string().min(1),
+  direction: z.string().optional(),
+  sourceRefs: z.array(SourceRefSchema).default([]),
+});
+
 export const ContentBlockSchema = z.discriminatedUnion('type', [
   ActionBlockSchema,
   DialogueBlockSchema,

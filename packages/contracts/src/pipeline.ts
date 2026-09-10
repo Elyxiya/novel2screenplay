@@ -130,6 +130,27 @@ export const UserProfileSchema = z.object({
   targetFormat: z.string().optional(),
 });
 
+// ── FIX-12: 风格五轴参数化（C6 契约域）──
+
+/**
+ * 风格 = 五轴参数（非离散模板；预设只是参数组合的快捷方式）：
+ * ① channel 信息通道：visual（画面承担叙事）| audio（一切必须可听）
+ * ② dialoguePolicy 对白策略：implicit（潜台词/低密度）| direct（直给/高密度）| plain（平实叙述型）
+ * ③ rhythmUnit 节奏单元：episodeTargetMinutes + hookPolicy（集末钩子）
+ * ④ voPolicy 旁白地位：forbidden（忌用）| allowed（限量）| primary（主叙事通道）
+ * ⑤ artifactForm 下游产物形态：screenplay（文学剧本）| dubbing-script（配音脚本）
+ */
+export const StyleProfileSchema = z.object({
+  channel: z.enum(['visual', 'audio']),
+  dialoguePolicy: z.enum(['implicit', 'direct', 'plain']),
+  rhythmUnit: z.object({
+    episodeTargetMinutes: z.number().positive(),
+    hookPolicy: z.enum(['cliffhanger', 'none']),
+  }),
+  voPolicy: z.enum(['forbidden', 'allowed', 'primary']),
+  artifactForm: z.enum(['screenplay', 'dubbing-script']),
+});
+
 // ── Phase 2: scene boundaries ──
 
 export const SceneBoundarySchema = z.object({
@@ -209,6 +230,7 @@ export type UserCharacterOverride = z.infer<typeof UserCharacterOverrideSchema>;
 export type PlotConstraint = z.infer<typeof PlotConstraintSchema>;
 export type AppellationLock = z.infer<typeof AppellationLockSchema>;
 export type UserProfile = z.infer<typeof UserProfileSchema>;
+export type StyleProfile = z.infer<typeof StyleProfileSchema>;
 export type RawLocation = z.infer<typeof RawLocationSchema>;
 export type TimelineHint = z.infer<typeof TimelineHintSchema>;
 export type ChapterSummary = z.infer<typeof ChapterSummarySchema>;

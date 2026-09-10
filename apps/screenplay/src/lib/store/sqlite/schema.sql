@@ -31,7 +31,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   novel_id TEXT,
 
   -- 归属用户（多用户数据隔离，NULL 表示旧库遗留数据）
-  user_id TEXT
+  user_id TEXT,
+
+  -- FIX-05：resume 恢复锁（DB 持久化 CAS + TTL；NULL 表示未加锁）
+  lock_owner TEXT,
+  locked_at INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);

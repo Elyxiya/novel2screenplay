@@ -15,6 +15,9 @@ import type { QualityAssessment } from '../multi-agent/handoff-protocol';
 import type { JobMetrics } from '../pipeline/metrics';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
 
+/** FIX-05：恢复锁 TTL（毫秒）——进程崩溃后由 TTL 自动释放，锁可被夺 */
+export const RECOVER_LOCK_TTL_MS = 10 * 60_000;
+
 /** Internal stored job with pipeline state */
 export interface StoredJob {
   id: string;
@@ -64,6 +67,8 @@ export interface StoredJob {
 export class JobStore {
   private repository = getJobRepository();
   private recoveringJobs = new Set<string>();
+  /** FIX-05：本进程的锁持有者标识（写进 jobs.lock_owner，用于跨进程 CAS 与归属校验） */
+  private readonly lockOwner = `owner_${process.pid}_${Math.random().toString(36).slice(2, 8)}`;
 
   create(config: {
     novelText: string;
@@ -128,15 +133,26 @@ export class JobStore {
     return this.repository.list(status);
   }
 
-  /** Resume lock management */
+  /**
+   * Resume lock management（FIX-05：DB 持久化 CAS + TTL，跨进程安全）。
+   * 进程内 Set 保留为快路径；DB 锁为事实源（崩溃后由 TTL 释放）。
+   */
   tryLockRecover(jobId: string): boolean {
     if (this.recoveringJobs.has(jobId)) return false;
-    this.recoveringJobs.add(jobId);
-    return true;
+    const acquired = this.repository.tryAcquireRecoverLock(jobId, this.lockOwner, RECOVER_LOCK_TTL_MS);
+    if (acquired) this.recoveringJobs.add(jobId);
+    return acquired;
+  }
+
+  /** 心跳续锁：长时间恢复期间周期调用，仅在仍持锁时生效 */
+  refreshRecoverLock(jobId: string): boolean {
+    if (!this.recoveringJobs.has(jobId)) return false;
+    return this.repository.refreshRecoverLock(jobId, this.lockOwner);
   }
 
   unlockRecover(jobId: string): void {
     this.recoveringJobs.delete(jobId);
+    this.repository.releaseRecoverLock(jobId, this.lockOwner);
   }
 
   isRecovering(jobId: string): boolean {

@@ -157,6 +157,13 @@ function migrateJobColumns(database: Database.Database): void {
     if (!columns.includes('novel_id')) {
       missingColumns.push({ name: 'novel_id', ddl: 'novel_id TEXT' });
     }
+    // FIX-05：resume 恢复锁列（旧库幂等补齐）
+    if (!columns.includes('lock_owner')) {
+      missingColumns.push({ name: 'lock_owner', ddl: 'lock_owner TEXT' });
+    }
+    if (!columns.includes('locked_at')) {
+      missingColumns.push({ name: 'locked_at', ddl: 'locked_at INTEGER' });
+    }
 
     for (const col of missingColumns) {
       database.exec(`ALTER TABLE jobs ADD COLUMN ${col.ddl}`);

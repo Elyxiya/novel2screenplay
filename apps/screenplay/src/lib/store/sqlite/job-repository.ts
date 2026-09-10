@@ -68,6 +68,15 @@ export interface JobRepository {
   listByDateRange(startTime: number, endTime: number): StoredJob[];
   /** 删除某用户全部任务（清空历史），返回删除条数 */
   deleteByUser(userId: string): number;
+  /**
+   * FIX-05：尝试获取恢复锁（DB 持久化 CAS，跨进程安全）。
+   * 成功条件：锁为空，或 locked_at 已早于 now - ttlMs（过期可夺）。
+   */
+  tryAcquireRecoverLock(jobId: string, owner: string, ttlMs: number): boolean;
+  /** 刷新锁的持有时间（心跳）；仅在仍持有锁时返回 true */
+  refreshRecoverLock(jobId: string, owner: string): boolean;
+  /** 释放锁；仅在 owner 匹配时返回 true */
+  releaseRecoverLock(jobId: string, owner: string): boolean;
 }
 
 class JobRepositoryImpl implements JobRepository {
@@ -211,6 +220,34 @@ class JobRepositoryImpl implements JobRepository {
   /**
    * 删除某用户全部任务（清空历史），返回删除条数
    */
+  tryAcquireRecoverLock(jobId: string, owner: string, ttlMs: number): boolean {
+    const db = getEngine();
+    const now = Date.now();
+    const res = db
+      .prepare(
+        `UPDATE jobs SET lock_owner = @owner, locked_at = @now
+         WHERE id = @id AND (lock_owner IS NULL OR locked_at < @expireBefore)`,
+      )
+      .run({ id: jobId, owner, now, expireBefore: now - ttlMs });
+    return res.changes > 0;
+  }
+
+  refreshRecoverLock(jobId: string, owner: string): boolean {
+    const db = getEngine();
+    const res = db
+      .prepare('UPDATE jobs SET locked_at = @now WHERE id = @id AND lock_owner = @owner')
+      .run({ id: jobId, now: Date.now(), owner });
+    return res.changes > 0;
+  }
+
+  releaseRecoverLock(jobId: string, owner: string): boolean {
+    const db = getEngine();
+    const res = db
+      .prepare('UPDATE jobs SET lock_owner = NULL, locked_at = NULL WHERE id = @id AND lock_owner = @owner')
+      .run({ id: jobId, owner });
+    return res.changes > 0;
+  }
+
   deleteByUser(userId: string): number {
     const db = getEngine();
     return db.prepare('DELETE FROM jobs WHERE user_id = ?').run(userId).changes;

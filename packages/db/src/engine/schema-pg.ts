@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   config TEXT NOT NULL,
   pipeline_state TEXT,
   novel_id TEXT,
-  user_id TEXT
+  user_id TEXT,
+  lock_owner TEXT,
+  locked_at BIGINT
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
@@ -194,5 +196,13 @@ ON CONFLICT (version) DO NOTHING;
 
 INSERT INTO schema_version (version, applied_at, description)
 VALUES (6, (extract(epoch FROM now()) * 1000)::bigint, 'Encrypt user_llm.api_key (AES-GCM), migrate legacy plaintext')
+ON CONFLICT (version) DO NOTHING;
+
+-- FIX-05：jobs 恢复锁列——旧库幂等补列（新库已含于上方 CREATE TABLE）
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS lock_owner TEXT;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS locked_at BIGINT;
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (7, (extract(epoch FROM now()) * 1000)::bigint, 'Add jobs.lock_owner/locked_at: resume recovery lock')
 ON CONFLICT (version) DO NOTHING;
 `;

@@ -1,6 +1,6 @@
 import type { LLMProvider } from '../llm/types';
 import { resolveProvider, resolveDefaultProvider } from '../llm/llm-gateway';
-import { jobStore } from '../store/job-store';
+import { jobStore, RECOVER_LOCK_TTL_MS } from '../store/job-store';
 import { parseNovel } from '../novel/parser';
 import { ContextManager } from './ContextManager';
 import { createPhase1Budget } from './phase1-budget';
@@ -146,6 +146,11 @@ export class PipelineEngine {
       throw new Error(`任务 ${jobId} 正在恢复中`);
     }
 
+    // FIX-05：心跳续锁（TTL/3 周期）——长恢复期间防止锁过期被其他进程夺走
+    const heartbeat = setInterval(() => {
+      jobStore.refreshRecoverLock(jobId);
+    }, Math.floor(RECOVER_LOCK_TTL_MS / 3));
+
     try {
       const failedScenes = job.scenesStatus
         .filter((s) => s.status === 'failed' || s.status === 'pending')
@@ -223,6 +228,7 @@ export class PipelineEngine {
         ],
       }));
     } finally {
+      clearInterval(heartbeat);
       jobStore.unlockRecover(jobId);
     }
   }

@@ -11,6 +11,7 @@ import type {
 } from '@novel/contracts/pipeline';
 import type { ChapterExtraction } from './phase1-map';
 import { buildAliasIndex } from './setting-card';
+import { detectNameConflicts, type NameConflictCandidate } from './phase1-name-conflicts';
 
 /** 合并决策：LLM 返回的归并分组 */
 export interface MergeMember {
@@ -46,6 +47,8 @@ export interface MergeLogEntry {
 export interface ReduceResult extends Omit<Phase1Output, 'aliasIndex'> {
   aliasIndex: Map<string, string>;
   mergeLog: MergeLogEntry[];
+  /** FIX-14：同名/近名冲突预警候选（归并前检测；只预警不裁决） */
+  nameConflicts: NameConflictCandidate[];
   /** 预算 guards 未通过，LLM 合并决策被跳过（降级为朴素 merge） */
   budgetBlocked?: boolean;
 }
@@ -113,6 +116,11 @@ export async function reduceSetting(
   options?: ReduceOptions,
 ): Promise<ReduceResult> {
   const flatChars = flattenCharacters(results);
+  // FIX-14：归并决策前的确定性冲突预警（只提示人工，不影响归并决策本身）
+  const nameConflicts = detectNameConflicts(flatChars);
+  if (nameConflicts.length > 0) {
+    console.log(`[Phase1-reduce] 同名/近名冲突预警 ${nameConflicts.length} 条：${nameConflicts.map((c) => c.kind).join('、')}`);
+  }
   const flatLocs = flattenLocations(results);
   const flatTimeline = flattenTimelineHints(results);
   const chapterSummaries = flattenChapterSummaries(results);
@@ -190,6 +198,7 @@ export async function reduceSetting(
     rawResponse,
     aliasIndex,
     mergeLog,
+    nameConflicts,
     ...(budgetBlocked ? { budgetBlocked: true } : {}),
   };
 }

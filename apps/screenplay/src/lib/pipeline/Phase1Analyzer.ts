@@ -271,6 +271,8 @@ export class Phase1Analyzer {
       timelineHints: reduced.timelineHints,
       settingCard: reduced.settingCard,
       aliasIndex: Object.fromEntries(reduced.aliasIndex),
+      // FIX-14：同名/近名冲突候选随产物持久化（供人工复核与 debug 页展示）
+      nameConflicts: reduced.nameConflicts,
       rawResponse: reduced.rawResponse,
     };
   }

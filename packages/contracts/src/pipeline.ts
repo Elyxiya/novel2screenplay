@@ -74,12 +74,22 @@ export const SettingCardSchema = z.object({
   openThreads: z.array(OpenThreadSchema),
 });
 
+/** FIX-14：同名/近名冲突预警候选（只提示人工，不参与归并裁决） */
+export const NameConflictCandidateSchema = z.object({
+  kind: z.enum(['alias-collision', 'circular-alias', 'far-apart-same-name']),
+  names: z.array(z.string()),
+  chapters: z.array(z.number().int()),
+  message: z.string(),
+});
+
 export const Phase1OutputSchema = z.object({
   characters: z.array(RawCharacterSchema),
   locations: z.array(RawLocationSchema),
   timelineHints: z.array(TimelineHintSchema),
   /** 全局设定卡（map-reduce 路径产出；旧截断路径无此字段） */
   settingCard: SettingCardSchema.optional(),
+  /** FIX-14：归并前检测的同名/近名冲突候选（map-reduce 产出） */
+  nameConflicts: z.array(NameConflictCandidateSchema).optional(),
   /**
    * 别名 → canonical 名 索引（map-reduce 产出）。
    * 注：评估脚本（run-conversion/identity）消费该字段；此前被 Analyzer 剥离导致
@@ -237,6 +247,7 @@ export type ChapterSummary = z.infer<typeof ChapterSummarySchema>;
 export type OpenThread = z.infer<typeof OpenThreadSchema>;
 export type SettingCard = z.infer<typeof SettingCardSchema>;
 export type Phase1Output = z.infer<typeof Phase1OutputSchema>;
+export type NameConflictCandidate = z.infer<typeof NameConflictCandidateSchema>;
 export type SceneBoundary = z.infer<typeof SceneBoundarySchema>;
 export type Phase2Output = z.infer<typeof Phase2OutputSchema>;
 export type Phase3ContentBlock = z.infer<typeof Phase3ContentBlockSchema>;

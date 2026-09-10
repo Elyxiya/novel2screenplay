@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STYLE_PRESETS } from '../../apps/screenplay/src/lib/pipeline/style-profile';
 import { planEpisodes, serializeDubbingScript, estimateSceneDuration, detectSceneHook } from '../../apps/screenplay/src/lib/drama/episodes';
+import { serializeToMarkdown } from '@novel/contracts/serializers';
 import type { Screenplay } from '@novel/contracts/screenplay';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -88,4 +89,15 @@ for (const presetName of ['short-drama', 'audio-drama']) {
   const outFile = path.join(outDir, `style-preview-${presetName}.md`);
   writeFileSync(outFile, lines.join('\n'));
   console.log(`[style-preview] ${presetName}: ${plan.stats.episodeCount} 集 / 总 ${plan.stats.totalDurationSec}s / 钩子 ${plan.stats.hookEndings} → ${outFile}`);
+
+  // FIX-15：md 导出预览（short-drama 档，不含分集视图时也可作为纯场景稿）
+  const exportMd = arg('export-md');
+  if (exportMd && presetName === 'short-drama') {
+    const md = serializeToMarkdown(screenplay as unknown as Parameters<typeof serializeToMarkdown>[0], {
+      episodes: plan.episodes,
+      includeSourceRefs: process.argv.includes('--source-refs'),
+    });
+    writeFileSync(exportMd, md);
+    console.log(`[style-preview] md 导出 → ${exportMd}（${md.length} 字符）`);
+  }
 }

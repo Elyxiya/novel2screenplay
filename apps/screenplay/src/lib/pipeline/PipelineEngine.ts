@@ -12,6 +12,7 @@ import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
+import type { Phase1Output } from '@novel/contracts/pipeline';
 
 /** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
 const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
@@ -62,6 +63,8 @@ export class PipelineEngine {
     selectedChapters?: number[];
     novelId?: string;
     userId?: string;
+    /** B-09：显式复用来源任务的 Phase1 设定卡（跳过本次 LLM 分析，用户主动选择） */
+    reusePhase1FromJobId?: string;
   }): Promise<string> {
     // Parse novel text into chapters
     const parseResult = parseNovel(input.novelText);
@@ -88,6 +91,19 @@ export class PipelineEngine {
       );
     }
 
+    // B-09：复用来源校验（先校验后建 job，避免产生无主的半成品任务）
+    let reusablePhase1: Phase1Output | undefined;
+    if (input.reusePhase1FromJobId) {
+      const source = jobStore.get(input.reusePhase1FromJobId);
+      if (!source?.pipelineState.phase1Output) {
+        throw new Error('复用的设定卡不存在（来源任务无 Phase1 产物）');
+      }
+      if (source.userId && source.userId !== input.userId) {
+        throw new Error('无权复用该任务的设定卡');
+      }
+      reusablePhase1 = source.pipelineState.phase1Output;
+    }
+
     // Create job — store ALL chapters (for result page original text)
     const jobId = jobStore.create({
       novelText: input.novelText,
@@ -102,6 +118,18 @@ export class PipelineEngine {
       author: input.author,
       userId: input.userId,
     });
+
+    // B-09：写入复用设定卡（审计留痕；runPipeline 将据此跳过 Phase 1）
+    if (reusablePhase1) {
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, phase1Output: reusablePhase1 },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `Phase 1: 复用设定卡（来源任务 ${input.reusePhase1FromJobId}）` },
+        ],
+      }));
+    }
 
     // Start pipeline asynchronously (don't await — let it run in background)
     this.runPipeline(jobId, provider, selectedChapterObjs, input).catch((err) => {
@@ -289,55 +317,78 @@ export class PipelineEngine {
       phaseTimings: { ...metrics.value.phaseTimings },
     });
 
-    // ── Phase 1: Analyze ──
+    // ── Phase 1: Analyze（B-09：已导入历史设定卡时跳过 LLM 分析）──
     const t1 = Date.now();
-    console.log(`[${jobId}] Phase 1: 开始分析角色与地点 (${chapters.length} 章, ${chapters.reduce((s,c) => s + c.text.length, 0)} 字)`);
-    jobStore.update(jobId, (job) => {
-      const updated = {
-        ...job,
-        status: 'analyzing' as const,
-        currentPhase: 1 as StoredJob['currentPhase'],
-        progress: 10,
-        logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: 'Phase 1: 开始分析角色与地点...' }],
-      };
-      this.emitSSE(jobId, 'phase', { phase: 1, status: 'analyzing', progress: 10 });
-      this.emitSSE(jobId, 'log', { message: 'Phase 1: 开始分析角色与地点...', level: 'info' });
-      return updated;
-    });
+    const existingPhase1 = jobStore.get(jobId)?.pipelineState.phase1Output;
+    let phase1Output: Phase1Output;
 
-    const phase1 = new Phase1Analyzer(
-      provider,
-      this.ctxManager,
-      createPhase1Budget({
-        modelId: provider.modelId,
-        enabled: true,
-        onBlocked: (site, reason) => {
-          console.log(`[${jobId}] Phase1 预算守卫拦截（${site}）: ${reason}`);
-          metrics.addBudgetBlocked();
-        },
-      }),
-    );
-    const phase1Output = await phase1.analyze(
-      chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
-    );
+    if (existingPhase1) {
+      console.log(`[${jobId}] Phase 1: 复用已导入的设定卡（跳过 LLM 分析）`);
+      recordTiming('analyze', t1);
+      jobStore.update(jobId, (job) => {
+        const updated = {
+          ...job,
+          status: 'analyzing' as const,
+          currentPhase: 1 as StoredJob['currentPhase'],
+          progress: 25,
+          metadata: withTiming(job),
+          pipelineState: { ...job.pipelineState, metrics: metrics.snapshot() },
+          logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: 'Phase 1: 复用已导入的历史设定卡（跳过 LLM 分析）' }],
+        };
+        this.emitSSE(jobId, 'phase', { phase: 1, status: 'analyzing', progress: 25 });
+        this.emitSSE(jobId, 'progress', { progress: 25 });
+        return updated;
+      });
+      phase1Output = existingPhase1;
+    } else {
+      console.log(`[${jobId}] Phase 1: 开始分析角色与地点 (${chapters.length} 章, ${chapters.reduce((s,c) => s + c.text.length, 0)} 字)`);
+      jobStore.update(jobId, (job) => {
+        const updated = {
+          ...job,
+          status: 'analyzing' as const,
+          currentPhase: 1 as StoredJob['currentPhase'],
+          progress: 10,
+          logs: [...job.logs, { timestamp: Date.now(), level: 'info' as const, message: 'Phase 1: 开始分析角色与地点...' }],
+        };
+        this.emitSSE(jobId, 'phase', { phase: 1, status: 'analyzing', progress: 10 });
+        this.emitSSE(jobId, 'log', { message: 'Phase 1: 开始分析角色与地点...', level: 'info' });
+        return updated;
+      });
 
-    console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
-    recordTiming('analyze', t1);
-    jobStore.update(jobId, (job) => {
-      const updated = {
-        ...job,
-        progress: 25,
-        metadata: withTiming(job),
-        pipelineState: { ...job.pipelineState, phase1Output, metrics: metrics.snapshot() },
-        logs: [
-          ...job.logs,
-          { timestamp: Date.now(), level: 'info' as const, message: `Phase 1 完成: 提取到 ${phase1Output.characters.length} 个角色、${phase1Output.locations.length} 个地点` },
-        ],
-      };
-      this.emitSSE(jobId, 'progress', { progress: 25 });
-      this.emitSSE(jobId, 'log', { message: `Phase 1 完成: 提取到 ${phase1Output.characters.length} 个角色、${phase1Output.locations.length} 个地点`, level: 'info' });
-      return updated;
-    });
+      const phase1 = new Phase1Analyzer(
+        provider,
+        this.ctxManager,
+        createPhase1Budget({
+          modelId: provider.modelId,
+          enabled: true,
+          onBlocked: (site, reason) => {
+            console.log(`[${jobId}] Phase1 预算守卫拦截（${site}）: ${reason}`);
+            metrics.addBudgetBlocked();
+          },
+        }),
+      );
+      phase1Output = await phase1.analyze(
+        chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
+      );
+
+      console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
+      recordTiming('analyze', t1);
+      jobStore.update(jobId, (job) => {
+        const updated = {
+          ...job,
+          progress: 25,
+          metadata: withTiming(job),
+          pipelineState: { ...job.pipelineState, phase1Output, metrics: metrics.snapshot() },
+          logs: [
+            ...job.logs,
+            { timestamp: Date.now(), level: 'info' as const, message: `Phase 1 完成: 提取到 ${phase1Output.characters.length} 个角色、${phase1Output.locations.length} 个地点` },
+          ],
+        };
+        this.emitSSE(jobId, 'progress', { progress: 25 });
+        this.emitSSE(jobId, 'log', { message: `Phase 1 完成: 提取到 ${phase1Output.characters.length} 个角色、${phase1Output.locations.length} 个地点`, level: 'info' });
+        return updated;
+      });
+    }
 
     // ── Phase 2: Segment ──
     const t2 = Date.now();

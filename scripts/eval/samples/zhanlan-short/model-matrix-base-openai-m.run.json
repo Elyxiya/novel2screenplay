@@ -1,0 +1,16 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "model-matrix-base-openai-m",
+  "model": "openai",
+  "actualModelId": "deepseek-chat",
+  "jobId": "job_1789066429627_lyxfso",
+  "finalStatus": "completed",
+  "elapsedMs": 70535,
+  "scenes": 26,
+  "characters": 12,
+  "charIdSet": 8,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T18:55:00.154Z"
+}

@@ -1,0 +1,16 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "model-matrix-base-deepseek-chat-m",
+  "model": "deepseek-chat",
+  "actualModelId": "deepseek-chat",
+  "jobId": "job_1789066358050_k7f7uy",
+  "finalStatus": "completed",
+  "elapsedMs": 71467,
+  "scenes": 32,
+  "characters": 13,
+  "charIdSet": 8,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T18:53:49.484Z"
+}

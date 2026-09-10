@@ -1,0 +1,3699 @@
+{
+  "tag": "model-matrix-base-openai-m",
+  "generatedAt": "2026-09-10T18:55:00.153Z",
+  "jobId": "job_1789066429627_lyxfso",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "slugline": "内景. 矮人遗迹通道 - 未知",
+      "timeOfDay": "unknown",
+      "locationId": "loc_01",
+      "characterIds": [
+        "char_01",
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "尼斯抬手射出一发胶水弩箭，将一台开裂的矮人傀儡固定在原地。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 2,
+              "excerpt": "干净利落的抬手一发胶水弩箭将一台虽然已经开裂了的矮人傀儡固定在原地。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "就算是累赘，我也是个有价值的累赘。",
+          "direction": "甩了甩被汗水凝结的头发，语气自嘲而坚定",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 3,
+              "excerpt": "“就算是累赘，我也是个有价值的累赘。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯再次抬手射出一发弩箭，将一台矮人傀儡化为不可移动的废品。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 4,
+              "excerpt": "甩了甩已经被汗水凝结在一起的头发，尼斯再一次抬手一发弩箭将一台矮人傀儡化为了不可移动的废品。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "其实放下了恐惧感之后，这些铁疙瘩也不是那么可怕么……",
+          "direction": "语气轻松，带着一丝尴尬",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 5,
+              "excerpt": "“其实放下了恐惧感之后，这些铁疙瘩也不是那么可怕么……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯精准射箭击中试图偷袭黎恩的矮人傀儡，配合黎恩的剑术攻势。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 7,
+              "excerpt": "在黎恩如同狂风暴雨一般的剑术攻势之中，尼斯的弩箭就如同雨幕中夹杂着的冰雹，精准的击中了每一个试图偷袭黎恩的矮人傀儡。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "最后一台矮人傀儡在狼咬剑下四分五裂，两人对视微笑。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 8,
+              "excerpt": "当最后一台两人眼前最后一台矮人傀儡在狼咬剑下四分五裂的时候。两人互相对视着露出了微笑"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "远处传来闷雷般的脚步声，两人迅速收敛笑容。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 9,
+              "excerpt": "从远处传来的一阵阵熟悉的如同闷雷一般的脚步声，却让两个人都迅速的收敛了起了笑容。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "我的天，这里究竟有多少矮人傀儡！",
+          "direction": "声音中带着惊恐",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 11,
+              "excerpt": "“我的天，这里究竟有多少矮人傀儡！”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "几百台，我觉得至少有吧。",
+          "direction": "稍稍歪了歪头，语气平静地估算",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 12,
+              "excerpt": "“几百台，我觉得至少有吧。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯脸色惨白，露出恐惧的表情。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 13,
+              "excerpt": "脸上依旧还是不由得泛起了一阵阵毫无血色的惨白。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "不想打啊。",
+          "direction": "语气无奈而疲惫",
+          "sourceRefs": [
+            {
+              "chapterIndex": 65,
+              "paragraphIndex": 14,
+              "excerpt": "“不想打啊。”"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩与尼斯击溃傀儡后逃向秘库",
+      "sourceChapterRange": [
+        0,
+        0
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 2,
+      "slugline": "内景. 矮人遗迹储物间 - 未知",
+      "timeOfDay": "unknown",
+      "locationId": "loc_01",
+      "characterIds": [
+        "char_09"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "尼斯脸色惨白，毫无血色。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "得泛起了一阵阵毫无血色的惨白。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "不想打啊。",
+          "direction": "看着尼斯，笑了起来",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "“不想打啊。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩看着一脸惨白的尼斯，笑了起来。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "看着一脸惨白的尼斯，黎恩顿时笑了起来。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "如果不想打，那还楞着干嘛。",
+          "direction": "笑着对尼斯说",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "“如果不想打，那还楞着干嘛。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "跑啊！",
+          "direction": "大声喊道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "“跑啊！”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩扛着狼咬剑率先跑进曲折的小路。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "话刚说完，黎恩就已经直接扛着狼咬剑率先跑进了身边的一条曲折的小路之中。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯愣神，看着黎恩飞快的背影。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "而尼斯微微的愣了愣神，看着黎恩溜的飞快的背影，根本无法想象这是一个刚刚如同怪物一般横扫了整个战场的强大战士。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯仰天怪叫。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "但片刻之后，稍稍想明白过来的尼斯就仰天发出了一声怪叫。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "妈呀，你这个家伙不要抛下我啊，要跑也要带上我啊。",
+          "direction": "怪叫着追赶",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 8,
+              "excerpt": "“妈呀，你这个家伙不要抛下我啊，要跑也要带上我啊。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯以更快的速度追着黎恩跑去，留下钢铁碎片和矮人傀儡。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 9,
+              "excerpt": "然后就以更快的速度追着已经快要消失身影的黎恩跑了过去，留下一台台已经变成了无尽的钢铁碎片以及宛如雕塑一般的矮人傀儡。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩和尼斯在曲折通道中奔跑，慌不择路。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 10,
+              "excerpt": "在曲折的通道之中不知道奔跑了多久，黎恩和尼斯看起来都有些显得慌不择路，毕竟对于这里的预计已经超过了之前的规划。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "两人在尼斯建议下朝有更多矮人傀儡的方向前进。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 11,
+              "excerpt": "不过在尼斯的建议下，两人还是尽量朝着有更多矮人傀儡的方向慢慢前进着，"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "南海海盗们进入第二层。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 12,
+              "excerpt": "而就在黎恩和尼斯尽可能的朝着那座秘库前进的时候，之前被困在外层的那一批南海海盗们也幸运的进入了第二层。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "矮人傀儡的脚步声如闷雷般响彻。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 13,
+              "excerpt": "引动了沉睡在地底的这些矮人傀儡，如同闷雷一般响彻的脚步声，即使隔着长远的距离都能清晰的听见。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "妈的，原来出路就在身边，给我砸了它！",
+          "direction": "愤怒地喊道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 14,
+              "excerpt": "“妈的，原来出路就在身边，给我砸了它！”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "裂须海盗挥舞兵器在墙上砸出大洞。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 15,
+              "excerpt": "立刻挥舞着兵器在墙上砸出了一个大洞。"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩与尼斯逃入通道，海盗砸墙进入第二层",
+      "sourceChapterRange": [
+        0,
+        0
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 3,
+      "slugline": "外景. 南海岸群岛 - 历史回溯",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [],
+      "content": [
+        {
+          "type": "action",
+          "description": "南海岸群岛零星散布在海面上，大小不一，小的只能建几所简陋房屋，大的足以建起一座城镇。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 66,
+              "paragraphIndex": 0,
+              "excerpt": "在佩鲁斯南海岸数百海里的地方，有着许多零星的岛屿，小的或许只能建造几所简陋的房屋，但大的却也可以建立起一座城镇。"
+            }
+          ]
+        }
+      ],
+      "summary": "南海岸群岛海盗与佩鲁斯帝国历史回溯",
+      "sourceChapterRange": [
+        1,
+        1
+      ],
+      "confidence": 0.2
+    },
+    {
+      "sceneNumber": 4,
+      "slugline": "内景. 矮人地宫 - 未知时刻",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [],
+      "content": [
+        {
+          "type": "action",
+          "description": "海盗们与矮人傀儡激烈交战，用巨斧和弯刀击毁傀儡。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "砰！砰！砰！"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "海盗与矮人傀儡激战"
+            }
+          ]
+        }
+      ],
+      "summary": "海盗在矮人地宫与矮人傀儡激战",
+      "sourceChapterRange": [
+        1,
+        1
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 5,
+      "slugline": "内景. 矮人地宫通道 - 未知时刻",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [
+        "char_01",
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "海盗们击碎陈旧的盔甲和没有血肉的肢体，不断击碎涌进来的新敌人。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "陈旧的盔甲，击碎就可以了！"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "没有血肉的肢体，击碎就可以了！"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "哪怕是不断后续涌进来的新的敌人，一样还是击碎就可以了！"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "在数百平米的空间内，海盗与矮人傀儡进行持久战，将此处化为破坏和杀戮的战场。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "跟之前的黎恩和尼斯所面对的那场短暂而危险的遭遇战不同，此刻在这片数百平米的空间内。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "这两只时隔数百年才遭遇到的敌人，已经将此处化为破坏和杀戮的战场，而且是一场令人满是焦灼和不安的持久战。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们从彼此眼神中看到胜利天平倾斜，尽管不知矮人傀儡数量，但知道它们是残破半废品。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "但随着时间的推移，每一个海盗都能从彼此的眼神中看到，胜利的天平正在悄悄的朝着自己的这一方倾斜过来。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "哪怕不知道眼前依旧无法数清的矮人傀儡还有多少，但毕竟这些昔日的站在兵器，如今只是残破的半废品。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们习惯厮杀，继续战斗。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "对于早已习惯厮杀的这些海盗而言，"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩尼斯在地宫与矮人傀儡战斗",
+      "sourceChapterRange": [
+        1,
+        1
+      ],
+      "confidence": 0.6
+    },
+    {
+      "sceneNumber": 6,
+      "slugline": "内景. 矮人遗迹钢铁之门前 - 未知",
+      "timeOfDay": "unknown",
+      "locationId": "loc_03",
+      "characterIds": [
+        "char_01",
+        "char_02",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "黎恩与尼斯穿过矮人地宫通道，抵达一扇厚重的钢铁巨门前。门上齿轮转动，链条交错，镶嵌着照明宝石。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 0,
+              "excerpt": "没有了矮人傀儡的阻碍，之后的路上也再没碰见什么机关，并没有花多久的时间，二人就顺利抵达了目的地。"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 1,
+              "excerpt": "挡在二人面前的，是一扇厚重而庞大的巨门，通体由钢铁打造，历经岁月的侵蚀，却没有显出太多腐朽的迹象。上边有许多机关交错，另外还装饰着几颗照明用的奇特的宝石。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "这也是……矮人的作品吗？",
+          "direction": "惊疑不定地看着巨门",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 2,
+              "excerpt": "“这也是……矮人的作品吗？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯盯着大门看了半天，转头看向黎恩。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 3,
+              "excerpt": "尼斯盯着大门目不转睛地看了半天，才把头转向了黎恩"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "我说，你可以解决这玩意儿吗？",
+          "direction": "迟疑地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 3,
+              "excerpt": "用迟疑的语气问道：“我说，你可以解决这玩意儿吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "明显不可能吧！",
+          "direction": "狠狠瞪了尼斯一眼，没好气地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 4,
+              "excerpt": "“明显不可能吧！”黎恩狠狠瞪了他一眼，没好气地回答道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "说起溜门撬锁，你尼斯·拉尔森可比我专业多了，难道你都没办法吗？",
+          "direction": "反问",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 6,
+              "excerpt": "“说起溜门撬锁，你尼斯·拉尔森可比我专业多了，难道你都没办法吗？”黎恩反问道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "倒不是完全没办法……好吧，事实上我心里没底。",
+          "direction": "摊手，无奈地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 7,
+              "excerpt": "“倒不是完全没办法……好吧，事实上我心里没底。”尼斯摊手，无奈地说道"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "普通的密道、机关这些小东西也就罢了，但像现在这样的巨大工程，就算对矮人来说也不是轻轻松松就能搞定的。",
+          "direction": "解释",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 7,
+              "excerpt": "“普通的密道、机关这些小东西也就罢了，但像现在这样的巨大工程，就算对矮人来说也不是轻轻松松就能搞定的。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "它一定是由矮人的大师倾尽全力设计制造的，毫无疑问，这不是外面那种量产的便宜门锁，不会有按经验开锁的机会……这么麻烦的机关我也是第一回见到，我可没有太大的把握，如果失手的话，我们两个可能都会被砍成两截、被滚石压扁、或者被突然冒出的火焰烤成猪排……尽情地发挥你的想象力吧。",
+          "direction": "语气沉重，带着一丝自嘲",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 8,
+              "excerpt": "“它一定是由矮人的大师倾尽全力设计制造的，毫无疑问，这不是外面那种量产的便宜门锁，不会有按经验开锁的机会……这么麻烦的机关我也是第一回见到，我可没有太大的把握，如果失手的话，我们两个可能都会被砍成两截、被滚石压扁、或者被突然冒出的火焰烤成猪排……尽情地发挥你的想象力吧。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "都已经走到这里了，难道真的毫无办法，只能回去了？",
+          "direction": "皱着眉头",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 9,
+              "excerpt": "黎恩皱了皱眉头：“都已经走到这里了，难道真的毫无办法，只能回去了？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "那倒不是。",
+          "direction": "露出得意的笑容，手中出现特制匕首",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 10,
+              "excerpt": "“那倒不是。”尼斯露出了得意的笑容，不知何时，那把特制的匕首已经出现在他的手中"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "不试试怎么能下断言呢？矮人比起人类来说还算心肠好一点的，只要把握好分寸就没事，如果幸运地成功当然好，如果失败，只要不去不甘心地做些多余的尝试，机关一般就不会发动。",
+          "direction": "自信地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 10,
+              "excerpt": "“不试试怎么能下断言呢？矮人比起人类来说还算心肠好一点的，只要把握好分寸就没事，如果幸运地成功当然好，如果失败，只要不去不甘心地做些多余的尝试，机关一般就不会发动。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "普通的小毛贼当然不行，但我应该还是有能力把握这个分寸的……",
+          "direction": "说着摆出奇怪的姿势",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 11,
+              "excerpt": "“普通的小毛贼当然不行，但我应该还是有能力把握这个分寸的……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯摆出奇怪姿势，左手摸索机关表面，右手持匕首探向钥匙孔，双手稳定无颤。匕首微动，额角冒汗，嘴角勾起。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 11,
+              "excerpt": "说着，他摆出了奇怪的姿势，黎恩不得不承认，这个骗子手上的确有过硬的本事，他的身手其实只能算一般，但他此时却用奇怪的姿势站得比一些身经百战的强者还要稳妥，而他一边用左手摸索着机关表面，一边用右手小心翼翼地将匕首探向门上钥匙孔，完全没有丝毫颤抖的双手比起许多雕刻家也毫不逊色。"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 12,
+              "excerpt": "奇形的匕首微微抖动着，没过多久，尼斯的额角冒出汗珠，但嘴角却已经向上勾起，看起来进展还算顺利的样子。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩看着机关齿轮与链条的动向，心中升起警兆。机关突然发出“当”的一声卡死，齿轮与链条高速反向运转。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 13,
+              "excerpt": "看着机关齿轮与链条的动向，虽然看不太明白，黎恩却隐隐有一股说不出的奇怪感觉，他的心中突然升起一股警兆。毕竟从重生以来到现在，他的直觉已经变得十分敏锐了，让人丝毫不敢轻慢。"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 14,
+              "excerpt": "这股警兆瞬间就膨胀到了没法忽视的地步。也就在同一时刻，尼斯忍不住轻轻地发出了一声：“咦？”"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 15,
+              "excerpt": "原本正在被慢慢解除着的机关突然发出了“当”的一声，像是撞上了什么东西似的卡死了，下个瞬间，齿轮与链条高速地反向运转起来，很明显出了问题。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "咦？",
+          "direction": "轻声疑惑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 14,
+              "excerpt": "尼斯忍不住轻轻地发出了一声：“咦？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "糟糕！",
+          "direction": "迅速冲上前，揪住尼斯礼服向后拽开",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 16,
+              "excerpt": "“糟糕！”黎恩早已有了警兆，马上反应过来，迅速冲上前去，一把揪住尼斯昂贵的礼服将他向后拽开。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一支精钢箭矢擦着尼斯的裤腿钉入地面，箭尾震颤嗡鸣。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 17,
+              "excerpt": "咄！"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 18,
+              "excerpt": "一支精钢的箭矢擦着尼斯的裤腿钉在了地面上，几乎射入了一半之多，剩余的箭尾还在震颤，嗡嗡作响，足可见这一箭的强劲。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "还没结束！",
+          "direction": "声音在脑海中响起",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 19,
+              "excerpt": "“还没结束！”琼斯的声音在脑海中响起。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩挥出长剑，格挡开一支从右边飞来的箭矢，箭矢偏离方向打着旋飞出。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 20,
+              "excerpt": "顺从直觉的引导，黎恩挥出长剑，只听见一声清脆的金属碰撞声，手上传来仿佛被兽人的狼牙棒砸到一般的沉重触感，一支从右边飞来的箭矢被这一剑格挡得偏离了方向，打着旋飞了出去。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "更多箭矢袭来，钉在门前地面，地面出现裂痕。黎恩带着尼斯提前躲开。两边墙壁褪去伪装，露出几个漆黑圆孔。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 21,
+              "excerpt": "下个瞬间，又有不止一支箭矢袭来，钉在门前的地上，坚硬的地面都出现了多道裂痕，幸亏黎恩反应迅速带着尼斯提前躲开，否则连变成刺猬都不可能，血肉之躯吃了那么强劲的箭矢一定会分崩离析的。"
+            },
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 22,
+              "excerpt": "两边的墙壁褪去了表面的伪装，露出了几个漆黑的圆孔，很明显那些危险的箭矢就是从这里发射出来的。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "矮人的机关弩箭……吗？",
+          "direction": "看着墙壁上的圆孔",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 23,
+              "excerpt": "“矮人的机关弩箭……吗？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯面色苍白，双手颤抖地掏出手帕擦着额角冷汗。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 24,
+              "excerpt": "毕竟是在生死线上走了一遭，尼斯已经没法再保持镇定，他面色苍白地掏出手帕，双手颤抖地擦着额角上的冷汗"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "开玩笑的吧，我还没动真格的就开始攻击，矮人什么时候心黑成这样了……",
+          "direction": "面色苍白，声音发颤",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 24,
+              "excerpt": "“开玩笑的吧，我还没动真格的就开始攻击，矮人什么时候心黑成这样了……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "你已经拿它完全没办法了？",
+          "direction": "摇晃着有些发麻的手",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 25,
+              "excerpt": "“你已经拿它完全没办法了？”黎恩一边摇晃着有些发麻的手，一边问道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "虽然很不甘心，但这个完全超出我的能力范畴了。打个比方的话，我在开锁上面勉强算是白银等级，刚才那么小心都触发了机关，这扇门绝对是黄金",
+          "direction": "沉默片刻后，不甘心地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 67,
+              "paragraphIndex": 26,
+              "excerpt": "尼斯沉默了片刻，这才说道：“虽然很不甘心，但这个完全超出我的能力范畴了。打个比方的话，我在开锁上面勉强算是白银等级，刚才那么小心都触发了机关，这扇门绝对是黄金"
+            }
+          ]
+        }
+      ],
+      "summary": "二人抵达钢铁巨门，尼斯开锁失败触发机关",
+      "sourceChapterRange": [
+        2,
+        2
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 7,
+      "slugline": "内景. 秘库 - 未知",
+      "timeOfDay": "unknown",
+      "locationId": "loc_03",
+      "characterIds": [],
+      "content": [
+        {
+          "type": "action",
+          "description": "尼斯站在钢铁之门前，眉头紧锁，盯着门上的机关。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "还没动真格的就开始攻击，矮人什么时候心黑成这样了……"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "还没动真格的就开始攻击，矮人什么时候心黑成这样了……",
+          "direction": "无奈地抱怨",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "还没动真格的就开始攻击，矮人什么时候心黑成这样了……"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩甩了甩手，活动着发麻的手指，看向尼斯。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "黎恩一边摇晃着有些发麻的手，一边问道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "你已经拿它完全没办法了？",
+          "direction": "询问，语气平静",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "你已经拿它完全没办法了？"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯沉默片刻，叹了口气，摇了摇头。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "尼斯沉默了片刻，这才说道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "虽然很不甘心，但这个完全超出我的能力范畴了。打个比方的话，我在开锁上面勉强算是白银等级，刚才那么小心都触发了机关，这扇门绝对是黄金级的挑战。比起开门，我倒宁愿试着花时间从旁边挖洞绕过去",
+          "direction": "不甘心但无奈地承认失败，语气认真",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "虽然很不甘心，但这个完全超出我的能力范畴了。打个比方的话，我在开锁上面勉强算是白银等级，刚才那么小心都触发了机关，这扇门绝对是黄金级的挑战。比起开门，我倒宁愿试着花时间从旁边挖洞绕过去"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩与尼斯在秘库前面对机关门，尼斯承认无法打开",
+      "sourceChapterRange": [
+        2,
+        2
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 8,
+      "slugline": "内景. 地下秘库走廊 - 未知时间",
+      "timeOfDay": "unknown",
+      "locationId": "loc_04",
+      "characterIds": [
+        "char_01",
+        "char_02",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "琼斯显出身形，注视着钢铁之门，面色复杂，一言不发。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 1,
+              "excerpt": "显出身形的琼斯并没有关注他哪怕一眼，就连黎恩也感觉到气氛有些不对劲。"
+            },
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 2,
+              "excerpt": "琼斯注视着钢铁之门，一言不发，就连往常和黎恩开玩笑的行为都没有，面色复杂。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "琼斯向两侧伸出双手，空气中出现涟漪，魔力向大门汇集。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 4,
+              "excerpt": "他向两侧伸出了双手，伴随着这个动作，空气中仿佛出现了无数的涟漪。"
+            },
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 5,
+              "excerpt": "在空气中弥散着的，本就已经十分浓郁的魔力，向琼斯面前大门所在的方向更加浓厚地汇集起来。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "魔力涌入钢铁之门，化为蒸汽从齿轮喷出，大门被推开，金币涌出。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 7,
+              "excerpt": "磅礴的魔力涌入钢铁之门，又化为无穷的蒸汽，从每一个齿轮中汹涌喷出，伴随着咯嗒咯嗒的声响，这扇厚重的大门被一点点地推了开来。"
+            },
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 9,
+              "excerpt": "从门的里侧，有成千上万枚金币奏着愉悦的声响，一齐化作金黄色的潮水涌流而出，几乎没过了二人的脚脖子。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "这……这！",
+          "direction": "惊讶地弯腰伸手捞起金币，用牙齿咬。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 8,
+              "excerpt": "尼斯弯下腰伸手一捞，用牙齿一咬，毫无疑问，这就是金币！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "传说中龙的洞穴也不过如此吧？",
+          "direction": "恍惚片刻，顺手向口袋里塞了几枚金币。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 68,
+              "paragraphIndex": 10,
+              "excerpt": "黎恩也恍惚了片刻，还顺手向口袋里塞了几枚金币，"
+            }
+          ]
+        }
+      ],
+      "summary": "琼斯开启钢铁之门，金币涌出走廊",
+      "sourceChapterRange": [
+        3,
+        3
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 9,
+      "slugline": "内景. 秘库深处 - 未知时间",
+      "timeOfDay": "unknown",
+      "locationId": "loc_04",
+      "characterIds": [
+        "char_01",
+        "char_02",
+        "char_04",
+        "char_06"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "秘库的门从里侧涌出成千上万枚金币，如金黄色潮水般流出，几乎没过了二人的脚脖子。金币反射着门内灯火的光芒，将走廊照得透亮。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "从门的里侧，有成千上万枚金币奏着愉悦的声响，一齐化作金黄色的潮水涌流而出，几乎没过了二人的脚脖子。一枚枚金币反射着门内灯火的光芒，闪烁而耀眼，将走廊都照得透亮，几乎能够激发一切人的贪婪与欲望！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "传说中龙的洞穴也不过如此吧？",
+          "direction": "恍惚片刻，顺手向口袋里塞了几枚金币，随即回过神来",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "“传说中龙的洞穴也不过如此吧？”黎恩也恍惚了片刻，还顺手向口袋里塞了几枚金币，然而他马上便回过神来。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "琼斯一言不发地回到万物怀表之中，淡淡地开口。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "琼斯依旧一言不发地回到了万物怀表之中，只是淡淡地开口说道：“时间不多了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "时间不多了。",
+          "direction": "淡淡地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "“时间不多了。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩拍了尼斯一把，二人一起踏着金币向里走去。尼斯一时失神，但很快冷静下来跟上来。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "“啊！”黎恩拍了尼斯一把，二人一起踏着金币向里走去。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "与此相对，尼斯虽然也一时失神，但也能够冷静下来跟过来，就可以证明他并非等闲之辈。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "这个银杯的风格，还有刚才机关的样式……喂，黎恩，这个秘库，可能比整个银石城的历史都更加久远！",
+          "direction": "关注周边环境，发现震惊的事实",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "“这个银杯的风格，还有刚才机关的样式……喂，黎恩，这个秘库，可能比整个银石城的历史都更加久远！”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "如果城主大人能请来千年以前的老古董矮人把秘库建得和上古时一模一样，我就把这些金币都吃下去……呃、维克托城主？",
+          "direction": "玩笑开到一半，尴尬地停住",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 8,
+              "excerpt": "“如果城主大人能请来千年以前的老古董矮人把秘库建得和上古时一模一样，我就把这些金币都吃下去……呃、维克托城主？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "在秘库的最深处有一张由无数流动着的金沙构成的宝座，维克托·莫特森端坐在那里。宝座旁横七竖八倒着十几具尸体，绝大多数是身穿皮甲乃至链甲、手握兵器的大汉，唯独有一具尸体身穿颇为累赘的礼服。黎恩认出那身礼服曾穿在摩根爵士身上。除了几具尸体外，其余尸体上没有肉眼可见的伤痕，也没有出血迹象。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 9,
+              "excerpt": "在秘库的最深处有一张由无数流动着的金沙构成的宝座，而维克托·莫特森，银石城的城主大人就正端坐在那里。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 10,
+              "excerpt": "在宝座旁还横七竖八倒着十几具尸体，绝大多数都是身穿皮甲乃至链甲，手里也握着兵器的大汉，唯独有一具尸体身穿颇为累赘的礼服，完全不像能够战斗的样子——黎恩还能记得起来，上次见到那身礼服时，它正被穿在那位亲近商人的摩根爵士的身上。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 11,
+              "excerpt": "除了几具尸体之外，其余的尸体上都并没有肉眼可见的伤痕，也没有出血的迹象。发现这一点，黎恩不禁加强了戒备。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "维克托面色苍白，皮肤新添了许多皱纹，双眼里布满血丝，气息微弱。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 12,
+              "excerpt": "不过，他完全可以看得出，城主维克托的状况似乎并不太好，他的面色苍白，皮肤新添了许多皱纹，双眼里布满血丝。明明身负不错的武力，此时的他的气息却弱得还不如普通的随便一个成年男子。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "你终于来了。",
+          "direction": "突然开口，用沙哑的声音缓缓说道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 13,
+              "excerpt": "“你终于来了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "守密人静候了数百年的继承者，万物怀表的主人。",
+          "direction": "沙哑的声音",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 14,
+              "excerpt": "“守密人静候了数百年的继承者，万物怀表的主人。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩惊疑不定地瞪着维克托，忍不住握紧了手中的长剑。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 15,
+              "excerpt": "“呃！”黎恩还没想过居然会在这时被人叫破身份，尤其是关于万物怀表的事，让他惊疑不定地瞪着维克托，忍不住握紧了手中的长剑。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "琼斯·博诺佛尔……这应该不是你的真名吧？",
+          "direction": "瞟了一眼似乎不知所措的尼斯",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 17,
+              "excerpt": "“琼斯·博诺佛尔……这应该不是你的真名吧？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "我的本名是黎恩·怀特。",
+          "direction": "决定开口回答",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 18,
+              "excerpt": "“我的本名是黎恩·怀特。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "黎恩…怀特……",
+          "direction": "反复默念了几遍这个名字",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 19,
+              "excerpt": "“黎恩…怀特……”反复默念了几遍这个名字"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "你知道我们莫特森家族的由来吗？",
+          "direction": "继续说道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 19,
+              "excerpt": "“你知道我们莫特森家族的由来吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "白之王与十二骑士的故事家喻户晓，而大多数人都不清楚的是，当白之王陨落之后，这十二位神圣骑士深入无人知晓的黑森林中完成白之王最后的任务。而十二骑士的侍从骑士们则代表白之王最后的力量和心愿，代替他守护这一片大地，如今七大公国的皇室其实都是这些侍从骑士的血脉。我们莫特森家族的先祖也一样，曾",
+          "direction": "讲述历史",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 20,
+              "excerpt": "“白之王与十二骑士的故事家喻户晓，而大多数人都不清楚的是，当白之王陨落之后，这十二位神圣骑士深入无人知晓的黑森林中完成白之王最后的任务。而十二骑士的侍从骑士们则代表白之王最后的力量和心愿，代替他守护这一片大地，如今七大公国的皇室其实都是这些侍从骑士的血脉。我们莫特森家族的先祖也一样，曾"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩与尼斯进入秘库，发现维克托与尸体，身份被揭穿",
+      "sourceChapterRange": [
+        3,
+        3
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 10,
+      "slugline": "内景. 莫里森家族密室 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_05",
+      "characterIds": [
+        "char_01",
+        "char_04"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "维克托·莫特森勉强露出笑容，望向黎恩。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 69,
+              "paragraphIndex": 0,
+              "excerpt": "维克托·莫特森勉强露出了笑容"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "这一副传承了千年的重担，就要交给你了。",
+          "direction": "勉强露出笑容，语气郑重",
+          "sourceRefs": [
+            {
+              "chapterIndex": 69,
+              "paragraphIndex": 0,
+              "excerpt": "“这一副传承了千年的重担，就要交给你了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "就让守密人的使命能够在我这一代终结吧。我的儿子也再也不用背负这沉重的包袱，可以去过普通人的生活。",
+          "direction": "语气释然，带着一丝欣慰",
+          "sourceRefs": [
+            {
+              "chapterIndex": 69,
+              "paragraphIndex": 0,
+              "excerpt": "“就让守密人的使命能够在我这一代终结吧。我的儿子也再也不用背负这沉重的包袱，可以去过普通人的生活。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "从这一点来看，我衷心地感谢您来到此处，万物怀表之主黎",
+          "direction": "语气感激，声音渐弱",
+          "sourceRefs": [
+            {
+              "chapterIndex": 69,
+              "paragraphIndex": 0,
+              "excerpt": "“从这一点来看，我衷心地感谢您来到此处，万物怀表之主黎”"
+            }
+          ]
+        }
+      ],
+      "summary": "维克托在密室将守密人使命托付给黎恩",
+      "sourceChapterRange": [
+        4,
+        4
+      ],
+      "confidence": 0.75
+    },
+    {
+      "sceneNumber": 11,
+      "slugline": "外景. 未知 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_05",
+      "characterIds": [
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "从这一点来看，我衷心地感谢您来到此处，万物怀表之主黎恩。",
+          "direction": "诚恳地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "从这一点来看，我衷心地感谢您来到此处，万物怀表之主黎恩。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩沉默不语。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "“……”"
+            }
+          ]
+        }
+      ],
+      "summary": "尼斯在未知地点夜间向黎恩表达感谢",
+      "sourceChapterRange": [
+        4,
+        4
+      ],
+      "confidence": 0.3
+    },
+    {
+      "sceneNumber": 12,
+      "slugline": "内景. 密道 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_06",
+      "characterIds": [
+        "char_01",
+        "char_04",
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "维克托·莫特森皮肤皱缩，双眼失去神采，浑身散发腐朽气息。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 0,
+              "excerpt": "不知不觉，维克托·莫特森已经变得像是七八十岁的老人，皮肤皱缩，双眼也失去了神采，浑身上下透着一股腐朽的气息。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "真是…太好了……",
+          "direction": "低微的声音，仿佛马上就要咽气",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 4,
+              "excerpt": "“真是…太好了……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "我答应你。预言里的灾厄，就由我来阻止！",
+          "direction": "上前一步，斩钉截铁地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 2,
+              "excerpt": "“我答应你。”"
+            },
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 3,
+              "excerpt": "“预言里的灾厄，就由我来阻止！”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_04",
+          "line": "守密人也被愚弄了……居然是这样！黎恩，我……",
+          "direction": "拼命张开嘴，喉咙已发不出声音",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 9,
+              "excerpt": "“守密人也被愚弄了……居然是这样！黎恩，我……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "维克托·莫特森的身体化为灰尘，散落一地，尸体和衣物无存。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 11,
+              "excerpt": "维克托·莫特森的身体居然就这样化为了灰尘，散落了一地。"
+            },
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 12,
+              "excerpt": "无论是尸体还是衣物，都没有存留。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一个细小的沙漏弹跳几下，落到黎恩脚边，紫色水晶外壁有玫瑰色彩金花纹，砂砾闪水银光芒。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 12,
+              "excerpt": "只有一个不起眼的小物件，叮叮当当地弹跳几下，落到了黎恩的脚边。"
+            },
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 13,
+              "excerpt": "那是一个细小的沙漏，紫色水晶的外壁上用略显玫瑰色的彩金勾勒出古奥的花纹，而其中装载的砂砾则闪着水银般的流动光芒"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩伸出手去，即将触摸到沙漏。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 17,
+              "excerpt": "黎恩伸出手去，眼看就要触摸到那"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一个人影在黎恩身后悄悄接近。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 70,
+              "paragraphIndex": 16,
+              "excerpt": "身后一个人影正在悄悄接近的举动。"
+            }
+          ]
+        }
+      ],
+      "summary": "维克托化为灰尘留下沙漏，尼斯从背后接近",
+      "sourceChapterRange": [
+        5,
+        5
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 13,
+      "slugline": "外景. 暗道尽头 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_06",
+      "characterIds": [
+        "char_05"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "黎恩站在暗道尽头，缓缓伸出手，指尖几乎触到那枚沙漏。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "黎恩伸出手去，眼看就要触摸到那枚沙漏的时候"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一个人影从黎恩身后悄悄接近，将冰冷的刀刃贴上他的脖颈。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "身后一个人影正在悄悄接近的举动"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "脖颈上却传来一股森冷的寒意"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩伸手触沙漏时被身后人影制住",
+      "sourceChapterRange": [
+        5,
+        5
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 14,
+      "slugline": "内景. 地道 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_07",
+      "characterIds": [
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "尼斯气喘吁吁地撑着墙壁，低头抹了一下额头。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 1,
+              "excerpt": "当尼斯气喘吁吁的撑着墙壁吐气的时候"
+            },
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 4,
+              "excerpt": "低头抹了了一下额头可能并不存在的冷汗"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "可恶……没想到那群海盗……意外的能打啊。",
+          "direction": "气喘吁吁，带着意外和无奈",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 0,
+              "excerpt": "“可恶……没想到那群海盗……意外的能打啊。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "能干掉那么多矮人傀儡的海盗团，想必也不是什么简单货色啊……",
+          "direction": "低声自语，嘴角露出苦笑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 3,
+              "excerpt": "“能干掉那么多矮人傀儡的海盗团，想必也不是什么简单货色啊……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "黎恩先生，如果你不能从接下来的情况中活下来的话，千万不要怪我啊……",
+          "direction": "带着无奈和一丝歉意",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 5,
+              "excerpt": "“黎恩先生，如果你不能从接下来的情况中活下来的话，千万不要怪我啊……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "要怪就怪那群看到我脸的海盗们吧……",
+          "direction": "自我安慰般地说道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 6,
+              "excerpt": "“要怪就怪那群看到我脸的海盗们吧……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯扶着墙壁喘息了一会，勉强重新站直身体，肌肉酸痛让他表情不适。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 10,
+              "excerpt": "但扶着墙壁喘息了一会之后，尼斯才勉强重新站直了身体，但就算如此，从肌肉里传出那种酥麻的酸痛感，依旧让他觉得很不适应。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "没有死在教会的刺客手里，也没有死在黎恩那个狡诈的家伙手里，反而死在这些海盗的手里的话，我的人生可就真的变成一个笑话了。",
+          "direction": "自嘲地低声说道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 9,
+              "excerpt": "“没有死在教会的刺客手里，也没有死在黎恩那个狡诈的家伙手里，反而死在这些海盗的手里的话，我的人生可就真的变成一个笑话了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "难道是之前和妹子们玩的太过了？",
+          "direction": "疑惑地自言自语",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 11,
+              "excerpt": "“难道是之前和妹子们玩的太过了？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "又或者是太久没锻炼了？",
+          "direction": "继续自言自语，带着自嘲",
+          "sourceRefs": [
+            {
+              "chapterIndex": 6,
+              "paragraphIndex": 12,
+              "excerpt": "“又或者是太久没锻炼了？”"
+            }
+          ]
+        }
+      ],
+      "summary": "尼斯在地道中扶墙喘息逃脱海盗追杀",
+      "sourceChapterRange": [
+        6,
+        6
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 15,
+      "slugline": "内景. 秘库 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_02",
+      "characterIds": [
+        "char_05",
+        "char_01"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "海盗们疯狂地将金币和宝石塞进口袋，有人跳进金币堆里，把金币抛向空中。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "秘库之中，还活着的海盗们已经陷入了一种狂欢的状态，所有人都在拼命的朝着身上可以塞的口袋里装各种各样的金币还有宝石。还有几个可能从没见过那么多金币的家伙，已经一个猛子扎进了金币堆中，然后伴随着旁人根本听不懂的呼喊声，将手中的金币不停的抛向空中。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "一帮子没见过世面的蠢驴。",
+          "direction": "嘴上骂着，脸上却洋溢着无法隐藏的喜悦",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "“一帮子没见过世面的蠢驴。”虽然嘴上依旧毫不客气的骂着，但身为领队的海盗头子此刻脸上依旧洋溢着无法隐藏的喜悦神情。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "从今天开始，你们可以重新称呼我为艾瑞克船长了，等我们将这里的财富带回南海，我们就将成为整个南海最为强大的海盗团之一！",
+          "direction": "充满野心和喜悦地宣布",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "“从今天开始，你们可以重新称呼我为艾瑞克船长了，等我们将这里的财富带回南海，我们就将成为整个南海最为强大的海盗团之一！”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "是！艾瑞克船长！",
+          "direction": "兴奋地齐声回应",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "“是！艾瑞克船长！”听到老大这么说，这个一脸荣幸的海盗脸上立刻焕发出了一阵兴奋的红光"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "头……不，艾瑞克船长，我们发现了个问题。",
+          "direction": "挠了挠头，犹豫地说",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "不过仅仅片刻之后，他就挠了挠头说道。“头……不，艾瑞克船长，我们发现了个问题。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "唉……说吧，你们发现了什么。",
+          "direction": "无奈地捂住额头，叹息后说",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "所以在一声叹息后，艾瑞克就理智的不再去纠结细节，反正教育这帮蠢蛋以后还有的是时间。“唉……说吧，你们发现了什么。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "呃……头儿。我们在那儿发现了个活人。",
+          "direction": "犹豫了片刻，仿佛自己也有些不确定地说",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "“呃……头儿。”那个海盗在犹豫了片刻之后，仿佛自己也有些不确定的说道：“我们在那儿发现了个活人。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "废话，我们不都是活人……",
+          "direction": "话一说出口就感觉到了不对",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "“废话，我们不都是活人……”话一说出口，艾瑞克就感觉到了不对，然后他顺着下属的手指朝着不远处看了过去。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克顺着下属的手指看去，看到一双充满杀气的眼睛，不由自主地抖了抖身子。一个穿着华丽贵族服饰的年轻人用剑勉强支撑着身体，身边残留着十几具尸体。海盗们下意识地保持距离。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "然后他看到了一双充满杀气的眼睛。再看到那双眼睛的时候，艾瑞克甚至不由自主的抖了抖身子，仿佛一下子进入了严酷的寒冬一般。拥有这双眼睛的年轻人穿着比自己还要华丽的贵族服饰，虽然此刻仿佛脱力一般用剑勉强的支撑着自己的身体。但他的身边却残留着十几具看起来死的不明不白的尸体。这让所有发现他的海盗，都下意识的跟这个年轻人保持着绝对安全的距离。"
+            }
+          ]
+        }
+      ],
+      "summary": "海盗在秘库狂欢，艾瑞克自封船长，黎恩现身",
+      "sourceChapterRange": [
+        6,
+        6
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 16,
+      "slugline": "内景. 秘库 - 未知",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [
+        "char_01",
+        "char_05",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "艾瑞克被黎恩直勾勾地盯着，感到不适，但保持镇定。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "被那个年轻贵族小白脸直勾勾地盯着，艾瑞克居然莫名其妙地产生了一点不适的感觉。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克从腰间掏出一把手斧，用手掌拍得啪啪作响。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "从腰间掏出一把手斧，用手掌拍得啪啪作响"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "嘿，交易？把你砍了，就算你身上的最后一个铜板都要变成我们的，交易什么？",
+          "direction": "不屑地哼了一声",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "嘿，交易？把你砍了，就算你身上的最后一个铜板都要变成我们的，交易什么？"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "莫非你准备交易那个？三扁不如一圆……",
+          "direction": "露出猥琐笑容",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "莫非你准备交易那个？三扁不如一圆……"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们心领神会地笑了起来。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "海盗们都跟着心领神会地笑了起来"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩不屑地一笑。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "黎恩没有动怒，反倒不屑地一笑。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "如果我是你，就会先把那个想弄死你上位的大副拖出去吊死，再和我说话。",
+          "direction": "用满怀恶意的眼神，越过艾瑞克，看向他身后的一个海盗",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 9,
+              "excerpt": "如果我是你，就会先把那个想弄死你上位的大副拖出去吊死，再和我说话。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_11",
+          "line": "你、你小子说什么？我对艾瑞克船长可是忠心耿耿！",
+          "direction": "脸色青一阵红一阵，愤怒地尖叫",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 12,
+              "excerpt": "你、你小子说什么？我对艾瑞克船长可是忠心耿耿！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "是吗？你口袋里的那包黑雪莲粉末是为谁准备的呢？如果用来治偏头疼的话，那个分量足够你吃七八年了啊……",
+          "direction": "满带笑意地注视着大副，不紧不慢地摇晃着手指",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 13,
+              "excerpt": "是吗？你口袋里的那包黑雪莲粉末是为谁准备的呢？如果用来治偏头疼的话，那个分量足够你吃七八年了啊……"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "黑雪莲？！",
+          "direction": "喧嚷",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 14,
+              "excerpt": "黑雪莲？！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "我的老天！",
+          "direction": "喧嚷",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 15,
+              "excerpt": "我的老天！"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克的脸色变得阴沉，随即又恢复若无其事。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 20,
+              "excerpt": "艾瑞克的脸色也一下子变得阴沉了起来，不过，马上又变成了一副若无其事的样子。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_11",
+          "line": "船长，你不会相信这个莫名其妙的小鬼吧？黑雪莲粉末那么贵的东西我哪里买得起？这小子在挑拨我们兄弟，让我来砍了他——",
+          "direction": "咬牙切齿",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 21,
+              "excerpt": "船长，你不会相信这个莫名其妙的小鬼吧？黑雪莲粉末那么贵的东西我哪里买得起？这小子在挑拨我们兄弟，让我来砍了他——"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克伸手拦住大副，突然大笑起来。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 22,
+              "excerpt": "艾瑞克伸手拦住了他，然后，突然大笑了起来。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "小鬼！要说什么就别弯来绕去的，我艾瑞克·弗瑞德里希可不是那种会怀疑兄弟的人！",
+          "direction": "大笑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 23,
+              "excerpt": "小鬼！要说什么就别弯来绕去的，我艾瑞克·弗瑞德里希可不是那种会怀疑兄弟的人！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "看来你们还很团结嘛。是，是，我刚才胡说八道而已，对不起啦。",
+          "direction": "露出苦笑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 24,
+              "excerpt": "看来你们还很团结嘛。是，是，我刚才胡说八道而已，对不起啦。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "小鬼你究竟是什么人？",
+          "direction": "质问",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 26,
+              "excerpt": "小鬼你究竟是什么人？"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "现在的年轻人一点都不礼貌，居然叫我小鬼？至于我是什么人……或者说是什么东西嘛？有谁需要知道这种无关紧要的事呢？非要较真，你就把我当做孤零零看守了几百年宝藏的一只可怜幽灵好了。",
+          "direction": "皱了皱眉头，翻了下白眼",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 27,
+              "excerpt": "现在的年轻人一点都不礼貌，居然叫我小鬼？至于我是什么人……或者说是什么东西嘛？有谁需要知道这种无关紧要的事呢？非要较真，你就把我当做孤零零看守了几百年宝藏的一只可怜幽灵好了。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "哈？幽灵？你是在逗我开心吗——",
+          "direction": "愣住",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 28,
+              "excerpt": "哈？幽灵？你是在逗我开心吗——"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩随手一挥，两具尸体瞬间粉碎，宝剑变成锈蚀铁棍。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 29,
+              "excerpt": "黎恩似乎很不经意地随手一挥，原本倒在一旁的两具尸体就在这微风的吹拂下一瞬间粉碎了。它们像是突然承担了数百年的时光，如同古墓里挖掘出的文物一般，瞬间就化为粉尘消散在空中。就连掉在旁边的一把宝剑，也突然变成了一团锈蚀严重的铁棍"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩在秘库揭穿大副下毒，震慑海盗",
+      "sourceChapterRange": [
+        7,
+        7
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 17,
+      "slugline": "内景. 地下宝库 - 夜",
+      "timeOfDay": "night",
+      "locationId": "loc_09",
+      "characterIds": [
+        "char_01",
+        "char_03",
+        "char_05"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "黎恩身上泛起森冷白光，如圆月般耀眼。海盗们面露不安，纷纷后退。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 0,
+              "excerpt": "黎恩的身上突然泛起了森冷的白光，就如同一轮圆月，在这地下的环境更是耀眼。"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 1,
+              "excerpt": "海盗们完全没有见过这样的场景，与魔力爆发之类的完全不同，就好像他穿着一件白纱的长袍。"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 2,
+              "excerpt": "这样灵异的场面，让他们更加不安了起来。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "不要紧张，我亲爱的孩子们。",
+          "direction": "黎恩张口，但声音来自万物怀表中的琼斯，语气平静而神秘",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 3,
+              "excerpt": "“不要紧张，我亲爱的孩子们。”这时，黎恩虽然张口，实际上发出声音的却是万物怀表之中的琼斯。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "查士丁尼三世把我关在这个地牢里的时候，曾经和我立了一个约定。",
+          "direction": "琼斯通过黎恩之口讲述，声音低沉",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 5,
+              "excerpt": "“查士丁尼三世把我关在这个地牢里的时候，曾经和我立了一个约定。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "原本我不太相信那个老糊涂鬼，但现在我确信他真有看到未来的大能了。",
+          "direction": "琼斯语气带着一丝感慨",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 6,
+              "excerpt": "“原本我不太相信那个老糊涂鬼，但现在我确信他真有看到未来的大能了。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们意犹未尽地望着黎恩，等待下文。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 7,
+              "excerpt": "看着那些海盗们意犹未尽望着自己，还想接着往下听的样子"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "卑鄙的窃贼只能拾起十七枚金币，就会被勇敢者驱逐。他损失的必将在这里得到偿还，又把多的那份添上。从阴暗的心灵中开放莲花，骄傲的心灵则会诞生荣耀。他既是匪徒，也是领主。海风骑手的传奇却起始于地上……",
+          "direction": "琼斯以预言般的口吻缓缓道出",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 8,
+              "excerpt": "“卑鄙的窃贼只能拾起十七枚金币，就会被勇敢者驱逐。他损失的必将在这里得到偿还，又把多的那份添上。从阴暗的心灵中开放莲花，骄傲的心灵则会诞生荣耀。他既是匪徒，也是领主。海风骑手的传奇却起始于地上……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克笑容凝固，惊讶地合不拢嘴。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 9,
+              "excerpt": "渐渐的，艾瑞克再也讥笑不出来了"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 13,
+              "excerpt": "看着他惊讶地合不拢嘴的表情"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩脸上端着高深莫测的神情。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 15,
+              "excerpt": "脸上端着高深莫测的神情"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_10",
+          "line": "头……船长？这家伙说的，您看……",
+          "direction": "一名海盗忍不住出声，语气犹豫",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 16,
+              "excerpt": "“头……船长？这家伙说的，您看……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克从震惊中回神，摇了摇头，勉强咧嘴笑。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 17,
+              "excerpt": "艾瑞克才从刚才的震惊中回过神来。"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 19,
+              "excerpt": "这样想着，艾瑞克摇了摇脑袋"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 20,
+              "excerpt": "接着，他鼓起勇气，勉强笑着说道"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "哼，你不是说能实现我的愿望吗？那么，我要长生不老，你能做到吗？",
+          "direction": "艾瑞克勉强笑着，语气带着质疑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 20,
+              "excerpt": "“哼，你不是说能实现我的愿望吗？那么，我要长生不老，你能做到吗？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩拍了拍巴掌，笑眯眯地指向宝库一角。那里矗立着一尊只剩半个身子的破碎石雕。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 21,
+              "excerpt": "黎恩几乎用出了全力，才拍了拍巴掌，然后努力不露出疲态地，笑眯眯地将手指向了宝库的一角。"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 22,
+              "excerpt": "在那里，一尊栩栩如生的雕像正矗立着"
+            },
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 23,
+              "excerpt": "那尊雕像就已经只剩下半个身子了，剩下半个身子化为了满地碎片"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "三百五十多年前，这个可怜虫就许了和你一样的愿望。可费了我好大劲儿。你瞧，他现在也还活着呢。",
+          "direction": "黎恩指着破碎石雕，饶有兴趣地说道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 25,
+              "excerpt": "“三百五十多年前，这个可怜虫就许了和你一样的愿望。可费了我好大劲儿。你瞧，他现在也还活着呢。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克脸颊抽搐。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 26,
+              "excerpt": "艾瑞克的脸颊抽搐着。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "得了吧，船长大人。何必再骗人呢？你想要的可不是这个吧……",
+          "direction": "黎恩语气带着调侃",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 27,
+              "excerpt": "“得了吧，船长大人。何必再骗人呢？你想要的可不是这个吧……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "我想要什么？",
+          "direction": "艾瑞克下意识地反问",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 28,
+              "excerpt": "“我想要什么？”艾瑞克下意识地反问道。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩随脚一踢，一顶古旧的黄金冠冕从宝物堆中滚出，被他拾起在手中随意翻弄。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 29,
+              "excerpt": "只是随脚一踢，便有一顶古旧的黄金冠冕从旁边的宝物堆中脱离，一路翻滚着到了黎恩的面前，被他拾起在手上随意地翻弄着。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "古老，华丽，象征着权利与荣耀，你……最喜欢的难道不是它吗？",
+          "direction": "黎恩轻声呢喃，语气充满诱惑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 30,
+              "excerpt": "“古老，华丽，象征着权利与荣耀，你……最喜欢的难道不是它吗？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克想要干笑，却发不出声，只能勉强咧起嘴角震颤两下。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 73,
+              "paragraphIndex": 31,
+              "excerpt": "艾瑞克想要干笑两声，但他完全发不出声来，最后他只能勉强咧起嘴角，震颤了两下，算是回应。"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩以预言诱惑海盗船长艾瑞克",
+      "sourceChapterRange": [
+        8,
+        8
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 18,
+      "slugline": "内景. 银石城秘库 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [
+        "char_08",
+        "char_05",
+        "char_01"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "海盗们纷纷往布包和口袋里猛塞金银珠宝，有人倾倒金币搜寻珠宝，有人戴上戒指和项链。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 2,
+              "excerpt": "还是有不少海盗仍然只顾着往布包、口袋里猛塞金银珠宝。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "胡安往麻袋里装金币，随即倒出不少，转而搜寻珠宝塞入，双手戴五枚戒指，脖子缠两条金项链。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 4,
+              "excerpt": "胡安最开始往麻袋里装了一大堆的金币，然而随即他就把不少金币又倒了出去，转而在金币堆中搜寻更高价的珠宝往里面塞。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "胡安看见地上一个镶着彩色宝石的护腕，伸手去拿，第一次没拿起来，露出狂喜表情。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 6,
+              "excerpt": "胡安迫不及待地将手伸向那个护腕，然而最初的一下居然没能够拿得起来。他略微疑惑了片刻，然后露出了狂喜的表情。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_08",
+          "line": "嘿嘿，这么沉，难不成还真的是纯金的？众神保佑老子今天发大财！",
+          "direction": "狂喜地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 7,
+              "excerpt": "“嘿嘿，这么沉，难不成还真的是纯金的？众神保佑老子今天发大财！”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "胡安狠狠一拽，护腕拔起，但拿到手中后变得很轻，护腕下有一根奇怪铁杆。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 8,
+              "excerpt": "他狠狠地再次一拽，这下子护腕终于拔地而起，然而很快他就觉得不对劲了，拿到手中之后，护腕怎么变得那么轻了？"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_08",
+          "line": "哎？这是什么？",
+          "direction": "疑惑地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 9,
+              "excerpt": "“哎？这是什么？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一声巨响，大地剧烈摇晃，海盗们惊慌失措。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 11,
+              "excerpt": "轰隆！"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "地上突然开出一个大洞，胡安直接掉了下去，无数金币和珠宝随之坠落。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 13,
+              "excerpt": "地上突然开出了一个大洞——胡安就从那里直接掉了下去，而伴随他一起坠落的，则是无数的金币和其他各式各样的珠宝财物。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_08",
+          "line": "呜啊啊啊啊啊——！！！",
+          "direction": "惊恐地尖叫",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 14,
+              "excerpt": "“呜啊啊啊啊啊——！！！”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "秘库地面倾斜，金币和珠宝流入大洞，只有个别金币靠摩擦力留在地上。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 15,
+              "excerpt": "原来这间秘库的地面本身就不是平整的，而是像大城市里的公共澡堂那样有一丁点倾斜，污水就会汇集向低处，最终全都流进下水道里面。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "数秒后洞中传来沉重落地声，海盗们面面相觑，无人说话。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 74,
+              "paragraphIndex": 17,
+              "excerpt": "直到数秒之后，从洞中才传来了沉重的落地声，海盗们面面相觑，没有人愿意去想象胡安那个倒霉鬼的下场。"
+            }
+          ]
+        }
+      ],
+      "summary": "胡安贪财触发机关坠洞，秘库财物倾泻",
+      "sourceChapterRange": [
+        9,
+        9
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 19,
+      "slugline": "内景. 秘库隧道 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_02",
+      "characterIds": [
+        "char_01",
+        "char_05"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "地上剩余的金币全部流入大洞。数秒后，洞中传来沉重的落地声。海盗们面面相觑，无人作声。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "地上之外，剩下的全部流入了那个大洞。直到数秒之后，从洞中才传来了沉重的落地声，海盗们面面相觑，没有人愿意去想象胡安那个倒霉鬼的下场。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克面色大变，急忙命令下属去查看通道的状况。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "最先想到这件事的艾瑞克不禁面色大变，他急忙命令下属去查看一下通道的状况。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一个海盗急匆匆跑回来，喘着粗气，面如死灰。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "那个海盗急匆匆地跑了回来，一边呼哧着，一边面如死灰地说着"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_12",
+          "line": "老、老大，我们来的那条路，已经…完全被堵死了啊！",
+          "direction": "喘着粗气，面如死灰，结结巴巴地报告",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "老、老大，我们来的那条路，已经…完全被堵死了啊！"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "挖不开吗……",
+          "direction": "沉声追问，语气凝重",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "“挖不开吗……"
+            }
+          ]
+        }
+      ],
+      "summary": "海盗触发机关，艾瑞克下令查探通道",
+      "sourceChapterRange": [
+        9,
+        9
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 20,
+      "slugline": "外景. 银石城 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_06",
+      "characterIds": [
+        "char_01",
+        "char_05"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "海盗急匆匆跑回来，喘着粗气，脸色灰白。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "那个海盗急匆匆地跑了回来，一边呼哧着，一边面如死灰地说着："
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_12",
+          "line": "老、老大，我们来的那条路，已经…完全被堵死了啊！",
+          "direction": "喘着粗气，面如死灰",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "“老、老大，我们来的那条路，已经…完全被堵死了啊！”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "挖不开吗……不，没什么。",
+          "direction": "意识到自己问了个愚蠢的问题",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "“挖不开吗……不，没什么。”"
+            }
+          ]
+        }
+      ],
+      "summary": "海盗报告退路被堵，艾瑞克意识到困境",
+      "sourceChapterRange": [
+        9,
+        9
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 21,
+      "slugline": "内景. 秘道 - 未知时间",
+      "timeOfDay": "unknown",
+      "locationId": "loc_11",
+      "characterIds": [
+        "char_01",
+        "char_05",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "黎恩的左手在墙壁上拂过，一道缝隙突然出现并扩大，形成一个可容两人并行的通道。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "海盗们还并没有看清楚什么，只见黎恩的左手在墙壁上拂过，便有一道缝隙突然出现，随即缝隙扩大，便形成了一个可以容得下两人并行的通道。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩施施然地走进通道之中。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "也不待海盗们反应过来，他便施施然地走进了通道之中。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克走在最前面，走进通道。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "虽然有所疑虑，但毕竟是海盗们的领头人，艾瑞克当仁不让地走在了最前面。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "昏暗的通道里，一个个脚印闪烁着青色的荧光，隐约透出不祥的气息。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "在那昏暗的通道里，正有一个个脚印闪烁着青色的荧光，隐约中透出不祥的气息。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "这里处处都是机关陷阱，若是脱离我的脚印触发了机关，除我之外可没法保证有几人可以活的下来。",
+          "direction": "淡淡地说",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "“这里处处都是机关陷阱，若是脱离我的脚印触发了机关，除我之外可没法保证有几人可以活的下来。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们紧跟着艾瑞克，踏着脚印慢慢前行。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "淡淡的一句话，顿时让所有海盗打消了多余的心思，他们只好紧跟着艾瑞克，踏着脚印慢慢前行。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "琼斯，这脚印是怎么弄出来的？",
+          "direction": "在心里问道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "“琼斯，这脚印是怎么弄出来的？”黎恩在心里问道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "其实并不是什么了不起的东西，不过是萤火虫身体里的一种物质而已。",
+          "direction": "淡定地回答道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 8,
+              "excerpt": "“其实并不是什么了不起的东西，不过是萤火虫身体里的一种物质而已。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "尽管放心，这些脚印耗用的魔力还不如制造两瓶九号圣水的。",
+          "direction": "淡定地回答道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 8,
+              "excerpt": "琼斯淡定地回答道:“尽管放心，这些脚印耗用的魔力还不如制造两瓶九号圣水的。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "这种事你为什么做得这么熟练啊？",
+          "direction": "忍不住问道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 9,
+              "excerpt": "黎恩忍不住问道:“这种事你为什么做得这么熟练啊？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "你以为我很喜欢装神弄鬼吗？",
+          "direction": "没好气地说着",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 10,
+              "excerpt": "“你以为我很喜欢装神弄鬼吗？”琼斯没好气地说着。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "只是，许多愚蠢的凡人对神秘莫测的事物更加迷信而已，我活的久了，自然就会学上不少。",
+          "direction": "没好气地说着",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 11,
+              "excerpt": "“只是，许多愚蠢的凡人对神秘莫测的事物更加迷信而已，我活的久了，自然就会学上不少。”"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩开启秘道，海盗跟随前行",
+      "sourceChapterRange": [
+        10,
+        10
+      ],
+      "confidence": 0.8
+    },
+    {
+      "sceneNumber": 22,
+      "slugline": "外景. 秘道出口 - 未知时间",
+      "timeOfDay": "unknown",
+      "locationId": "loc_11",
+      "characterIds": [
+        "char_01",
+        "char_05"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "一名海盗抓着装满金银财宝的麻袋，小心翼翼地踏着脚印行走，气喘吁吁。麻袋晃动，金币挤破袋口漏出。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "抓着一袋金银财宝，还要小心翼翼地踏着脚印行走，就算是膀大腰圆的海盗也未免有些气喘吁吁。一不小心，麻袋便晃动得厉害。金币之类的又是十分沉重，居然直接挤破了麻袋，向外漏出了不少。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "一枚金币弹跳着砸中一块不起眼的石头。墙壁中射出钢矛，将这名海盗和身前另一个倒霉鬼钉在墙上。二人抽搐着，从穿孔的肺里挤出嗬哧嗬哧的求救声。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "只见一枚金币弹跳着砸中了一块不起眼的石头，随后——嗤！嗤嗤嗤！一道道钢矛从墙壁中射出，将他，还有身前的另一个倒霉鬼钉在了墙上。也是二人生命力顽强，即使这样都还没有死透，一边抽搐一边从穿孔的肺里挤出嗬哧嗬哧的求救声。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "又过了一刻钟，前方出现一丝光明。一行人走出秘道，重见天日。海盗们有人痛哭流涕，跪下亲吻大地。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "又过了一刻钟，前方终于出现了一丝光明。……当一行人总算走出秘道，重见天日的时候，就算是向来凶狠残暴的海盗们也都有人忍不住痛哭流涕，跪下亲吻大地。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克很快调整好心情，将手上提着的大半袋金银财宝率先倒在地上。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "艾瑞克终究是未来的枭雄，很快就调整好了心情。……说罢，他便将手上提着的大半袋金银财宝率先倒在了地上。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "既然没有死在那个鬼地方，那就证明诸神都保佑我们发财，现在就把带出来的金子都堆在这儿，咱们商量一下怎么分配！毕竟大家都冒了这么大的险，我也会从自己的份额里扣一些给你们喝酒的！",
+          "direction": "豪爽而富有煽动性，率先倒出财宝",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "“既然没有死在那个鬼地方，那就证明诸神都保佑我们发财，现在就把带出来的金子都堆在这儿，咱们商量一下怎么分配！毕竟大家都冒了这么大的险，我也会从自己的份额里扣一些给你们喝酒的！”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "海盗们纷纷走上前来，将自己带来的财宝堆在艾瑞克身旁。大副倒完财宝时，艾瑞克伸手拦住了他。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "有船长带头，海盗们自然也是纷纷照做。……他们一个个走上前来，将自己装来的财宝在艾瑞克的身旁，可到了大副倒完的时候，却被艾瑞克拦住了。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "等等，还少了点东",
+          "direction": "突然打断，语气转为冷厉",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "“等等，还少了点东"
+            }
+          ]
+        }
+      ],
+      "summary": "艾瑞克率众走出秘道，分赃时拦住大副",
+      "sourceChapterRange": [
+        10,
+        10
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 23,
+      "slugline": "外景. 下坡路 - 未知时间",
+      "timeOfDay": "unknown",
+      "locationId": "loc_11",
+      "characterIds": [
+        "char_02",
+        "char_01"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "大副将财宝堆在艾瑞克身旁，倒完最后一袋。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "自己装来的财宝在艾瑞克的身旁，可到了大副倒完的时候，却被艾瑞克拦住了。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "等等，还少了点东西。",
+          "direction": "拦住大副，语气平淡",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "“等等，还少了点东西。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克伸手指向大副的靴子。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "艾瑞克伸手，指了指他的靴子：“你往靴子里藏了什么？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "你往靴子里藏了什么？",
+          "direction": "指向靴子，质问",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "艾瑞克伸手，指了指他的靴子：“你往靴子里藏了什么？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_11",
+          "line": "不愧是船长……",
+          "direction": "表情尴尬，挤出讨好笑容",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "“不愧是船长……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "大副弯腰将手伸进靴子，尚未抬头。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 4,
+              "excerpt": "大副的表情顿时尴尬起来，挤出讨好地笑容，弯下腰将手伸进靴子，可还没等他抬起头，就看到地上的影子。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "艾瑞克的影子笔直站立，他从旁人手中接过战斧，抡至头顶。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 5,
+              "excerpt": "艾瑞克的影子站得笔直，不知何时从旁边的人手中接过了一柄战斧，将它抡至头顶。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "不用掏了。",
+          "direction": "淡淡地，战斧高举",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 6,
+              "excerpt": "“不用掏了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_05",
+          "line": "你自己留着吧。",
+          "direction": "淡淡地，挥斧斩下",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 7,
+              "excerpt": "艾瑞克淡淡地：“你自己留着吧。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尖啸声一闪而逝，战斧斩落在地，鲜血喷涌，一颗头颅滚落。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 8,
+              "excerpt": "尖啸声一闪而逝。"
+            },
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 9,
+              "excerpt": "战斧斩落在地，鲜血喷涌中，一颗头颅滚落"
+            }
+          ]
+        }
+      ],
+      "summary": "艾瑞克识破大副藏宝，挥斧斩其首",
+      "sourceChapterRange": [
+        10,
+        10
+      ],
+      "confidence": 0.9
+    },
+    {
+      "sceneNumber": 24,
+      "slugline": "内景. 未知地点 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_12",
+      "characterIds": [
+        "char_01",
+        "char_02"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "黎恩低头看着瘫坐在地的尼斯，语气平静地开口。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 0,
+              "excerpt": "“不得不说，我低估了你。不仅耍了整个银石城，甚至还骗到了我的头上来。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "不得不说，我低估了你。不仅耍了整个银石城，甚至还骗到了我的头上来。",
+          "direction": "平静中带着一丝嘲讽",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 0,
+              "excerpt": "“不得不说，我低估了你。不仅耍了整个银石城，甚至还骗到了我的头上来。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "之前我已经提醒过你一次了，还不吸取教训。好心给你建议却不听，终于落到这个下场，我得说，是你咎由自取。",
+          "direction": "语气冷淡，带着教训的意味",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 1,
+              "excerpt": "黎恩继续说着：“之前我已经提醒过你一次了，还不吸取教训。好心给你建议却不听，终于落到这个下场，我得说，是你咎由自取。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯颤抖着伸出手，勉强抓住黎恩的裤腿。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 2,
+              "excerpt": "尼斯颤颤巍巍地伸出手来，勉强抓住了黎恩的裤腿。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "抱…歉……",
+          "direction": "声音颤抖，虚弱无力",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 3,
+              "excerpt": "“抱…歉……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "但我也…不打算辩解……什么。如果可以，就给我…个痛快的好了。",
+          "direction": "断断续续，带着求死的意味",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 4,
+              "excerpt": "“但我也…不打算辩解……什么。如果可以，就给我…个痛快的好了。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩看着尼斯装出不怕死的样子，被气笑了。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 5,
+              "excerpt": "看见尼斯这会儿居然完全不怕死，装起了烈士似的，黎恩被他给气得笑了起来。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩带着古怪的笑意盯着尼斯看了许久，直到尼斯忍不住开始打寒战，才慢条斯理地开口。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 6,
+              "excerpt": "他带着古怪的笑意盯着尼斯看了许久，直到尼斯都忍不住开始打寒战了，才慢条斯理地开口说道：“莫特森家族已经结束了使命，能够操纵时间之沙的自然也就只有我了……"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "莫特森家族已经结束了使命，能够操纵时间之沙的自然也就只有我了……你被时间之沙诅咒的还不算久，我就可以帮你先解除一部分。",
+          "direction": "慢条斯理，带着掌控一切的意味",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 6,
+              "excerpt": "“莫特森家族已经结束了使命，能够操纵时间之沙的自然也就只有我了……你被时间之沙诅咒的还不算久，我就可以帮你先解除一部分。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "难道你就不想再活下去吗？再活蹦乱跳地泡妞、喝酒、骗钱、给这个世界再添个四五十年的乱子？",
+          "direction": "带着诱惑和调侃的语气",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 7,
+              "excerpt": "“难道你就不想再活下去吗？再活蹦乱跳地泡妞、喝酒、骗钱、给这个世界再添个四五十年的乱子？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯瞠目结舌，随后像放弃了一样叹了口气。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 8,
+              "excerpt": "尼斯瞠目结舌，没过多久，他像是放弃了似的叹了一口气。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "果然…还是你赢了……",
+          "direction": "叹气，带着无奈和认命",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 9,
+              "excerpt": "“果然…还是你赢了……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "要我……对诸神发个誓…吗？",
+          "direction": "犹豫而试探地询问",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 10,
+              "excerpt": "“要我……对诸神发个誓…吗？”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩将时间之沙按进万物怀表的机芯，怀表垂下，表面浮现出树枝与沙漏的纹样。尼斯认出纹样后全身一震。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 11,
+              "excerpt": "黎恩将时间之沙按进了万物怀表的机芯，听着琼斯口中种种已经恢复的力量，露出了不怀好意的微笑。"
+            },
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 12,
+              "excerpt": "怀表从他的手中垂下，上面无中生有般出现了树枝与沙漏的纹样。昏花的双眼在认清那树枝模样的刹那，尼斯忍不住全身一震。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "你就对着它发誓吧。",
+          "direction": "不怀好意地微笑",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 11,
+              "excerpt": "“你就对着它发誓吧。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯不再犹豫，大声起誓。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 13,
+              "excerpt": "他不再犹豫，大声地起誓：“我尼斯·纳尔森在世界树的见证下起誓，若是我得以从这诅咒中恢复，从今日起必将奉黎恩·"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "我尼斯·纳尔森在世界树的见证下起誓，若是我得以从这诅咒中恢复，从今日起必将奉黎恩·",
+          "direction": "大声、郑重地发誓",
+          "sourceRefs": [
+            {
+              "chapterIndex": 76,
+              "paragraphIndex": 13,
+              "excerpt": "“我尼斯·纳尔森在世界树的见证下起誓，若是我得以从这诅咒中恢复，从今日起必将奉黎恩·"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩制服尼斯并迫其向怀表发誓效忠",
+      "sourceChapterRange": [
+        11,
+        11
+      ],
+      "confidence": 0.85
+    },
+    {
+      "sceneNumber": 25,
+      "slugline": "内景. 万物怀表领域 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_12",
+      "characterIds": [
+        "char_01",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "尼斯不再犹豫，大声起誓。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "他不再犹豫，大声地起誓："
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_02",
+          "line": "我尼斯·纳尔森在世界树的见证下起誓，若是我得以从这诅咒中恢复，从今日起必将奉黎恩·怀特为唯一真正的主人，尽心尽力为他服务到生命的尽头！",
+          "direction": "大声地起誓",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 0,
+              "excerpt": "我尼斯·纳尔森在世界树的见证下起誓，若是我得以从这诅咒中恢复，从今日起必将奉黎恩·怀特为唯一真正的主人，尽心尽力为他服务到生命的尽头！"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "怀表上有绿色的微光一闪即逝。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 1,
+              "excerpt": "仿佛是接纳了这一誓言，怀表上有绿色的微光一闪即逝。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黎恩心念一动，万物怀表的指针开始逆向转动。尼斯的年龄肉眼可见地倒退，被剥夺的寿命渐渐回来。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 2,
+              "excerpt": "黎恩心念一动，万物怀表的指针便开始逆向转动。尼斯的年龄肉眼可见地倒退了起来……不，倒不如说是他之前被剥夺的寿命又渐渐地回来了。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "尼斯苦笑。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 0,
+              "paragraphIndex": 3,
+              "excerpt": "尼斯苦笑着"
+            }
+          ]
+        }
+      ],
+      "summary": "黎恩逆转时间之沙恢复尼斯寿命",
+      "sourceChapterRange": [
+        11,
+        11
+      ],
+      "confidence": 0.6
+    },
+    {
+      "sceneNumber": 26,
+      "slugline": "内景. 琼斯书房 - 日",
+      "timeOfDay": "unknown",
+      "locationId": "loc_13",
+      "characterIds": [
+        "char_01",
+        "char_03"
+      ],
+      "content": [
+        {
+          "type": "action",
+          "description": "琼斯恢复一本正经的样子，看着黎恩。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 2,
+              "excerpt": "不再开什么玩笑，琼斯恢复了一本正经的样子。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "如今的世界，已经和从前大不相同了对吧？",
+          "direction": "一本正经地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 3,
+              "excerpt": "“如今的世界，已经和从前大不相同了对吧？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "魔力的回归，归根结底不都是你…不，我们俩一起所导致的吗？",
+          "direction": "淡定地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 4,
+              "excerpt": "黎恩此时已经想通了许多，他淡定地回答道:“魔力的回归，归根结底不都是你…不，我们俩一起所导致的吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "说得好啊，听见‘我们’这么美好的词汇还真是令人开心。不过，让你一个人在外边经受将至的种种挑战，却总让我有点不放心……",
+          "direction": "开心但担忧地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 5,
+              "excerpt": "“说得好啊，听见‘我们’这么美好的词汇还真是令人开心。不过，让你一个人在外边经受将至的种种挑战，却总让我有点不放心……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "你想说什么？",
+          "direction": "不解地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 6,
+              "excerpt": "“你想说什么？”黎恩不解地问道。"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "琼斯从书架抽出一本钢铁封皮古书，翻看后合上插回，同时一块巨大黑板凭空出现。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 7,
+              "excerpt": "琼斯从背后的书架中抽出了一本似乎是用钢铁保护封皮的古书，摸索了片刻，便翻到其中一页。让黎恩想不到的是，他只是瞥了一眼，就马上又合上书，将其插回了书架。同时，一块巨大的黑板凭空出现在了旁边。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "抱歉，刚才我没有留心，差点就把很麻烦的东西给你看了……这段记忆对目前的你来说完全是有害无益，容我暂时保密。",
+          "direction": "尴尬地咳嗽",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 9,
+              "excerpt": "“抱歉，刚才我没有留心，差点就把很麻烦的东西给你看了……”他尴尬地咳嗽了两声，“这段记忆对目前的你来说完全是有害无益，容我暂时保密。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "谁没有点自己的秘密呢？只要互相信任就没有问题，不是吗？",
+          "direction": "笑着",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 10,
+              "excerpt": "“谁没有点自己的秘密呢？”黎恩笑了，“只要互相信任就没有问题，不是吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "居然给老头子我上课，现在的年轻人真是……",
+          "direction": "叹气",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 11,
+              "excerpt": "“居然给老头子我上课，现在的年轻人真是……”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "琼斯创造出一瓶红酒，倒在两个酒杯中，微抿一口。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 12,
+              "excerpt": "琼斯叹了口气，随手便创造出一瓶黎恩没有见过的红酒，倒在两个酒杯之中。他微抿了一口润了润喉咙"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "就算是时间之沙归来，我在战斗中也只能起一些辅助的作用，剩下的就得靠你自己的努力了。所以，我必须的得给你好好讲一下，现在世界上都发生了哪些变化，而这些变化对你的实力又有哪些影响。",
+          "direction": "认真地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 12,
+              "excerpt": "“就算是时间之沙归来，我在战斗中也只能起一些辅助的作用，剩下的就得靠你自己的努力了。所以，我必须的得给你好好讲一下，现在世界上都发生了哪些变化，而这些变化对你的实力又有哪些影响。”"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "description": "黑板上自动显示数十行长篇大论，随后化为几行简洁解释。",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 13,
+              "excerpt": "一边说着，黑板上便自动显示出了数十行的长篇大论，仿佛是有一支无形的粉笔在那里自动写字一般。其原理也很简单，不过是靠魔力创造出那个字迹而已，现在空气中弥漫的魔力浓度都已经不错，完全支撑得起这样挥霍。不过，黎恩对那些太过高深的理论还是一头雾水，察觉到这一点，琼斯又一挥手，数十行的长篇大论顿时化为了几行简洁明了的解释。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "虽然不太准确，但还是尽可能简略地说明好了：由于万物怀表收回了时间之沙，魔力流入世界的速度加快了许多。就像一个蚂蚁洞会很快毁掉堤坝那样，那个原本将魔力排斥在世界之外的‘罩子’的破裂会比预期中快上许多。恐怕用不了太长的时间，这个世界便会逐渐向着过去的形态蜕变。",
+          "direction": "简略地说明",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 14,
+              "excerpt": "“虽然不太准确，但还是尽可能简略地说明好了：由于万物怀表收回了时间之沙，魔力流入世界的速度加快了许多。就像一个蚂蚁洞会很快毁掉堤坝那样，那个原本将魔力排斥在世界之外的‘罩子’的破裂会比预期中快上许多。恐怕用不了太长的时间，这个世界便会逐渐向着过去的形态蜕变。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "黎恩，你读过《至高圣典》、《伟大的开国》、《十二骑士传说》吗？",
+          "direction": "突然问道",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 15,
+              "excerpt": "突然，琼斯问了一个似乎毫不相关的问题：“黎恩，你读过《至高圣典》、《伟大的开国》、《十二骑士传说》吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "莫非那些……并不是捏造出来的虚构故事，而是货真价实的史实？",
+          "direction": "惊讶地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 17,
+              "excerpt": "“莫非那些……并不是捏造出来的虚构故事，而是货真价实的史实？”黎恩惊讶地问道。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "不，那倒不是。流传下来为公众所知的知识并不都对，但其中相当一部分都有着真实的依据。而且，你经历的这些事也完全不会比那些史诗传奇差多少，不是吗？",
+          "direction": "叹气",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 18,
+              "excerpt": "“不，那倒不是。”琼斯叹了口气道，“流传下来为公众所知的知识并不都对，但其中相当一部分都有着真实的依据。而且，你经历的这些事也完全不会比那些史诗传奇差多少，不是吗？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "身为北地的佣兵之王，为抵挡魔兽与蛮族的袭击流尽最后一滴热血；跨越时间长河来到这个时代的你，比任何预言家都还要了解未来的走向；拥有一棵属于你自己的世界树，斩杀了带有神性的魔狼之王，见证了白之王留下的守密人，还曾经与沉眠的混沌之龙索卡哈姆擦肩而过，又和三位在历史上留下大名的奇人结交……",
+          "direction": "一一道来",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 19,
+              "excerpt": "“身为北地的佣兵之王，为抵挡魔兽与蛮族的袭击流尽最后一滴热血；跨越时间长河来到这个时代的你，比任何预言家都还要了解未来的走向；拥有一棵属于你自己的世界树，斩杀了带有神性的魔狼之王，见证了白之王留下的守密人，还曾经与沉眠的混沌之龙索卡哈姆擦肩而过，又和三位在历史上留下大名的奇人结交……”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "你每活一天，都已经是在书写一页新的传奇了。",
+          "direction": "注视着黎恩，微笑着",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 20,
+              "excerpt": "琼斯将黎恩所经历的事件一一道来，最终，他注视着黎恩，微笑着说道：“你每活一天，都已经是在书写一页新的传奇了。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "既然你已经身处传奇故事之中，那就要做好心理准备。要做好看见巨龙和精灵，乃至于面对魔法师和古代的亡魂的准备，否则下场一定会十分凄惨。幸运的是我这把老骨头还能帮点忙。不然，就算那些原本历史上出色的英杰，也很有可能来不及适应这剧变的世界，在崭露头角之前便丢掉性命。",
+          "direction": "严肃地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 21,
+              "excerpt": "“既然你已经身处传奇故事之中，那就要做好心理准备。要做好看见巨龙和精灵，乃至于面对魔法师和古代的亡魂的准备，否则下场一定会十分凄惨。幸运的是我这把老骨头还能帮点忙。不然，就算那些原本历史上出色的英杰，也很有可能来不及适应这剧变的世界，在崭露头角之前便丢掉性命。”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "能够格挡冷箭的剑术不一定挡得住魔法的侵袭，以一当百的猛士可能死在隐形杀手的刀下。世界正在剧变，无法赶上的注定会被时代浪潮所抛弃。",
+          "direction": "激动地站起来，挥舞双手",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 22,
+              "excerpt": "“能够格挡冷箭的剑术不一定挡得住魔法的侵袭，以一当百的猛士可能死在隐形杀手的刀下。世界正在剧变，无法赶上的注定会被时代浪潮所抛弃。”像是对着翘首以盼的民众们发表演讲一般，琼斯讲到激动之时，忍不住站了起来，像是要搅动世界的风云变幻一般挥舞着双手。"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_03",
+          "line": "黎恩，黄金级的实力已经是许多佣兵毕生的追求，然而你可知道凌驾于黄金级之上的力量？",
+          "direction": "激动地",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 23,
+              "excerpt": "“黎恩，黄金级的实力已经是许多佣兵毕生的追求，然而你可知道凌驾于黄金级之上的力量？”"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "characterId": "char_01",
+          "line": "黄金级之上……突破人类的界限，开辟出新的道路，踏入未知境界的强者。我记得这样的人被称作‘大师’，他们的战斗技巧无",
+          "direction": "努力挖掘回忆",
+          "sourceRefs": [
+            {
+              "chapterIndex": 77,
+              "paragraphIndex": 25,
+              "excerpt": "努力挖掘着过往的回忆，黎恩回答：“突破人类的界限，开辟出新的道路，踏入未知境界的强者。我记得这样的人被称作‘大师’，他们的战斗技巧无"
+            }
+          ]
+        }
+      ],
+      "summary": "琼斯在书房向黎恩讲解世界剧变与力量层级",
+      "sourceChapterRange": [
+        12,
+        12
+      ],
+      "confidence": 0.8
+    }
+  ],
+  "charIdToName": {
+    "char_01": "黎恩·怀特",
+    "char_02": "尼斯·拉尔森",
+    "char_03": "琼斯",
+    "char_04": "维克托·莫特森",
+    "char_05": "艾瑞克·弗瑞德里希",
+    "char_06": "摩根·狄福尔特",
+    "char_07": "白之王",
+    "char_08": "胡安",
+    "char_09": "未知角色(id=裂须海盗头子)",
+    "char_10": "未知角色(id=围观者)",
+    "char_11": "未知角色(id=大副)",
+    "char_12": "未知角色(id=海盗)"
+  },
+  "charIdSet": [
+    "char_01",
+    "char_02",
+    "char_03",
+    "char_04",
+    "char_05",
+    "char_06",
+    "char_07",
+    "char_08"
+  ],
+  "aliasIndex": {}
+}

@@ -48,7 +48,7 @@ describe('P0-3: convert-scene Prompt 精简验证', () => {
       ['4', ['sourceRefs']],
       ['5', ['confidence', '0.9']],
       ['6', ['summary']],
-      ['7', ['VO', '忽略']],
+      ['7', ['心理', '忽略']],
       ['8', ['insufficient_context']],
     ];
     for (const [num, keywords] of expectations) {
@@ -86,5 +86,9 @@ describe('P0-3: convert-scene Prompt 精简验证', () => {
     expect(SYSTEM_PROMPT).toContain('严格基于原文');
     expect(SYSTEM_PROMPT).toContain('禁止归给任何具名主角');
     expect(SYSTEM_PROMPT).toContain('只转换原文实际存在的内容');
+  });
+
+  it('FIX-10（ADR-0002，B 案）：不承诺契约无法承载的 VO 通道', () => {
+    expect(SYSTEM_PROMPT).not.toContain('VO');
   });
 });

@@ -1,0 +1,398 @@
+{
+  "sample": "zhanlan-short",
+  "profile": "light",
+  "jobId": "job_1789066893149_qx1khu",
+  "decisions": [
+    {
+      "sceneIndex": 1,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:尼斯",
+        "major:黎恩",
+        "chapter:0"
+      ]
+    },
+    {
+      "sceneIndex": 2,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:尼斯",
+        "major:黎恩",
+        "chapter:0"
+      ]
+    },
+    {
+      "sceneIndex": 3,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-CHAPTER",
+      "protectedHits": [
+        "chapter:1"
+      ]
+    },
+    {
+      "sceneIndex": 4,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-CHAPTER",
+      "protectedHits": [
+        "chapter:1"
+      ]
+    },
+    {
+      "sceneIndex": 5,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "chapter:1"
+      ]
+    },
+    {
+      "sceneIndex": 6,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "major:琼斯",
+        "chapter:2"
+      ]
+    },
+    {
+      "sceneIndex": 7,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "major:琼斯",
+        "chapter:3"
+      ]
+    },
+    {
+      "sceneIndex": 8,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "major:维克托·莫特森",
+        "major:琼斯",
+        "chapter:3"
+      ]
+    },
+    {
+      "sceneIndex": 9,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "major:维克托·莫特森",
+        "chapter:3"
+      ]
+    },
+    {
+      "sceneIndex": 10,
+      "action": "MERGE",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:维克托·莫特森",
+        "chapter:4"
+      ],
+      "mergedWith": [
+        11
+      ]
+    },
+    {
+      "sceneIndex": 12,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:维克托·莫特森",
+        "major:黎恩",
+        "major:尼斯",
+        "chapter:5"
+      ]
+    },
+    {
+      "sceneIndex": 13,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:尼斯",
+        "chapter:6"
+      ]
+    },
+    {
+      "sceneIndex": 14,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:艾瑞克",
+        "major:黎恩",
+        "chapter:6"
+      ]
+    },
+    {
+      "sceneIndex": 15,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:艾瑞克"
+      ]
+    },
+    {
+      "sceneIndex": 16,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:琼斯",
+        "major:艾瑞克",
+        "chapter:8"
+      ]
+    },
+    {
+      "sceneIndex": 17,
+      "action": "MERGE",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:艾瑞克"
+      ],
+      "mergedWith": [
+        18
+      ]
+    },
+    {
+      "sceneIndex": 19,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:艾瑞克"
+      ]
+    },
+    {
+      "sceneIndex": 20,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:艾瑞克",
+        "major:琼斯"
+      ]
+    },
+    {
+      "sceneIndex": 21,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:艾瑞克"
+      ]
+    },
+    {
+      "sceneIndex": 22,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:尼斯",
+        "major:黎恩",
+        "major:艾瑞克"
+      ]
+    },
+    {
+      "sceneIndex": 23,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:尼斯",
+        "chapter:11"
+      ]
+    },
+    {
+      "sceneIndex": 24,
+      "action": "KEEP",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:黎恩",
+        "major:琼斯",
+        "major:尼斯",
+        "chapter:11"
+      ]
+    },
+    {
+      "sceneIndex": 25,
+      "action": "MERGE",
+      "ruleId": "R-PROTECT-MAJOR",
+      "protectedHits": [
+        "major:琼斯",
+        "major:黎恩"
+      ],
+      "mergedWith": [
+        26
+      ]
+    }
+  ],
+  "stats": {
+    "total": 26,
+    "kept": 23,
+    "merged": 3,
+    "condensed": 0,
+    "dropped": 0,
+    "dropRatio": 0,
+    "outputScenes": 23,
+    "targetRatio": 0.7,
+    "actualRatio": 0.8846
+  },
+  "protectedReport": {
+    "protectedChapters": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      11
+    ],
+    "hits": [
+      {
+        "sceneIndex": 1,
+        "chapter": 0,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 2,
+        "chapter": 0,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 3,
+        "chapter": 1,
+        "reason": "protected-chapter"
+      },
+      {
+        "sceneIndex": 4,
+        "chapter": 1,
+        "reason": "protected-chapter"
+      },
+      {
+        "sceneIndex": 5,
+        "chapter": 1,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 6,
+        "chapter": 2,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 7,
+        "chapter": 3,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 8,
+        "chapter": 3,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 9,
+        "chapter": 3,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 10,
+        "chapter": 4,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 11,
+        "chapter": 4,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 12,
+        "chapter": 5,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 13,
+        "chapter": 6,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 14,
+        "chapter": 6,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 15,
+        "chapter": 7,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 16,
+        "chapter": 8,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 17,
+        "chapter": 9,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 18,
+        "chapter": 9,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 19,
+        "chapter": 9,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 20,
+        "chapter": 10,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 21,
+        "chapter": 10,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 22,
+        "chapter": 10,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 23,
+        "chapter": 11,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 24,
+        "chapter": 11,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 25,
+        "chapter": 12,
+        "reason": "major-present"
+      },
+      {
+        "sceneIndex": 26,
+        "chapter": 12,
+        "reason": "major-present"
+      }
+    ]
+  }
+}

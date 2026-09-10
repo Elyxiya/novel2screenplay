@@ -13,6 +13,7 @@ import type { PipelineJobState } from '@novel/contracts/pipeline';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import type { QualityAssessment } from '../multi-agent/handoff-protocol';
 import type { JobMetrics } from '../pipeline/metrics';
+import type { PreprocessReport } from '../preprocess/clean';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
 
 /** FIX-05：恢复锁 TTL（毫秒）——进程崩溃后由 TTL 自动释放，锁可被夺 */
@@ -55,6 +56,8 @@ export interface StoredJob {
     qualityAssessment?: QualityAssessment;
     /** FIX-02b：运行期指标（usage/耗时/预算拦截/占位），随 pipelineState 落库 */
     metrics?: JobMetrics;
+    /** FIX-11：预处理留痕（噪声行清洗报告） */
+    preprocess?: PreprocessReport;
   };
 }
 

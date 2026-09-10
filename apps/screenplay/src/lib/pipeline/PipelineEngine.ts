@@ -13,6 +13,7 @@ import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
 import type { Phase1Output } from '@novel/contracts/pipeline';
+import { cleanNovelText } from '../preprocess/clean';
 
 /** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
 const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
@@ -66,8 +67,11 @@ export class PipelineEngine {
     /** B-09：显式复用来源任务的 Phase1 设定卡（跳过本次 LLM 分析，用户主动选择） */
     reusePhase1FromJobId?: string;
   }): Promise<string> {
+    // FIX-11：章节解析前清洗噪声行（盗版水印/广告/章尾引导/乱码）；留痕进 pipelineState.preprocess
+    const { text: cleanedNovelText, report: preprocessReport } = cleanNovelText(input.novelText);
+
     // Parse novel text into chapters
-    const parseResult = parseNovel(input.novelText);
+    const parseResult = parseNovel(cleanedNovelText);
 
     if (parseResult.chapters.length === 0) {
       throw new Error('未检测到有效章节内容');
@@ -106,7 +110,7 @@ export class PipelineEngine {
 
     // Create job — store ALL chapters (for result page original text)
     const jobId = jobStore.create({
-      novelText: input.novelText,
+      novelText: cleanedNovelText,
       chapterTexts: allChapterTexts,
       modelId: provider.modelId,
       selectedChapters: input.selectedChapters && input.selectedChapters.length > 0
@@ -127,6 +131,21 @@ export class PipelineEngine {
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `Phase 1: 复用设定卡（来源任务 ${input.reusePhase1FromJobId}）` },
+        ],
+      }));
+    }
+
+    // FIX-11：预处理留痕（仅在有移除时写入；含分规则计数与审计样本）
+    if (preprocessReport.removedLines > 0) {
+      const detail = Object.entries(preprocessReport.byRule)
+        .map(([rule, count]) => `${rule}×${count}`)
+        .join('、');
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, preprocess: preprocessReport },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `预处理: 移除 ${preprocessReport.removedLines} 行噪声（${detail}）` },
         ],
       }));
     }

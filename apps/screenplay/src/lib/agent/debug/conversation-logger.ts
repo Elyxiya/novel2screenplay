@@ -14,6 +14,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { redactValue } from './redact';
 
 // ── 类型定义 ──────────────────────────────────────────────────────────────
 
@@ -228,7 +229,8 @@ export class AgentConversationLogger {
     try {
       fs.mkdirSync(this.logDir, { recursive: true });
       const file = path.join(this.logDir, `${entry.taskId}.jsonl`);
-      fs.appendFileSync(file, JSON.stringify(entry) + '\n', 'utf8');
+      // FIX-23：落盘前深遍历脱敏（密钥/JWT/邮箱/手机号掩码，超长文本 hash 化）
+      fs.appendFileSync(file, JSON.stringify(redactValue(entry)) + '\n', 'utf8');
     } catch (err) {
       // 落盘失败不阻断主流程，降级为静默
       console.warn(`[AgentDebug] JSONL 落盘失败 (${entry.taskId}):`, err);

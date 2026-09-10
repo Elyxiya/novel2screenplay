@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { FlowDebugClient } from '@/components/debug/FlowDebugClient';
+import { MetricsCard } from '@/components/debug/MetricsCard';
 
 export const metadata = {
   title: '流程调试与评测',
@@ -11,6 +12,7 @@ export default function DebugPage() {
   return (
     <RequireAuth>
       <Suspense fallback={<div style={{ padding: 24 }}>加载中...</div>}>
+        <MetricsCard />
         <FlowDebugClient />
       </Suspense>
     </RequireAuth>

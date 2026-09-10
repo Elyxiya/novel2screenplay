@@ -8,6 +8,7 @@ import { Phase1Analyzer } from './Phase1Analyzer';
 import { Phase2Segmenter } from './Phase2Segmenter';
 import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
+import { MetricsAccumulator } from './metrics';
 import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
 import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
@@ -164,6 +165,9 @@ export class PipelineEngine {
       const phase2Output = job.pipelineState.phase2Output!;
       const phase1Output = job.pipelineState.phase1Output!;
 
+      // FIX-02b：从已落库指标恢复并继续累积（旧 job 无指标时置 partial）
+      const metrics = MetricsAccumulator.restore(job.pipelineState.metrics);
+
       const sceneDefs = phase2Output.scenes.filter((s) =>
         failedScenes.includes(s.sceneIndex),
       );
@@ -176,7 +180,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         undefined,
-        { settingCard: phase1Output.settingCard },
+        { settingCard: phase1Output.settingCard, metrics },
       );
 
       // Merge old + new results
@@ -199,7 +203,7 @@ export class PipelineEngine {
         status: 'completed' as const,
         currentPhase: 4,
         progress: 100,
-        pipelineState: { ...j.pipelineState, phase3Output: allOutputs, phase4Output: screenplay },
+        pipelineState: { ...j.pipelineState, phase3Output: allOutputs, phase4Output: screenplay, metrics: metrics.snapshot() },
         resultId: screenplay.metadata.title,
         logs: [
           ...j.logs,
@@ -255,14 +259,16 @@ export class PipelineEngine {
     console.log(`[${jobId}] === PIPELINE STARTED ===`);
     console.log(`[${jobId}] provider=${provider.name}(${provider.modelId}), chapters=${chapters.length}`);
 
-    // 阶段耗时统计（供调试评测使用）
-    const phaseTimings: Record<string, { durationMs: number }> = {};
+    // 运行期指标累积（FIX-02b）：耗时/usage/预算拦截/占位统一进 MetricsAccumulator，
+    // 在阶段边界与终态随 pipelineState.metrics 一起落库（run-local 累积，避免
+    // 依赖 job.metadata——它没有持久化路径且每次 update 会从 DB 重载）
+    const metrics = new MetricsAccumulator();
     const recordTiming = (phase: string, startedAt: number): void => {
-      phaseTimings[phase] = { durationMs: Date.now() - startedAt };
+      metrics.recordPhaseTiming(phase, Date.now() - startedAt);
     };
     const withTiming = (job: StoredJob): Record<string, unknown> => ({
       ...(job.metadata ?? {}),
-      phaseTimings: { ...phaseTimings },
+      phaseTimings: { ...metrics.value.phaseTimings },
     });
 
     // ── Phase 1: Analyze ──
@@ -289,12 +295,7 @@ export class PipelineEngine {
         enabled: true,
         onBlocked: (site, reason) => {
           console.log(`[${jobId}] Phase1 预算守卫拦截（${site}）: ${reason}`);
-          jobStore.update(jobId, (job) => {
-            const meta = { ...(job.metadata || {}) } as Record<string, unknown>;
-            const prev = (meta.budgetBlocked as number) || 0;
-            meta.budgetBlocked = prev + 1;
-            return { ...job, metadata: meta };
-          });
+          metrics.addBudgetBlocked();
         },
       }),
     );
@@ -309,7 +310,7 @@ export class PipelineEngine {
         ...job,
         progress: 25,
         metadata: withTiming(job),
-        pipelineState: { ...job.pipelineState, phase1Output },
+        pipelineState: { ...job.pipelineState, phase1Output, metrics: metrics.snapshot() },
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `Phase 1 完成: 提取到 ${phase1Output.characters.length} 个角色、${phase1Output.locations.length} 个地点` },
@@ -349,7 +350,7 @@ export class PipelineEngine {
         ...job,
         progress: 45,
         metadata: withTiming(job),
-        pipelineState: { ...job.pipelineState, phase2Output },
+        pipelineState: { ...job.pipelineState, phase2Output, metrics: metrics.snapshot() },
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `Phase 2 完成: 识别到 ${phase2Output.scenes.length} 个场景` },
@@ -385,7 +386,7 @@ export class PipelineEngine {
       jobStore,
       jobId,
       undefined,
-      { settingCard: phase1Output.settingCard },
+      { settingCard: phase1Output.settingCard, metrics },
     );
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;
@@ -396,7 +397,7 @@ export class PipelineEngine {
         ...job,
         progress: 75,
         metadata: withTiming(job),
-        pipelineState: { ...job.pipelineState, phase3Output: phase3Outputs },
+        pipelineState: { ...job.pipelineState, phase3Output: phase3Outputs, metrics: metrics.snapshot() },
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `Phase 3 完成: 成功转换 ${successCount}/${phase3Outputs.length} 个场景` },
@@ -444,7 +445,7 @@ export class PipelineEngine {
         currentPhase: 4,
         progress: 100,
         metadata: withTiming(job),
-        pipelineState: { ...job.pipelineState, phase4Output: screenplay },
+        pipelineState: { ...job.pipelineState, phase4Output: screenplay, metrics: metrics.snapshot() },
         resultId: screenplay.metadata.title,
         logs: [
           ...job.logs,

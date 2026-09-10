@@ -101,7 +101,8 @@ function gradeOf(score: number): FlowEvaluation['overall']['grade'] {
 // ── 工具 ──────────────────────────────────────────────────────────────────
 
 function parsePhaseTimings(job: StoredJob): Record<string, { durationMs: number }> {
-  const raw = job.metadata?.phaseTimings;
+  // FIX-02b：优先读已落库的 pipelineState.metrics；metadata 仅作旧数据 fallback
+  const raw = job.pipelineState?.metrics?.phaseTimings ?? job.metadata?.phaseTimings;
   if (!raw || typeof raw !== 'object') return {};
   const out: Record<string, { durationMs: number }> = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
@@ -309,7 +310,8 @@ function evalMerge(
 // ── 整体评测 ───────────────────────────────────────────────────────────────
 
 function parseUsage(job: StoredJob): FlowEvaluation['stats']['usage'] {
-  const raw = job.metadata?.usage;
+  // FIX-02b：优先读已落库的 pipelineState.metrics；metadata 仅作旧数据 fallback
+  const raw = job.pipelineState?.metrics?.usage ?? job.metadata?.usage;
   if (!raw || typeof raw !== 'object') return null;
   const u = raw as Record<string, unknown>;
   const promptTokens = typeof u.promptTokens === 'number' ? u.promptTokens : 0;

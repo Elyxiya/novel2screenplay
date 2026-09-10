@@ -12,6 +12,7 @@ import type { PipelineJob, SceneStatus } from '../../types/api';
 import type { PipelineJobState } from '@novel/contracts/pipeline';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import type { QualityAssessment } from '../multi-agent/handoff-protocol';
+import type { JobMetrics } from '../pipeline/metrics';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
 
 /** Internal stored job with pipeline state */
@@ -49,6 +50,8 @@ export interface StoredJob {
     phase4Output?: Screenplay;
     /** P-评估：传统管线完成的 LLM 质量评估结果（持久化） */
     qualityAssessment?: QualityAssessment;
+    /** FIX-02b：运行期指标（usage/耗时/预算拦截/占位），随 pipelineState 落库 */
+    metrics?: JobMetrics;
   };
 }
 

@@ -12,11 +12,14 @@ import {
   buildRollingSummary,
   buildOpenThreadContext,
 } from './phase3-context';
+import type { MetricsSink } from './metrics';
 
 /** Task 3 convertScenes 可选增强上下文（向后兼容，未传则行为与改造前一致） */
 export interface Phase3ConvertOptions {
   /** map-reduce 路径的全局设定卡（章节摘要 + open threads），驱动 3.2 上下文注入 */
   settingCard?: SettingCard;
+  /** FIX-02b：运行期指标 sink（PipelineEngine 传入 run-local MetricsAccumulator） */
+  metrics?: MetricsSink;
 }
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
@@ -225,6 +228,7 @@ export class Phase3SceneConverter {
     charIdMap: Map<string, string>, jobStore: JobStore, jobId: string,
     abortSignal?: AbortSignal,
     summaries?: string, threads?: string,
+    metrics?: MetricsSink,
   ): Promise<Phase3Output> {
     const contextParts = [
       `角色: ${charContext}`,
@@ -250,7 +254,7 @@ export class Phase3SceneConverter {
         });
         const t1 = Date.now();
         console.log(`[Phase3]  ${label} LLM 返回 (${t1-t0}ms), 输出: ${response.content.length} 字符, usage: ${response.usage ? `输入${response.usage.promptTokens}+输出${response.usage.completionTokens}` : 'N/A'}`);
-        this.recordUsage(jobStore, jobId, response.usage || {}, partText.length);
+        this.recordUsage(jobStore, jobId, response.usage || {}, partText.length, metrics);
 
         const parsed = safeJsonParse(response.content) as Record<string, unknown>;
         console.log(`[Phase3]  ${label} 解析结果: keys=[${Object.keys(parsed).join(',')}], error=${parsed.error ?? '无'}, confidence=${parsed.confidence}, hasContent=${'content' in parsed}`);
@@ -373,9 +377,14 @@ export class Phase3SceneConverter {
     };
   }
 
-  /** Accumulate LLM usage into job metadata for token-efficiency evaluation. */
-  private recordUsage(jobStore: JobStore, jobId: string, usage: { promptTokens?: number; completionTokens?: number }, inputChars: number): void {
+  /**
+   * Accumulate LLM usage for token-efficiency evaluation.
+   * FIX-02b：有 sink 时写运行期累积器（随 pipelineState 落库）；job.metadata 的写入
+   * 保留为进程内兼容路径（无持久化，读取端已改为 metrics 优先）。
+   */
+  private recordUsage(jobStore: JobStore, jobId: string, usage: { promptTokens?: number; completionTokens?: number }, inputChars: number, sink?: MetricsSink): void {
     if (!usage.promptTokens && !usage.completionTokens) return;
+    sink?.addUsage({ promptTokens: usage.promptTokens, completionTokens: usage.completionTokens, inputChars });
     jobStore.update(jobId, j => {
       const meta = (j.metadata || {}) as Record<string, unknown>;
       const prev = (meta.usage || {}) as { promptTokens?: number; completionTokens?: number; inputChars?: number; calls?: number };
@@ -402,8 +411,9 @@ export class Phase3SceneConverter {
     return ctxTokens + bodyTokens + 1000; // + system prompt 余量
   }
 
-  /** 预算超限拦截：记入 metadata.budgetBlocked 计数 + warn 日志（不调 LLM） */
-  private recordBudgetBlocked(jobStore: JobStore, jobId: string, scene: SceneBoundary, reason?: string): void {
+  /** 预算超限拦截：计入指标 sink（FIX-02b）+ warn 日志（不调 LLM） */
+  private recordBudgetBlocked(jobStore: JobStore, jobId: string, scene: SceneBoundary, reason?: string, sink?: MetricsSink): void {
+    sink?.addBudgetBlocked();
     jobStore.update(jobId, j => {
       const meta = (j.metadata || {}) as Record<string, unknown>;
       const prev = (meta.budgetBlocked as number) || 0;
@@ -416,15 +426,20 @@ export class Phase3SceneConverter {
     });
   }
 
-  /** 3.1 占位率测点：未解析出 char_N 的在场角色名累计进 metadata.placeholder */
+  /** 3.1 占位率测点：未解析出 char_N 的在场角色名累计进指标 sink（FIX-02b） */
   private recordPlaceholder(
     jobStore: JobStore,
     jobId: string,
     scene: SceneBoundary,
     charIdMap: Map<string, string>,
+    sink?: MetricsSink,
   ): void {
     const resolve = resolveKeyCharacters(scene.keyCharacterNames || [], charIdMap);
     if (resolve.unresolved.length === 0) return;
+    sink?.addPlaceholder({
+      total: resolve.resolved.length + resolve.unresolved.length,
+      unresolved: resolve.unresolved.length,
+    });
     jobStore.update(jobId, j => {
       const meta = (j.metadata || {}) as Record<string, unknown>;
       const prev = (meta.placeholder || {}) as { total: number; unresolved: number };
@@ -464,8 +479,8 @@ export class Phase3SceneConverter {
         console.log(`[Phase3]  场景 #${scene.sceneIndex} 上下文裁剪: 角色 ${sceneCtx.charKept}/${sceneCtx.charTotal}, 地点 ${sceneCtx.locKept}/${sceneCtx.locTotal}`);
       }
 
-      // 3.1 显式 name→charN 解析：未命中名计入占位率（metadata 测点）
-      this.recordPlaceholder(jobStore, jobId, scene, charIdMap);
+      // 3.1 显式 name→charN 解析：未命中名计入占位率（FIX-02b：sink → pipelineState.metrics）
+      this.recordPlaceholder(jobStore, jobId, scene, charIdMap, opts?.metrics);
 
       const chapterText = chapterTexts[scene.chapterIndex] || '';
       const sceneText = chapterText.slice(scene.originalStartOffset, scene.originalEndOffset);
@@ -487,7 +502,7 @@ export class Phase3SceneConverter {
         totalTokens: estPrompt + 8192,
       });
       if (!check.allowed) {
-        this.recordBudgetBlocked(jobStore, jobId, scene, check.reason);
+        this.recordBudgetBlocked(jobStore, jobId, scene, check.reason, opts?.metrics);
         return this.degradedScene(scene, `预算超限已拦截: ${check.reason}`);
       }
 
@@ -495,7 +510,7 @@ export class Phase3SceneConverter {
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics);
         convResults.push(result);
       }
 

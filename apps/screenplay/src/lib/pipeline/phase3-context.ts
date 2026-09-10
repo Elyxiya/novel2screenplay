@@ -1,4 +1,4 @@
-import type { RawCharacter, SceneBoundary, SettingCard } from '@novel/contracts/pipeline';
+import type { CardSegment, RawCharacter, SceneBoundary, SettingCard } from '@novel/contracts/pipeline';
 
 /**
  * Task 3 的 Phase3 上下文组装纯函数（独立可测）：
@@ -38,6 +38,45 @@ export function resolveKeyCharacters(
     unresolved,
     placeholderRate: total === 0 ? 0 : unresolved.length / total,
   };
+}
+
+/** FIX-21：按章取卡的分阶段视图 */
+export interface CardView {
+  personalityTags: string[];
+  description: string;
+  status?: string;
+  /** 命中的段（未命中/无段时为 undefined = 基础卡） */
+  segment?: CardSegment;
+}
+
+/**
+ * FIX-21：区间取卡——返回该章应使用的角色视图。
+ * 规则：命中条件 from ≤ ch 且（无 to 或 ch ≤ to）；多段命中取「最晚开始」者（更贴近当下）；
+ * 无 cardSegments 或全不命中 → 基础字段（向后兼容，行为与改造前一致）。
+ */
+export function resolveCardView(char: RawCharacter, chapterIndex: number): CardView {
+  const base: CardView = {
+    personalityTags: char.personalityTags ?? [],
+    description: char.description ?? '',
+  };
+  const segments = char.cardSegments ?? [];
+  const hit = segments
+    .filter((s) => s.fromChapterIndex <= chapterIndex && (s.toChapterIndex === undefined || chapterIndex <= s.toChapterIndex))
+    .sort((a, b) => b.fromChapterIndex - a.fromChapterIndex)[0];
+  if (!hit) return base;
+  return {
+    personalityTags: hit.personalityTags ?? base.personalityTags,
+    description: hit.description ?? base.description,
+    status: hit.status,
+    segment: hit,
+  };
+}
+
+/**
+ * FIX-21：真名可用性——无 revealAt 恒可用；有则 ch ≥ revealAt 才放行（此前应用别名口径）。
+ */
+export function isTrueNameAllowedAt(char: RawCharacter, chapterIndex: number): boolean {
+  return char.revealAt === undefined || chapterIndex >= char.revealAt;
 }
 
 export interface SceneCharSelection {

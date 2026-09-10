@@ -11,6 +11,7 @@ import {
   selectSceneCharacters,
   buildRollingSummary,
   buildOpenThreadContext,
+  resolveCardView,
 } from './phase3-context';
 import type { MetricsSink } from './metrics';
 import { classifyJobError } from '../errors';
@@ -361,7 +362,15 @@ export class Phase3SceneConverter {
     const locsForCtx = keptLocs.length > 0 ? keptLocs : locations;
 
     const chars = charsForCtx
-      .map(c => `${charIdMap.get(c.name)}=${c.name}(${c.description?.slice(0, 20) || ''})`)
+      .map((c) => {
+        // FIX-21：按场景章号取分阶段卡（无段=基础卡，行为与改造前一致）
+        const view = resolveCardView(c, scene.chapterIndex);
+        const extra = [
+          view.status ? `状态:${view.status}` : '',
+          view.personalityTags.length > 0 ? view.personalityTags.slice(0, 3).join('/') : '',
+        ].filter(Boolean).join(' ');
+        return `${charIdMap.get(c.name)}=${c.name}(${view.description?.slice(0, 20) || ''}${extra ? ` ${extra}` : ''})`;
+      })
       .join(', ');
     const locs = locsForCtx
       .map(l => `loc_${String(l.sourceChapterIndex + 1).padStart(2, '0')}=${l.name}(${l.type})`)

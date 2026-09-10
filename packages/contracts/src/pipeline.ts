@@ -8,6 +8,17 @@ export const MergeProvenanceSchema = z.object({
   chapterIndex: z.number().int(),
 });
 
+/** FIX-21：分阶段卡——按章节区间的角色状态快照（缺省=整篇恒定，向后兼容） */
+export const CardSegmentSchema = z.object({
+  fromChapterIndex: z.number().int(),
+  /** 含端点；缺省 = 至结尾 */
+  toChapterIndex: z.number().int().optional(),
+  personalityTags: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  /** 阶段状态自由文本（如「重伤」「继任宗主」），供注入展示与人工核对 */
+  status: z.string().optional(),
+});
+
 export const RawCharacterSchema = z.object({
   name: z.string(),
   aliases: z.array(z.string()),
@@ -20,6 +31,13 @@ export const RawCharacterSchema = z.object({
    * 使断言矛盾可回溯到具体 merge 决策。旧截断路径不产出该字段。
    */
   mergeProvenance: z.array(MergeProvenanceSchema).optional(),
+  /**
+   * FIX-21：分阶段卡段（可选）。多段命中时取「最晚开始」的段（更贴近当下章）；
+   * 全部不命中回退基础字段。v1 由人工/后处理补齐，map-reduce 不自动产出。
+   */
+  cardSegments: z.array(CardSegmentSchema).optional(),
+  /** FIX-21：真名揭示章（含）；此前应使用别名口径，称谓断言据此放行/拦截 */
+  revealAt: z.number().int().optional(),
 });
 
 export const RawLocationSchema = z.object({
@@ -138,6 +156,7 @@ export const PipelineJobStateSchema = z.object({
 // ── Derived Types ──
 
 export type MergeProvenance = z.infer<typeof MergeProvenanceSchema>;
+export type CardSegment = z.infer<typeof CardSegmentSchema>;
 export type RawCharacter = z.infer<typeof RawCharacterSchema>;
 export type RawLocation = z.infer<typeof RawLocationSchema>;
 export type TimelineHint = z.infer<typeof TimelineHintSchema>;

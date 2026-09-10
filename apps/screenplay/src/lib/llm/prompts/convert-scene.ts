@@ -2,7 +2,9 @@
  * Phase 3: Scene Conversion system prompt.
  * Designed to prevent hallucinations and produce high-quality screenplay content.
  */
-export const SYSTEM_PROMPT = `你是专业剧本编剧。将小说片段转换为剧本 JSON。
+import { readFileSync } from 'fs';
+
+const BUILTIN_SYSTEM_PROMPT = `你是专业剧本编剧。将小说片段转换为剧本 JSON。
 
 输出格式（严格遵守）：
 {"summary":"场景摘要（15字内）","timeOfDay":"dawn|morning|afternoon|dusk|night|late-night|unknown","confidence":0.0-1.0,
@@ -29,3 +31,22 @@ export const SYSTEM_PROMPT = `你是专业剧本编剧。将小说片段转换�
 8.【严格基于原文】只转换原文实际存在的内容；原文未出现的角色/对话/事件禁添加。信息不足→输出 {"error":"insufficient_context","confidence":0.1}
 
 只输出纯 JSON，不要 markdown 代码块，不要任何解释文字。`;
+
+/**
+ * B-07：评估场景可用 CONVERT_PROMPT_FILE 指向外部提示词文件做版本对比；
+ * 未设置该环境变量时行为与改动前完全一致（内置提示词）。
+ */
+function resolveSystemPrompt(): string {
+  const file = process.env.CONVERT_PROMPT_FILE;
+  if (!file) return BUILTIN_SYSTEM_PROMPT;
+  try {
+    const content = readFileSync(file, 'utf8');
+    console.log(`[convert-scene] 使用外部提示词: ${file}（${content.length} 字符）`);
+    return content;
+  } catch (err) {
+    console.warn(`[convert-scene] 读取 ${file} 失败，回退内置提示词: ${(err as Error).message}`);
+    return BUILTIN_SYSTEM_PROMPT;
+  }
+}
+
+export const SYSTEM_PROMPT = resolveSystemPrompt();

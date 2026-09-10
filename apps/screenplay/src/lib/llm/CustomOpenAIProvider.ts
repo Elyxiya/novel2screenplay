@@ -14,6 +14,7 @@
  */
 
 import { BaseProvider } from './BaseProvider';
+import { llmHttpError } from '../errors';
 import type {
   LLMMessage,
   LLMChatOptions,
@@ -132,7 +133,7 @@ export class CustomOpenAIProvider extends BaseProvider implements LLMProvider, L
       const latency = Date.now() - t0;
 
       if (!response.ok) {
-        throw new Error(`Custom OpenAI API error: ${data.error?.message || response.statusText}`);
+        throw llmHttpError(`Custom OpenAI API error: ${data.error?.message || response.statusText}`, response.status);
       }
 
       this.totalLatency += latency;

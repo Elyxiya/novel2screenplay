@@ -1,4 +1,5 @@
 import { BaseProvider } from './BaseProvider';
+import { llmHttpError } from '../errors';
 import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
 
 /**
@@ -46,7 +47,7 @@ export class DeepSeekProvider extends BaseProvider {
     const json = await response.json();
 
     if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${json.error?.message || response.statusText}`);
+      throw llmHttpError(`DeepSeek API error: ${json.error?.message || response.statusText}`, response.status);
     }
 
     return {

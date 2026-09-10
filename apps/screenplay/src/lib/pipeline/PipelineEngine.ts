@@ -9,6 +9,7 @@ import { Phase2Segmenter } from './Phase2Segmenter';
 import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
 import { MetricsAccumulator } from './metrics';
+import { toJobErrorPayload } from '../errors';
 import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
 import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
@@ -99,12 +100,18 @@ export class PipelineEngine {
 
     // Start pipeline asynchronously (don't await — let it run in background)
     this.runPipeline(jobId, provider, selectedChapterObjs, input).catch((err) => {
-      const errorMsg = (err as Error).message;
+      // FIX-22：持久化为结构化 payload（SSE/日志仍用可读文案）
+      const failedJob = jobStore.get(jobId);
+      const payload = toJobErrorPayload(err, {
+        phase: failedJob?.currentPhase,
+        provider: provider.modelId,
+      });
+      const errorMsg = payload.message;
       jobStore.update(jobId, (job) => {
         const updated = {
           ...job,
           status: 'failed' as const,
-          error: errorMsg,
+          error: JSON.stringify(payload),
           logs: [
             ...job.logs,
             { timestamp: Date.now(), level: 'error' as const, message: `流水线失败: ${errorMsg}` },

@@ -15,6 +15,7 @@
  */
 
 import { BaseProvider } from './BaseProvider';
+import { llmHttpError } from '../errors';
 import type {
   LLMMessage,
   LLMChatOptions,
@@ -156,8 +157,9 @@ export class CustomAnthropicProvider extends BaseProvider implements LLMProvider
       const latency = Date.now() - t0;
 
       if (!response.ok) {
-        throw new Error(
+        throw llmHttpError(
           `Custom Anthropic API error: ${data.error?.message || response.statusText}`,
+          response.status,
         );
       }
 

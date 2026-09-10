@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getJobRepository } from '@/lib/store/sqlite';
 import { getCurrentUser, authError } from '@/lib/auth';
+import { formatJobError } from '@/lib/errors';
 import type { StoredJob } from '@/lib/store/job-store';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,8 @@ function toHistoryEntry(j: StoredJob) {
     currentPhase: j.currentPhase,
     progress: j.progress,
     error: j.error,
+    // FIX-22：可读文案（结构化 error → message；旧字符串原样）
+    errorText: formatJobError(j.error),
     createdAt: j.createdAt,
     updatedAt: j.updatedAt,
     completedAt: j.completedAt,

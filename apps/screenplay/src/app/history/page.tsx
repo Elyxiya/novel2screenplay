@@ -10,6 +10,8 @@ interface HistoryJob {
   currentPhase: number;
   progress: number;
   error: string | null;
+  /** FIX-22：后端格式化的可读错误文案 */
+  errorText?: string | null;
   createdAt: number;
   updatedAt: number;
   completedAt: number | null;
@@ -219,9 +221,9 @@ export default function HistoryPage() {
                       {j.selectedChapterCount > 0 && <span>{j.selectedChapterCount} 章</span>}
                       {j.resultId && <span>已生成剧本</span>}
                     </div>
-                    {j.error && (
-                      <p className="text-xs text-red-400 mt-1 truncate max-w-xs" title={j.error}>
-                        ⚠ {j.error.slice(0, 60)}
+                    {(j.errorText ?? j.error) && (
+                      <p className="text-xs text-red-400 mt-1 truncate max-w-xs" title={j.errorText ?? j.error ?? undefined}>
+                        ⚠ {(j.errorText ?? j.error ?? '').slice(0, 60)}
                       </p>
                     )}
                   </div>

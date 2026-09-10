@@ -27,6 +27,8 @@ interface JobItem {
   currentPhase: number;
   progress: number;
   error: string | null;
+  /** FIX-22：后端格式化的可读错误文案 */
+  errorText?: string | null;
   createdAt: number;
   updatedAt: number;
   completedAt: number | null;
@@ -390,7 +392,9 @@ function WorkbenchContent() {
                           {fmtTime(j.createdAt)}
                           {j.selectedChapterCount > 0 && ` · ${j.selectedChapterCount} 章`}
                           {sceneCount && ' · 已生成剧本'}
-                          {j.error && <span className="text-red-400 ml-2">⚠ {j.error.slice(0, 40)}</span>}
+                          {(j.errorText ?? j.error) && (
+                            <span className="text-red-400 ml-2">⚠ {(j.errorText ?? j.error ?? '').slice(0, 40)}</span>
+                          )}
                         </p>
                       </div>
                       {(j.status === 'completed' || j.status === 'failed') && (

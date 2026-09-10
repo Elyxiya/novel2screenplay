@@ -1,4 +1,5 @@
 import { BaseProvider } from './BaseProvider';
+import { llmHttpError } from '../errors';
 import type { LLMMessage, LLMChatOptions, LLMChatResponse, LLMStreamChunk } from './types';
 
 /**
@@ -33,7 +34,7 @@ export class OpenAIProvider extends BaseProvider {
     const json = await response.json();
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${json.error?.message || response.statusText}`);
+      throw llmHttpError(`OpenAI API error: ${json.error?.message || response.statusText}`, response.status);
     }
 
     return {

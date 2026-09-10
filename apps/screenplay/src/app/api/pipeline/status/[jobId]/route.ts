@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jobStore } from '@/lib/store/job-store';
 import { getCurrentUser, authError } from '@/lib/auth';
+import { formatJobError } from '@/lib/errors';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const user = await getCurrentUser();
@@ -14,6 +15,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ job
     id: job.id, status: job.status, currentPhase: job.currentPhase,
     progress: job.progress, subProgress: job.subProgress,
     scenesStatus: job.scenesStatus, logs: job.logs.slice(-50),
-    error: job.error, resultId: job.resultId, createdAt: job.createdAt,
+    error: job.error, errorText: formatJobError(job.error), resultId: job.resultId, createdAt: job.createdAt,
   });
 }

@@ -82,21 +82,24 @@ export async function driveConversion(opts) {
     return { status: res.status, data, text };
   };
 
-  const usr = `${titlePrefix}_${side}_${Date.now().toString(36).slice(-6)}`;
+  // 用户名约束：字母数字下划线、**≤20 字符**（titlePrefix 可能含 '-' 且偏长，如 model-matrix）
+  const usrPrefix = String(titlePrefix).replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 6);
+  const usrSide = String(side).replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 4);
+  const usr = `${usrPrefix}_${usrSide}_${Date.now().toString(36).slice(-6)}`; // ≤18 字符
   const chapters = splitChapters(readFileSync(path.join(sampleDir, 'chapters.txt'), 'utf-8'));
   if (chapters.length === 0) throw new Error('未能按 #N 标题解析章节，请检查 chapters.txt');
   const novelText = chapters.map((c) => `${c.title}\n\n${c.text}`.trim()).join('\n\n');
   console.log(`[convert-driver] ${side}: ${chapters.length} 章 / ${novelText.length} 字符，base=${base}`);
 
   await req('/api/health');
-  await req('/api/auth/register', { method: 'POST', body: { username: usr, password: PASSWORD } });
+  const regRes = await req('/api/auth/register', { method: 'POST', body: { username: usr, password: PASSWORD } });
   const loginRes = await fetch(base + '/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: usr, password: PASSWORD }),
   });
   const setCookie = loginRes.headers.get('set-cookie');
-  if (!setCookie) throw new Error(`${side}: 登录失败`);
+  if (!setCookie) throw new Error(`${side}: 登录失败（register=${regRes.status}${regRes.data?.error ? ` ${regRes.data.error}` : ''}；用户名 ${usr}）`);
   const cookie = setCookie.split(';')[0];
 
   const estimatedInputTokens = Math.round(novelText.length * 0.6);

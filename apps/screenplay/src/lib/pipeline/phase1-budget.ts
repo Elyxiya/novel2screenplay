@@ -18,9 +18,9 @@
 
 import { BudgetController, getBudgetController } from '../llm/adapter/budget-controller';
 
-export type Phase1Mode = 'truncate' | 'mapreduce';
+export type Phase1Mode = 'truncate' | 'mapreduce' | 'longctx';
 
-export type Phase1CallSite = 'map' | 'reduce' | 'truncate';
+export type Phase1CallSite = 'map' | 'reduce' | 'truncate' | 'longctx';
 
 export interface TokenEstimate {
   promptTokens: number;
@@ -92,4 +92,20 @@ export function estimateReducePromptTokens(listing: string): number {
  */
 export function resolveDefaultPhase1Mode(): Phase1Mode {
   return 'truncate';
+}
+
+/**
+ * 解析有效 Phase1 模式（B-01 三模式）：
+ *  显式 options.mode > 环境变量 PHASE1_MODE（truncate/mapreduce/longctx）> 单点默认（truncate）。
+ * longctx = 长上下文单次分析（不截断，依赖大窗口模型）；仅作实验/评估路径，
+ * 不改变默认（翻默认仍由 resolveDefaultPhase1Mode 单一决策点把守）。
+ */
+export function resolvePhase1Mode(
+  explicit?: Phase1Mode,
+  env: Record<string, string | undefined> = process.env,
+): Phase1Mode {
+  if (explicit) return explicit;
+  const envMode = env.PHASE1_MODE;
+  if (envMode === 'truncate' || envMode === 'mapreduce' || envMode === 'longctx') return envMode;
+  return resolveDefaultPhase1Mode();
 }

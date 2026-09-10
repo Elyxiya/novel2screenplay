@@ -7,7 +7,7 @@ import { reduceSetting } from './phase1-reduce';
 import {
   createPhase1Budget,
   estimateMapPromptTokens,
-  resolveDefaultPhase1Mode,
+  resolvePhase1Mode,
   type Phase1BudgetController,
   type Phase1Mode,
 } from './phase1-budget';
@@ -61,8 +61,7 @@ export class Phase1Analyzer {
     chapters: ChapterInput[],
     options?: Phase1AnalyzeOptions,
   ): Promise<Phase1Output> {
-    const effectiveMode: Phase1Mode =
-      options?.mode ?? (process.env.PHASE1_MODE === 'mapreduce' ? 'mapreduce' : resolveDefaultPhase1Mode());
+    const effectiveMode: Phase1Mode = resolvePhase1Mode(options?.mode);
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线
@@ -70,6 +69,15 @@ export class Phase1Analyzer {
         return await this.analyzeMapReduce(chapters);
       } catch (err) {
         console.log(`[Phase1] map-reduce 路径失败，回退 truncate 路径: ${(err as Error).message}`);
+        return this.analyzeTruncate(chapters);
+      }
+    }
+    if (effectiveMode === 'longctx') {
+      // B-01：长上下文单次分析（不截断）；窗口/预算不满足时同步降级回 truncate
+      try {
+        return await this.analyzeLongContext(chapters);
+      } catch (err) {
+        console.log(`[Phase1] longctx 路径失败，回退 truncate 路径: ${(err as Error).message}`);
         return this.analyzeTruncate(chapters);
       }
     }
@@ -113,12 +121,57 @@ export class Phase1Analyzer {
       };
     }
 
+    return this.callAnalyze(messages, 'truncate');
+  }
+
+  /**
+   * B-01：longctx 路径——全文单次分析（不截断）。守卫两道：
+   * ① 估算 token ≤ 模型窗口×0.9（超出会触发 provider 400 或被上游截断 → 直接降级）；
+   * ② 预算门（site='longctx'，与 truncate 同语义：超限即降级回 truncate）。
+   */
+  private async analyzeLongContext(chapters: ChapterInput[]): Promise<Phase1Output> {
+    const fullText = chapters
+      .map((c) => `[${c.title}]\n${c.text}`)
+      .join('\n\n');
+
+    const totalTokens = await this.ctxManager.countTokens(fullText);
+    const windowLimit = Math.floor(this.provider.contextWindow * 0.9);
+    console.log(`[Phase1-longctx] 全文 ${fullText.length} 字 ≈ ${totalTokens} token；模型窗口 ${this.provider.contextWindow}（上限 ${windowLimit}）`);
+    if (totalTokens > windowLimit) {
+      console.log('[Phase1-longctx] 超出模型窗口 90%，降级 truncate');
+      return this.analyzeTruncate(chapters);
+    }
+
+    const messages: LLMMessage[] = [
+      { role: 'system', content: ANALYZE_PROMPT },
+      {
+        role: 'user',
+        content: `请分析以下小说文本，提取角色、地点和时间线信息。以 JSON 格式输出。\n\n${fullText}`,
+      },
+    ];
+
+    if (!this.budget.canCall('longctx', {
+      promptTokens: totalTokens,
+      completionTokens: MAX_ANALYSIS_MAX_TOKENS,
+      totalTokens: totalTokens + MAX_ANALYSIS_MAX_TOKENS,
+    })) {
+      console.log('[Phase1-longctx] 预算超限，降级 truncate');
+      return this.analyzeTruncate(chapters);
+    }
+
+    return this.callAnalyze(messages, 'longctx');
+  }
+
+  /**
+   * 单次分析调用（3 次重试 + 解析防护）——truncate / longctx 共用。
+   */
+  private async callAnalyze(messages: LLMMessage[], label: string): Promise<Phase1Output> {
     let lastError: Error | null = null;
 
     // Retry up to 3 times for JSON parse failures
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        console.log(`[Phase1] 调用 LLM (attempt ${attempt + 1}/3)...`);
+        console.log(`[Phase1] ${label} 调用 LLM (attempt ${attempt + 1}/3)...`);
         const t0 = Date.now();
         const response = await this.provider.chat(messages, {
           responseFormat: 'json_object',
@@ -126,7 +179,7 @@ export class Phase1Analyzer {
           maxTokens: MAX_ANALYSIS_MAX_TOKENS,
         });
         const t1 = Date.now();
-        console.log(`[Phase1] LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
+        console.log(`[Phase1] ${label} LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
 
         const parsed = safeJsonParse(response.content);
         // 安全解析的失败哨兵：LLM 输出被截断/畸形时 safeJsonParse 返回
@@ -136,7 +189,7 @@ export class Phase1Analyzer {
           throw new Error('Phase1 JSON 解析失败（LLM 输出被截断或非 JSON）——触发重试');
         }
         const struct = parsed as Phase1LLMResponse;
-        console.log(`[Phase1] 解析结果: ${struct.characters?.length ?? 0} 角色, ${struct.locations?.length ?? 0} 地点`);
+        console.log(`[Phase1] ${label} 解析结果: ${struct.characters?.length ?? 0} 角色, ${struct.locations?.length ?? 0} 地点`);
         return {
           characters: (struct.characters || []).map((c) => ({
             name: c.name,
@@ -157,14 +210,14 @@ export class Phase1Analyzer {
         };
       } catch (err) {
         lastError = err as Error;
-        console.log(`[Phase1] 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
+        console.log(`[Phase1] ${label} 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
         // Wait before retry
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
 
     // All retries exhausted: return empty result
-    console.log(`[Phase1] 所有重试均失败: ${lastError?.message}`);
+    console.log(`[Phase1] ${label} 所有重试均失败: ${lastError?.message}`);
     return {
       characters: [],
       locations: [],

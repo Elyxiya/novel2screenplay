@@ -1,0 +1,7 @@
+{
+  "_comment": "示例阈值——数值按 B-02 实测基线（方差 2.89 / Jaccard 0.7063 / 事件 0.6651 / L1 7.33）放宽一档，仅用于打通链路；正式使用请按目标人工声明（先测量后定阈）。拷贝到 data/drift-thresholds.json 生效。",
+  "maxSceneVariance": 4,
+  "maxPerChapterL1": 10,
+  "minCharacterJaccard": 0.6,
+  "minEventConsistency": 0.55
+}

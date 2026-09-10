@@ -1,0 +1,15 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "drift-fix10-prompt-r3-drift",
+  "model": "deepseek-chat",
+  "jobId": "job_1789065743857_5fp0xz",
+  "finalStatus": "completed",
+  "elapsedMs": 75742,
+  "scenes": 28,
+  "characters": 12,
+  "charIdSet": 7,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T18:43:39.589Z"
+}

@@ -15,6 +15,7 @@ import { createHash } from 'crypto';
 import type { Phase1Output, StyleProfile, UserProfile } from '@novel/contracts/pipeline';
 import { cleanNovelText } from '../preprocess/clean';
 import { applyUserProfile } from './user-profile';
+import { diffCharacters, diffSettingCard, computeInvalidatedScenes } from './card-edit';
 
 /** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
 const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
@@ -307,6 +308,107 @@ export class PipelineEngine {
       }));
     } finally {
       clearInterval(heartbeat);
+      jobStore.unlockRecover(jobId);
+    }
+  }
+
+  /**
+   * B-03：设定卡编辑 → 失效集 → 局部重转（不重跑全量）。
+   * 复用 resume 的锁与「单场景重转 + Phase4 重合并」通道；编辑与重转留痕（cardEditLog）。
+   */
+  async applyCardEdit(
+    jobId: string,
+    edited: {
+      characters: Phase1Output['characters'];
+      locations?: Phase1Output['locations'];
+      settingCard?: Phase1Output['settingCard'];
+    },
+  ): Promise<{ invalidatedScenes: number[]; reconvertedScenes: number[] }> {
+    const job = jobStore.get(jobId);
+    if (!job) throw new Error(`任务 ${jobId} 不存在`);
+    const oldPhase1 = job.pipelineState.phase1Output;
+    const phase2Output = job.pipelineState.phase2Output;
+    if (!oldPhase1 || !phase2Output) throw new Error('任务缺少 Phase1/Phase2 产物，无法应用卡编辑');
+
+    if (!jobStore.tryLockRecover(jobId)) {
+      throw new Error(`任务 ${jobId} 正在恢复/重转中，请勿重复操作`);
+    }
+    try {
+      const newPhase1: Phase1Output = {
+        ...oldPhase1,
+        characters: edited.characters,
+        locations: edited.locations ?? oldPhase1.locations,
+        settingCard: edited.settingCard ?? oldPhase1.settingCard,
+      };
+      const charDiff = diffCharacters(oldPhase1.characters, newPhase1.characters);
+      const cardDiff = diffSettingCard(oldPhase1.settingCard, newPhase1.settingCard);
+      const invalidated = computeInvalidatedScenes(phase2Output.scenes, charDiff, cardDiff);
+
+      jobStore.update(jobId, (j) => ({
+        ...j,
+        pipelineState: { ...j.pipelineState, phase1Output: newPhase1 },
+        logs: [
+          ...j.logs,
+          {
+            timestamp: Date.now(), level: 'info' as const,
+            message: `设定卡编辑已应用：失效场景 ${invalidated.length} 个（主角变化=${charDiff.touchedMajor}，配角变化 ${charDiff.changedMinors.length + charDiff.addedMinors.length + charDiff.removedMinors.length}，线索窗口 ${cardDiff.threadWindows.length}，摘要章 ${cardDiff.summariesChangedChapters.length}）`,
+          },
+        ],
+      }));
+
+      if (invalidated.length === 0) {
+        return { invalidatedScenes: [], reconvertedScenes: [] };
+      }
+
+      const provider = resolveDefaultProvider(job.userId);
+      if (!provider) throw new Error('未配置 LLM Provider');
+      const metrics = MetricsAccumulator.restore(job.pipelineState.metrics);
+
+      const phase3 = new Phase3SceneConverter(provider, this.ctxManager);
+      const sceneDefs = phase2Output.scenes.filter((s) => invalidated.includes(s.sceneIndex));
+      const results = await phase3.convertScenes(
+        sceneDefs,
+        newPhase1.characters,
+        newPhase1.locations,
+        job.chapterTexts,
+        jobStore,
+        jobId,
+        undefined,
+        { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile },
+      );
+
+      const oldOutputs = job.pipelineState.phase3Output || [];
+      const allOutputs = oldOutputs.map((o) => results.find((r) => r.sceneNumber === o.sceneNumber) || o);
+
+      const phase4 = new Phase4Merger();
+      const { screenplay, fixes } = await phase4.merge(
+        { title: '剧本', author: '', sourceNovel: '剧本' },
+        newPhase1,
+        phase2Output,
+        allOutputs,
+      );
+
+      jobStore.update(jobId, (j) => ({
+        ...j,
+        // 重转走 Phase3 会把状态置为 converting——收尾必须恢复终态（集成测试抓到的真 bug）
+        status: 'completed' as const,
+        currentPhase: 4,
+        progress: 100,
+        pipelineState: {
+          ...j.pipelineState,
+          phase3Output: allOutputs,
+          phase4Output: screenplay,
+          metrics: metrics.snapshot(),
+          cardEditLog: { editedAt: Date.now(), invalidatedCount: invalidated.length, reconvertedScenes: invalidated, touchedMajor: charDiff.touchedMajor },
+        },
+        resultId: screenplay.metadata.title,
+        logs: [
+          ...j.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `卡编辑局部重转完成：${invalidated.length} 个场景重转，${fixes.length} 项修正` },
+        ],
+      }));
+      return { invalidatedScenes: invalidated, reconvertedScenes: invalidated };
+    } finally {
       jobStore.unlockRecover(jobId);
     }
   }

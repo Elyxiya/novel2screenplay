@@ -65,6 +65,8 @@ export interface StoredJob {
     profileReport?: ProfileMergeReport;
     /** FIX-12：风格五轴参数（C6） */
     styleProfile?: StyleProfile;
+    /** B-03：设定卡编辑与局部重转留痕 */
+    cardEditLog?: { editedAt: number; invalidatedCount: number; reconvertedScenes: number[]; touchedMajor: boolean };
   };
 }
 

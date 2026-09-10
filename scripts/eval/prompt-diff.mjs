@@ -341,25 +341,42 @@ async function main() {
     return;
   }
 
-  const readJson = (file) => JSON.parse(readFileSync(path.join(sampleDir, file), 'utf8'));
-  const scenesFileOf = (side) => `prompt-diff-${name}-${side}.scenes.json`;
-
-  let oldResult;
-  if (!force && cache.get(oldCell) && existsSync(path.join(sampleDir, scenesFileOf('old')))) {
-    console.log(`[prompt-diff] old 命中缓存，跳过 LLM 运行`);
-    oldResult = { scenesJson: readJson(scenesFileOf('old')), run: readJson(`prompt-diff-${name}-old.run.json`) };
-  } else {
-    oldResult = await driveConversion({ base: baseOld, sampleDir, name, side: 'old', model, timeoutMin, costCapCny, dbDir, dbFile });
-    cache.set(oldCell, { ranAt: new Date().toISOString(), promptHash: oldSide.hash, side: 'old' });
+  // Next 16 dev server 为项目级单实例锁（同目录第二个实例会被拒绝）——支持串行执行：
+  //   --only old  → 用（旧提示词的）server 跑旧侧
+  //   --only new  → 换（新提示词的）server 后跑新侧
+  //   --report-only → 两侧产物都已存在时，仅汇总报告
+  const only = arg('only'); // old | new | undefined
+  const reportOnly = process.argv.includes('--report-only');
+  if (only && !['old', 'new'].includes(only)) {
+    console.error('[prompt-diff] --only 须为 old 或 new');
+    process.exit(2);
   }
 
-  let newResult;
-  if (!force && cache.get(newCell) && existsSync(path.join(sampleDir, scenesFileOf('new')))) {
-    console.log(`[prompt-diff] new 命中缓存，跳过 LLM 运行`);
-    newResult = { scenesJson: readJson(scenesFileOf('new')), run: readJson(`prompt-diff-${name}-new.run.json`) };
-  } else {
-    newResult = await driveConversion({ base: baseNew, sampleDir, name, side: 'new', model, timeoutMin, costCapCny, dbDir, dbFile });
-    cache.set(newCell, { ranAt: new Date().toISOString(), promptHash: newSide.hash, side: 'new' });
+  const readJson = (file) => JSON.parse(readFileSync(path.join(sampleDir, file), 'utf8'));
+  const scenesFileOf = (side) => `prompt-diff-${name}-${side}.scenes.json`;
+  const loadSideArtifacts = (side) => ({
+    scenesJson: readJson(scenesFileOf(side)),
+    run: readJson(`prompt-diff-${name}-${side}.run.json`),
+  });
+
+  const runSide = async (side, base, cell, hash) => {
+    if (reportOnly) return loadSideArtifacts(side);
+    const cached = !force && cache.get(cell) && existsSync(path.join(sampleDir, scenesFileOf(side)));
+    if (cached) {
+      console.log(`[prompt-diff] ${side} 命中缓存，跳过 LLM 运行`);
+      return loadSideArtifacts(side);
+    }
+    const result = await driveConversion({ base, sampleDir, name, side, model, timeoutMin, costCapCny, dbDir, dbFile });
+    cache.set(cell, { ranAt: new Date().toISOString(), promptHash: hash, side });
+    return result;
+  };
+
+  const oldResult = (!only || only === 'old') ? await runSide('old', baseOld, oldCell, oldSide.hash) : null;
+  const newResult = (!only || only === 'new') ? await runSide('new', baseNew, newCell, newSide.hash) : null;
+
+  if (only) {
+    console.log(`[prompt-diff] 单侧（${only}）完成；另一侧跑完后用 --report-only 出报告`);
+    return;
   }
 
   const annotation = readJson('annotation.json');

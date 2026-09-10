@@ -36,8 +36,24 @@ export function readPipelineState(jobId, dbDir, dbFile) {
   const dbPath = path.join(dbDir, dbFile);
   const db = new Database(dbPath, { readonly: true });
   try {
-    const row = db.prepare('SELECT pipeline_state FROM jobs WHERE id = ?').get(jobId);
+    const row = db.prepare('SELECT pipeline_state, config FROM jobs WHERE id = ?').get(jobId);
     return row?.pipeline_state ? JSON.parse(row.pipeline_state) : null;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * 读取 job 行内的落库 config（含 **实际使用的 modelId**）。
+ * 为什么需要：resolveProvider 对未知 modelId 会静默回退默认 provider——
+ * 横评矩阵必须记录 actual 模型，避免"请求 gpt-4o 实际跑了 deepseek"这类串标签。
+ */
+export function readJobConfig(jobId, dbDir, dbFile) {
+  const dbPath = path.join(dbDir, dbFile);
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const row = db.prepare('SELECT config FROM jobs WHERE id = ?').get(jobId);
+    return row?.config ? JSON.parse(row.config) : null;
   } finally {
     db.close();
   }
@@ -123,6 +139,9 @@ export async function driveConversion(opts) {
   const charIdSet = p4Chars.filter((c) => phase1Names.has(c.name)).map((c) => c.characterId);
   const aliasIndex = phase1?.aliasIndex ?? {};
 
+  const jobConfig = readJobConfig(jobId, dbDir, dbFile);
+  const actualModelId = jobConfig?.modelId ?? null;
+
   const scenesJson = {
     tag: `${titlePrefix}-${runLabel}-${side}`,
     generatedAt: new Date().toISOString(),
@@ -134,7 +153,7 @@ export async function driveConversion(opts) {
   };
   writeFileSync(path.join(sampleDir, `${titlePrefix}-${runLabel}-${side}.scenes.json`), JSON.stringify(scenesJson, null, 2));
   const run = {
-    sample: path.basename(sampleDir), tag: scenesJson.tag, model, jobId, finalStatus, elapsedMs,
+    sample: path.basename(sampleDir), tag: scenesJson.tag, model, actualModelId, jobId, finalStatus, elapsedMs,
     scenes: phase4.scenes.length,
     characters: phase4.characters?.length ?? 0,
     charIdSet: charIdSet.length,

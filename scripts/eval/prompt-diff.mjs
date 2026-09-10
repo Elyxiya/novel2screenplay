@@ -160,18 +160,23 @@ export function buildPromptDiffReport(input) {
   return lines.join('\n');
 }
 
+/** 行尾归一化：git blob（LF）与工作区（CRLF）内容等价，hash/注入必须同源可比 */
+function normalizeEol(text) {
+  return text.replace(/\r\n/g, '\n');
+}
+
 /** 解析一侧的提示词来源 → { text, source } */
 export function resolvePromptSide(spec) {
   if (!spec || spec === 'builtin') {
-    return { text: extractPromptFromTs(readFileSync(path.join(ROOT, PROMPT_TS), 'utf8')), source: 'builtin@worktree' };
+    return { text: normalizeEol(extractPromptFromTs(readFileSync(path.join(ROOT, PROMPT_TS), 'utf8'))), source: 'builtin@worktree' };
   }
   if (spec.startsWith('git:')) {
     const ref = spec.slice(4);
     const r = spawnSync('git', ['show', `${ref}:${PROMPT_TS}`], { cwd: ROOT, encoding: 'utf8' });
     if (r.status !== 0) throw new Error(`git show ${ref}:${PROMPT_TS} 失败: ${r.stderr?.slice(0, 200)}`);
-    return { text: extractPromptFromTs(r.stdout), source: `git:${ref}` };
+    return { text: normalizeEol(extractPromptFromTs(r.stdout)), source: `git:${ref}` };
   }
-  return { text: readFileSync(spec, 'utf8'), source: spec };
+  return { text: normalizeEol(readFileSync(spec, 'utf8')), source: spec };
 }
 
 // ── HTTP 驱动（自包含） ────────────────────────────────────────────────────

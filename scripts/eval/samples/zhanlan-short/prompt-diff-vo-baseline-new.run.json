@@ -1,0 +1,15 @@
+{
+  "sample": "zhanlan-short",
+  "tag": "prompt-diff-vo-baseline-new",
+  "model": "deepseek-chat",
+  "jobId": "job_1789065351617_g8uqf6",
+  "finalStatus": "completed",
+  "elapsedMs": 66512,
+  "scenes": 26,
+  "characters": 12,
+  "charIdSet": 7,
+  "inputEstimateTokens": 20463,
+  "estimatedCostCny": 0.04,
+  "costCapCny": 20,
+  "generatedAt": "2026-09-10T18:36:58.086Z"
+}

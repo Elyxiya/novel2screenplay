@@ -263,12 +263,14 @@ export class Phase1Analyzer {
         `${reduced.budgetBlocked ? `（预算超限，合并决策降级朴素 merge）` : ''}`,
     );
 
-    // 仅返回 Phase1Output 结构（剥离 aliasIndex/mergeLog 辅助字段）
+    // 返回 Phase1Output 结构；aliasIndex 序列化为普通对象随产物持久化
+    //（评估脚本消费它做"别名当 ID"断言；mergeLog 仍在归并内部留痕，不入产物）
     return {
       characters: reduced.characters,
       locations: reduced.locations,
       timelineHints: reduced.timelineHints,
       settingCard: reduced.settingCard,
+      aliasIndex: Object.fromEntries(reduced.aliasIndex),
       rawResponse: reduced.rawResponse,
     };
   }

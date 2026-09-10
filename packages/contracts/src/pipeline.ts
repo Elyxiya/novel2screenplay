@@ -80,7 +80,54 @@ export const Phase1OutputSchema = z.object({
   timelineHints: z.array(TimelineHintSchema),
   /** 全局设定卡（map-reduce 路径产出；旧截断路径无此字段） */
   settingCard: SettingCardSchema.optional(),
+  /**
+   * 别名 → canonical 名 索引（map-reduce 产出）。
+   * 注：评估脚本（run-conversion/identity）消费该字段；此前被 Analyzer 剥离导致
+   * "别名当 ID"断言空跑（B-21），C5 批顺带持久化修复。
+   */
+  aliasIndex: z.record(z.string(), z.string()).optional(),
   rawResponse: z.string(),
+});
+
+// ── FIX-13: 用户自定义设定（意图通道，C5 契约域）──
+
+/** 角色覆盖：按 name 匹配抽取卡；用户值优先，差异记 conflict */
+export const UserCharacterOverrideSchema = z.object({
+  name: z.string(),
+  aliases: z.array(z.string()).optional(),
+  personalityTags: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  isMajor: z.boolean().optional(),
+});
+
+/** 结构化约束（可映射到断言/卡字段的部分显式建模，其余走自由文本） */
+export const PlotConstraintSchema = z.object({
+  id: z.string().optional(),
+  rule: z.string(),
+  kind: z
+    .enum(['forbid-death', 'forbid-reveal-before', 'require-reveal-at', 'lock-appellation', 'custom'])
+    .optional(),
+  character: z.string().optional(),
+  chapterIndex: z.number().int().optional(),
+});
+
+/** 称谓锁定：该角色只准使用 lockedNames 中的称呼 */
+export const AppellationLockSchema = z.object({
+  character: z.string(),
+  lockedNames: z.array(z.string()).min(1),
+});
+
+/**
+ * 用户画像（用户显式提供的改编意图）：
+ * - 融合规则：**用户设定 > 原文抽取**；差异一律记 conflict（不静默覆盖）；
+ * - 注入：格式化块常驻 Phase3（≤500 字符）；profile 参与指纹（manifest/eval cells）。
+ */
+export const UserProfileSchema = z.object({
+  characters: z.array(UserCharacterOverrideSchema).default([]),
+  appellations: z.array(AppellationLockSchema).default([]),
+  constraints: z.array(PlotConstraintSchema).default([]),
+  /** 预留：目标形态（短剧/有声剧…），由风格参数化批（C6）消费 */
+  targetFormat: z.string().optional(),
 });
 
 // ── Phase 2: scene boundaries ──
@@ -158,6 +205,10 @@ export const PipelineJobStateSchema = z.object({
 export type MergeProvenance = z.infer<typeof MergeProvenanceSchema>;
 export type CardSegment = z.infer<typeof CardSegmentSchema>;
 export type RawCharacter = z.infer<typeof RawCharacterSchema>;
+export type UserCharacterOverride = z.infer<typeof UserCharacterOverrideSchema>;
+export type PlotConstraint = z.infer<typeof PlotConstraintSchema>;
+export type AppellationLock = z.infer<typeof AppellationLockSchema>;
+export type UserProfile = z.infer<typeof UserProfileSchema>;
 export type RawLocation = z.infer<typeof RawLocationSchema>;
 export type TimelineHint = z.infer<typeof TimelineHintSchema>;
 export type ChapterSummary = z.infer<typeof ChapterSummarySchema>;

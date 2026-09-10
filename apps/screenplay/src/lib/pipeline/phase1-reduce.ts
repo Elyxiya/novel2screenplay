@@ -39,8 +39,11 @@ export interface MergeLogEntry {
   members: MergeMember[];
 }
 
-/** reduce 结果 = Phase1Output + 别名索引 + merge log */
-export interface ReduceResult extends Phase1Output {
+/**
+ * reduce 结果 = Phase1Output + 别名索引（内存态 Map）+ merge log。
+ * 注：Phase1Output.aliasIndex 为持久化形态（Record），两者在 Analyzer 出口处转换。
+ */
+export interface ReduceResult extends Omit<Phase1Output, 'aliasIndex'> {
   aliasIndex: Map<string, string>;
   mergeLog: MergeLogEntry[];
   /** 预算 guards 未通过，LLM 合并决策被跳过（降级为朴素 merge） */

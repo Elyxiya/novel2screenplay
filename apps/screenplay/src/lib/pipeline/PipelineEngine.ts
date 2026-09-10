@@ -12,8 +12,9 @@ import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
-import type { Phase1Output } from '@novel/contracts/pipeline';
+import type { Phase1Output, UserProfile } from '@novel/contracts/pipeline';
 import { cleanNovelText } from '../preprocess/clean';
+import { applyUserProfile } from './user-profile';
 
 /** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
 const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
@@ -66,6 +67,8 @@ export class PipelineEngine {
     userId?: string;
     /** B-09：显式复用来源任务的 Phase1 设定卡（跳过本次 LLM 分析，用户主动选择） */
     reusePhase1FromJobId?: string;
+    /** FIX-13：用户自定义设定（意图通道；路由层已按 UserProfileSchema 校验） */
+    userProfile?: UserProfile;
   }): Promise<string> {
     // FIX-11：章节解析前清洗噪声行（盗版水印/广告/章尾引导/乱码）；留痕进 pipelineState.preprocess
     const { text: cleanedNovelText, report: preprocessReport } = cleanNovelText(input.novelText);
@@ -146,6 +149,19 @@ export class PipelineEngine {
         logs: [
           ...job.logs,
           { timestamp: Date.now(), level: 'info' as const, message: `预处理: 移除 ${preprocessReport.removedLines} 行噪声（${detail}）` },
+        ],
+      }));
+    }
+
+    // FIX-13：用户设定载入（落库；融合在 Phase1 完成后执行）
+    if (input.userProfile) {
+      const p = input.userProfile;
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, userProfile: p },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `已载入用户设定（角色覆盖 ${p.characters?.length ?? 0} / 称谓锁定 ${p.appellations?.length ?? 0} / 约束 ${p.constraints?.length ?? 0}）` },
         ],
       }));
     }
@@ -244,7 +260,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         undefined,
-        { settingCard: phase1Output.settingCard, metrics },
+        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile },
       );
 
       // Merge old + new results
@@ -409,6 +425,21 @@ export class PipelineEngine {
       });
     }
 
+    // FIX-13：融合用户设定（用户 > 原文；差异记 conflict，不静默覆盖；profile hash 留痕）
+    const activeProfile = jobStore.get(jobId)?.pipelineState.userProfile;
+    if (activeProfile) {
+      const { phase1: mergedPhase1, report: profileReport } = applyUserProfile(phase1Output, activeProfile);
+      phase1Output = mergedPhase1;
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, phase1Output, profileReport },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `用户设定已融合: 应用 ${profileReport.applied.length} 项 / 冲突 ${profileReport.conflicts.length} 项（profile=${profileReport.profileHash ?? '无'}）` },
+        ],
+      }));
+    }
+
     // ── Phase 2: Segment ──
     const t2 = Date.now();
     console.log(`[${jobId}] Phase 2: 开始场景切割...`);
@@ -474,7 +505,7 @@ export class PipelineEngine {
       jobStore,
       jobId,
       undefined,
-      { settingCard: phase1Output.settingCard, metrics },
+      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile },
     );
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;

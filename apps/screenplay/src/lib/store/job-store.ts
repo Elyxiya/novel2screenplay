@@ -14,6 +14,8 @@ import type { Screenplay } from '@novel/contracts/screenplay';
 import type { QualityAssessment } from '../multi-agent/handoff-protocol';
 import type { JobMetrics } from '../pipeline/metrics';
 import type { PreprocessReport } from '../preprocess/clean';
+import type { ProfileMergeReport } from '../pipeline/user-profile';
+import type { UserProfile } from '@novel/contracts/pipeline';
 import { getJobRepository, type UpdateJobParams } from './sqlite';
 
 /** FIX-05：恢复锁 TTL（毫秒）——进程崩溃后由 TTL 自动释放，锁可被夺 */
@@ -58,6 +60,9 @@ export interface StoredJob {
     metrics?: JobMetrics;
     /** FIX-11：预处理留痕（噪声行清洗报告） */
     preprocess?: PreprocessReport;
+    /** FIX-13：用户自定义设定（意图通道）与融合报告 */
+    userProfile?: UserProfile;
+    profileReport?: ProfileMergeReport;
   };
 }
 

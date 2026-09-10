@@ -2,6 +2,28 @@
 # 用于 SQLite + Next.js 持久化部署
 
 services:
+  # 本地 PostgreSQL（FIX-07 双后端 co-run 验证用；profile 隔开，默认不随 app 启动）
+  # 用法：
+  #   docker compose --profile pg up -d postgres
+  #   DATABASE_URL=postgres://test:test@localhost:5432/novel2screenplay_test \
+  #   PG_TEST_DATABASE=novel2screenplay_test npm test -w @novel/screenplay
+  postgres:
+    image: postgres:16
+    profiles: ["pg"]
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: novel2screenplay_test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
   app:
     build:
       context: .
@@ -23,4 +45,6 @@ services:
 
 volumes:
   sqlite_data:
+    driver: local
+  pg_data:
     driver: local

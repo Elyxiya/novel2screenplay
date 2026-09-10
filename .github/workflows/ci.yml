@@ -38,8 +38,9 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
-    # 可选 PostgreSQL 服务：配置 DATABASE_URL 时多跑 PG 测试空间（决策 B 保守策略——
-    # 无 PG 配置维持 SQLite 单跑；repository-contract / schema-parity 按 env 自动启用 PG）。
+    # FIX-07：PG leg 常驻化——DATABASE_URL 固定指向 service 容器（不再依赖 secrets，
+    # 杜绝"未配置则静默跳过 PG 分支"）；repository-contract / schema-parity / job-lock
+    # 等双后端套件每次 CI 均真实跑 PostgreSQL + SQLite 两条腿。
     services:
       postgres:
         image: postgres:16
@@ -55,8 +56,10 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      # 仅在仓库设置里显式提供 DATABASE_URL 时启用 PG 分支（服务本身在 PR/push 均可用）
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL: postgres://test:test@localhost:5432/novel2screenplay_test
+      # 测试库命名空间：resolveTestPgUrl 优先使用它，避免自动追加 `_test` 后缀
+      # 连到不存在的库（见 src/__tests__/helpers/dual-backend.ts）
+      PG_TEST_DATABASE: novel2screenplay_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,6 +67,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify PG leg is active (fail fast, no silent skip)
+        run: |
+          node -e "const u=process.env.DATABASE_URL; if(!u){console.error('DATABASE_URL missing — PG leg would be silently skipped'); process.exit(1);} console.log('PG leg active:', u);"
       - run: npm test
       - name: Upload coverage
         uses: actions/upload-artifact@v4

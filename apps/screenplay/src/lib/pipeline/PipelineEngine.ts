@@ -10,9 +10,14 @@ import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
 import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
+import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
+import { createHash } from 'crypto';
+
+/** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
+const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
 import type { StoredJob } from '../store/job-store';
 import { getSSEClientManager } from '../sse';
-import { getNovelRepository, getHistoryRepository } from '../store/sqlite';
+import { getNovelRepository, getHistoryRepository, getNovelVersionRepository } from '../store/sqlite';
 import { serializeToYaml } from '@novel/contracts/serializers';
 import type { Screenplay } from '@novel/contracts/screenplay';
 import { assessPipelineScreenplay } from '../eval/llm-quality';
@@ -494,6 +499,17 @@ export class PipelineEngine {
         yamlContent: serializeToYaml(screenplay),
         userId: finished?.userId,
       });
+
+      // FIX-24：每次成功转换记录版本行（审计交付 / 版本对比）
+      if (finished?.novelId) {
+        getNovelVersionRepository().create({
+          novelId: finished.novelId,
+          jobId,
+          formatVersion: screenplay.formatVersion,
+          promptHash: CONVERT_PROMPT_HASH,
+        });
+        console.log(`[${jobId}] 版本已记录: novel=${finished.novelId}, prompt=${CONVERT_PROMPT_HASH}`);
+      }
     } catch (err) {
       console.error(`[${jobId}] 工作台数据更新失败: ${(err as Error).message}`);
     }

@@ -179,6 +179,19 @@ function migrateJobColumns(database: Database.Database): void {
       CREATE INDEX IF NOT EXISTS idx_novels_created_at ON novels(created_at);
       CREATE INDEX IF NOT EXISTS idx_novels_updated_at ON novels(updated_at);
     `);
+    // 幂等建 novel_versions 表（FIX-24；旧库升级时补建）
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS novel_versions (
+        id TEXT PRIMARY KEY,
+        novel_id TEXT NOT NULL,
+        job_id TEXT NOT NULL,
+        format_version TEXT NOT NULL,
+        prompt_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_novel_versions_novel_id ON novel_versions(novel_id);
+      CREATE INDEX IF NOT EXISTS idx_novel_versions_created_at ON novel_versions(created_at);
+    `);
   } catch (err) {
     // jobs 表不存在时静默（首次建表会走 schema.sql 完整结构）
     console.log(`[DB] Column migration skipped: ${err instanceof Error ? err.message : err}`);

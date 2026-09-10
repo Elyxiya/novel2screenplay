@@ -59,6 +59,19 @@ CREATE INDEX IF NOT EXISTS idx_novels_created_at ON novels(created_at);
 CREATE INDEX IF NOT EXISTS idx_novels_updated_at ON novels(updated_at);
 CREATE INDEX IF NOT EXISTS idx_novels_user_id ON novels(user_id);
 
+-- Novel Versions 表：每次成功转换落一行（审计交付 / 版本对比，FIX-24）
+CREATE TABLE IF NOT EXISTS novel_versions (
+  id TEXT PRIMARY KEY,
+  novel_id TEXT NOT NULL,
+  job_id TEXT NOT NULL,
+  format_version TEXT NOT NULL,
+  prompt_hash TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_novel_versions_novel_id ON novel_versions(novel_id);
+CREATE INDEX IF NOT EXISTS idx_novel_versions_created_at ON novel_versions(created_at);
+
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

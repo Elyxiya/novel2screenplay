@@ -14,6 +14,7 @@ export { getStorageKind, useEngine, useSqlite, resetEngine } from '@novel/db';
 // Repository
 export { getJobRepository, type JobRepository, type CreateJobParams, type UpdateJobParams } from './job-repository';
 export { getNovelRepository, type NovelRepository, type NovelAsset, type NovelSummary, type CreateNovelParams } from './novel-repository';
+export { getNovelVersionRepository, type NovelVersionRepository, type NovelVersionRecord, type CreateNovelVersionParams } from './novel-version-repository';
 export { getWriterNovelRepository, type WriterNovelRepository, type DraftSummary } from './writer-novel-repository';
 export { getProjectRepository, type ProjectRepository, type CreateProjectParams, type UpdateProjectParams } from './project-repository';
 export { getHistoryRepository, type HistoryRepository, type CreateHistoryParams } from './history-repository';

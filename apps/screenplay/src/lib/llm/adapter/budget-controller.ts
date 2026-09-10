@@ -305,10 +305,33 @@ export class BudgetController {
 // 全局单例
 const GLOBAL_KEY = '__novel2screenplay_budget_controller__';
 
+/**
+ * FIX-06（ADR-0001）：单实例语义边界告警。
+ *
+ * 预算计数为进程内存态，多副本部署时各副本独立计数、不共享。
+ * 部署方通过 INSTANCE_COUNT 声明副本数；>1 时启动即告警一次（见
+ * docs/adr/0001-budget-accounting-scope.md，含 B 案共享计数设计与触发条件）。
+ */
+export function warnIfMultiInstance(
+  env: Record<string, string | undefined> = process.env,
+  warn: (message: string) => void = console.warn,
+): boolean {
+  const count = env.INSTANCE_COUNT ? Number(env.INSTANCE_COUNT) : 1;
+  if (Number.isFinite(count) && count > 1) {
+    warn(
+      `[Budget] 检测到 INSTANCE_COUNT=${count}：预算计数为单实例内存态，各副本独立、不共享，` +
+        `实际上限约为 LIMIT×${count}。请阅读 docs/adr/0001-budget-accounting-scope.md（或调低单副本 LIMIT / 启动 B 案共享计数）。`,
+    );
+    return true;
+  }
+  return false;
+}
+
 export function getBudgetController(): BudgetController {
   if (typeof globalThis !== 'undefined') {
     if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
       (globalThis as Record<string, unknown>)[GLOBAL_KEY] = new BudgetController();
+      warnIfMultiInstance();
     }
     return (globalThis as Record<string, unknown>)[GLOBAL_KEY] as BudgetController;
   }

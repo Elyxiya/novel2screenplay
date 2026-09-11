@@ -67,6 +67,8 @@ export interface StoredJob {
     styleProfile?: StyleProfile;
     /** B-03：设定卡编辑与局部重转留痕 */
     cardEditLog?: { editedAt: number; invalidatedCount: number; reconvertedScenes: number[]; touchedMajor: boolean };
+    /** B-06：Few-shot 样例集指纹（启用时留痕） */
+    fewshots?: { count: number; hash: string };
   };
 }
 

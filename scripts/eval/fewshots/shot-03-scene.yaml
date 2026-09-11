@@ -1,0 +1,23 @@
+id: shot-03-scene
+note: 环境描写压缩——可见的氛围/空间变化落成少量动作块，不做逐句搬运；无明确说话人的群声归"围观者"
+source:
+  text: |
+    夜色像化开的墨，把整条长街浸得发黑。风穿过檐角的灯笼，灯影摇摇晃晃。
+    远处传来更夫拖长的梆子声。
+    人群里有人低声说了一句：「又死人了。」
+    四下里顿时安静下来。
+target:
+  summary: 长街夜巡传噩耗，人群噤声
+  timeOfDay: night
+  confidence: 0.8
+  content:
+    - type: action
+      description: 长街浸在夜色里，灯笼在风里摇晃。
+    - type: action
+      description: 梆子声自远处拖长而来。
+    - type: dialogue
+      characterId: 围观者
+      line: 又死人了。
+      direction: 低声
+    - type: action
+      description: 四下安静下来。

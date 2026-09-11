@@ -1,0 +1,17 @@
+id: shot-02-inner
+note: 心理描写外化——禁"他想/心中"句式、禁旁白式改写；情绪必须变成可见动作与表情（FIX-10 B 案口径）
+source:
+  text: |
+    林砚心中一片冰凉。他意识到自己终究还是晚了一步，师父恐怕已经遭了毒手。
+    他攥紧了拳头，指甲几乎掐进肉里，却强迫自己冷静下来，慢慢蹲下身查看地上的痕迹。
+target:
+  summary: 林砚确认来迟，强压情绪勘查现场
+  timeOfDay: unknown
+  confidence: 0.75
+  content:
+    - type: action
+      description: 林砚脸色发白，停住脚步。
+    - type: action
+      description: 他攥紧拳头，指节泛白，随即缓缓松开。
+    - type: action
+      description: 他蹲下身，借指尖一点点捻验地上的痕迹。

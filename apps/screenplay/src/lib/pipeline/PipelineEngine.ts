@@ -16,6 +16,7 @@ import type { Phase1Output, StyleProfile, UserProfile } from '@novel/contracts/p
 import { cleanNovelText } from '../preprocess/clean';
 import { applyUserProfile } from './user-profile';
 import { diffCharacters, diffSettingCard, computeInvalidatedScenes } from './card-edit';
+import { loadFewshots, hashFewshots } from './fewshots';
 
 /** FIX-24：版本行记录的转换提示词指纹（源文件内容 hash，前缀 16 位） */
 const CONVERT_PROMPT_HASH = createHash('sha256').update(CONVERT_SYSTEM_PROMPT).digest('hex').slice(0, 16);
@@ -182,6 +183,20 @@ export class PipelineEngine {
       }));
     }
 
+    // B-06：Few-shot 样例集（默认关闭；启用则指纹随产物留痕，供 AB 对比标识版本）
+    const fewshotEntries = loadFewshots();
+    if (fewshotEntries && fewshotEntries.length > 0) {
+      const rec = { count: fewshotEntries.length, hash: hashFewshots(fewshotEntries) };
+      jobStore.update(jobId, (job) => ({
+        ...job,
+        pipelineState: { ...job.pipelineState, fewshots: rec },
+        logs: [
+          ...job.logs,
+          { timestamp: Date.now(), level: 'info' as const, message: `已载入 Few-shot 样例 ${rec.count} 组（hash=${rec.hash}）` },
+        ],
+      }));
+    }
+
     // Start pipeline asynchronously (don't await — let it run in background)
     this.runPipeline(jobId, provider, selectedChapterObjs, input).catch((err) => {
       // FIX-22：持久化为结构化 payload（SSE/日志仍用可读文案）
@@ -276,7 +291,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         undefined,
-        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile },
+        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
       );
 
       // Merge old + new results
@@ -374,7 +389,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         undefined,
-        { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile },
+        { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
       );
 
       const oldOutputs = job.pipelineState.phase3Output || [];
@@ -623,7 +638,7 @@ export class PipelineEngine {
       jobStore,
       jobId,
       undefined,
-      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle },
+      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle, fewshots: loadFewshots() },
     );
 
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;

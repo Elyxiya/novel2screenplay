@@ -17,6 +17,7 @@ import type { MetricsSink } from './metrics';
 import { classifyJobError } from '../errors';
 import { formatUserProfileBlock } from './user-profile';
 import { formatStyleBlock } from './style-profile';
+import { formatFewshotBlock, type FewshotEntry } from './fewshots';
 
 /** Task 3 convertScenes 可选增强上下文（向后兼容，未传则行为与改造前一致） */
 export interface Phase3ConvertOptions {
@@ -28,6 +29,8 @@ export interface Phase3ConvertOptions {
   userProfile?: UserProfile;
   /** FIX-12：风格五轴（常驻注入，≤400 字符；未传零变化） */
   styleProfile?: StyleProfile;
+  /** B-06：Few-shot 最小对（仅 Phase3 注入；默认关闭，未传零变化） */
+  fewshots?: FewshotEntry[];
 }
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
@@ -237,8 +240,7 @@ export class Phase3SceneConverter {
     abortSignal?: AbortSignal,
     summaries?: string, threads?: string,
     metrics?: MetricsSink,
-    profileBlock?: string,
-    styleBlock?: string,
+    extraBlocks?: string[],
   ): Promise<Phase3Output> {
     const contextParts = [
       `角色: ${charContext}`,
@@ -248,8 +250,8 @@ export class Phase3SceneConverter {
     ];
     if (summaries) contextParts.push(`前情摘要:\n${summaries}`);
     if (threads) contextParts.push(`伏笔线索:\n${threads}`);
-    if (profileBlock) contextParts.push(profileBlock); // FIX-13：用户设定常驻注入
-    if (styleBlock) contextParts.push(styleBlock); // FIX-12：风格五轴常驻注入
+    // 常驻注入块（FIX-13 用户设定 / FIX-12 风格五轴 / B-06 Few-shot；空数组零变化）
+    for (const block of extraBlocks ?? []) contextParts.push(block);
     contextParts.push('', partText);
     const messages: LLMMessage[] = [
       { role: 'system', content: CONVERT_PROMPT },
@@ -479,9 +481,12 @@ export class Phase3SceneConverter {
   ): Promise<Phase3Output[]> {
     const charIdMap = this.buildCharIdMap(characters);
     // FIX-13：用户设定块（每场景常驻；空 profile 为空串不拼接）
-    const profileBlock = formatUserProfileBlock(opts?.userProfile);
-    const styleBlock = formatStyleBlock(opts?.styleProfile);
-    console.log(`[Phase3] 开始转换 ${scenes.length} 个场景, semaphore=3, rateLimit=50/min`);
+    const extraBlocks = [
+      formatUserProfileBlock(opts?.userProfile),
+      formatStyleBlock(opts?.styleProfile),
+      formatFewshotBlock(opts?.fewshots ?? []),
+    ].filter(Boolean);
+    console.log(`[Phase3] 开始转换 ${scenes.length} 个场景, semaphore=3, rateLimit=50/min${extraBlocks.length ? `（常驻注入块 ${extraBlocks.length}）` : ''}`);
 
     // Initialize job progress
     jobStore.update(jobId, j => ({
@@ -533,7 +538,7 @@ export class Phase3SceneConverter {
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, profileBlock, styleBlock);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, extraBlocks);
         convResults.push(result);
       }
 

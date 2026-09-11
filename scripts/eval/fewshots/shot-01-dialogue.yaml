@@ -1,0 +1,33 @@
+id: shot-01-dialogue
+note: 对白密集段——引号原话只保留原句、明确说话人归属、台词不漏不补
+source:
+  text: |
+    「你终于来了。」老者靠在门框上，声音沙哑。
+    林砚没有答话，只是把伞收了起来。
+    「东西呢？」
+    「先回答我一个问题。」林砚抬起头，「三年前那把火，是谁放的？」
+    老者笑了一声，不置可否。
+target:
+  summary: 林砚逼问三年前放火之人
+  timeOfDay: night
+  confidence: 0.92
+  content:
+    - type: action
+      description: 老者倚着门框，声音沙哑地开口。
+    - type: dialogue
+      characterId: 老者
+      line: 你终于来了。
+      direction: 沙哑
+    - type: action
+      description: 林砚收伞，没有答话。
+    - type: dialogue
+      characterId: 老者
+      line: 东西呢？
+    - type: dialogue
+      characterId: 林砚
+      line: 先回答我一个问题。
+    - type: dialogue
+      characterId: 林砚
+      line: 三年前那把火，是谁放的？
+    - type: action
+      description: 老者笑了一声，不置可否。

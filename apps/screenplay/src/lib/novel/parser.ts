@@ -1,4 +1,5 @@
 import type { Chapter, ParseResult } from './types';
+import { normalizeLineEndings } from '../preprocess/clean';
 
 /** Maximum file size in bytes (2MB) */
 export const MAX_FILE_SIZE = 2 * 1024 * 1024;
@@ -107,8 +108,12 @@ function fallbackSplit(text: string): Array<{ title: string; startIndex: number 
 /**
  * Parse raw novel text into chapters.
  * Validates encoding and file size.
+ *
+ * P0：入口统一行尾（CRLF/CR → LF）。上传路径不经过 cleanNovelText，
+ * 若此处不归一，上传预览与管线计算会使用不同的偏移基准。
  */
-export function parseNovel(text: string): ParseResult {
+export function parseNovel(rawText: string): ParseResult {
+  const text = normalizeLineEndings(rawText);
   const warnings: string[] = [];
 
   // Check for empty content

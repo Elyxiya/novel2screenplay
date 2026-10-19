@@ -65,13 +65,25 @@ export function classifyNoiseLine(line: string): PreprocessRule | null {
   return null;
 }
 
+/**
+ * 行尾归一（P0）：CRLF / CR → LF。
+ *
+ * 章节与场景偏移全部按 `\n` 计算（`Phase2Segmenter.calculateCharOffsets`），
+ * 混入 `\r` 会让每个段落的偏移累计漂移，最终 Phase 3 切出的「原文片段」错位且不报错。
+ * Windows 上编辑的 .txt 默认是 CRLF，因此必须在解析入口统一。
+ */
+export function normalizeLineEndings(text: string): string {
+  return text.includes('\r') ? text.replace(/\r\n?/g, '\n') : text;
+}
+
 export function cleanNovelText(raw: string, opts: { maxSamples?: number } = {}): CleanResult {
   const maxSamples = opts.maxSamples ?? 20;
   const byRule: Record<string, number> = {};
   const samples: string[] = [];
   let removedLines = 0;
 
-  const lines = raw.split('\n');
+  // P0：先归一化行尾，保证后续按 \n 切行与偏移计算一致
+  const lines = normalizeLineEndings(raw).split('\n');
   const kept: string[] = [];
 
   for (const line of lines) {

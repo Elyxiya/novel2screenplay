@@ -61,6 +61,12 @@ export interface UpdateJobParams {
 export interface JobRepository {
   create(params: CreateJobParams): string;
   get(jobId: string): StoredJob | null;
+  /**
+   * P0：轻量读取——不加载 novel_text / chapter_texts。
+   * 仅 update 路径使用：`jobStore.update` 只需状态类字段跑 updater，
+   * 旧实现每次都 SELECT * 并 JSON.parse 整本正文，2MB 任务单次 update 达 45ms。
+   */
+  getForUpdate(jobId: string): StoredJob | null;
   update(jobId: string, params: UpdateJobParams): void;
   delete(jobId: string): void;
   /** 按状态列出任务；传入 userId 时按用户过滤（多用户隔离） */
@@ -143,6 +149,25 @@ class JobRepositoryImpl implements JobRepository {
     if (!row) return null;
 
     return this.rowToStoredJob(row);
+  }
+
+  /**
+   * P0：轻量读取（不加载 novel_text / chapter_texts）。
+   * update 路径只需要状态类字段；整本正文与章节数组每次反序列化是主要写放大来源。
+   */
+  getForUpdate(jobId: string): StoredJob | null {
+    const db = getEngine();
+    const row = db
+      .prepare(
+        `SELECT id, status, current_phase, progress, sub_progress, scenes_status, logs, error,
+                result_id, created_at, updated_at, started_at, completed_at, config,
+                pipeline_state, novel_id, user_id
+           FROM jobs WHERE id = ?`,
+      )
+      .get(jobId) as JobRow | undefined;
+
+    if (!row) return null;
+    return this.rowToStoredJob(row, true);
   }
 
   /**
@@ -287,10 +312,11 @@ class JobRepositoryImpl implements JobRepository {
 
   /**
    * 将数据库行转换为 StoredJob 对象
+   * @param lite 轻量行（缺 novel_text / chapter_texts 列）——用空值占位，仅 update 路径使用
    */
-  private rowToStoredJob(row: JobRow): StoredJob {
+  private rowToStoredJob(row: JobRow, lite = false): StoredJob {
     const config = JSON.parse(row.config);
-    const chapterTexts = JSON.parse(row.chapter_texts);
+    const chapterTexts = lite ? [] : JSON.parse(row.chapter_texts);
     const pipelineState = row.pipeline_state ? JSON.parse(row.pipeline_state) : {};
 
     return {
@@ -314,7 +340,7 @@ class JobRepositoryImpl implements JobRepository {
       updatedAt: row.updated_at,
       startedAt: row.started_at ?? undefined,
       completedAt: row.completed_at ?? undefined,
-      novelText: row.novel_text,
+      novelText: lite ? '' : row.novel_text,
       chapterTexts,
       novelId: row.novel_id ?? undefined,
       userId: row.user_id ?? undefined,

@@ -102,8 +102,15 @@ export class JobStore {
     return this.repository.get(jobId) ?? undefined;
   }
 
+  /** P0：轻量读取（不加载 novel_text / chapter_texts），供 update 路径与回归测试使用 */
+  getForUpdate(jobId: string): StoredJob | undefined {
+    return this.repository.getForUpdate(jobId) ?? undefined;
+  }
+
   update(jobId: string, updater: (job: StoredJob) => StoredJob): void {
-    const job = this.repository.get(jobId);
+    // P0：走轻量读取（不含 novel_text / chapter_texts）。updater 只用于推导状态差异，
+    // 正文与章节数组不参与比较，也从不被写回；每次整行读取 + JSON.parse 是主要写放大来源。
+    const job = this.repository.getForUpdate(jobId);
     if (!job) return;
 
     // 执行 updater 获取更新后的 job

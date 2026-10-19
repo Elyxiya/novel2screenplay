@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import type { FlowEvaluation } from '@/lib/debug/flow-evaluator';
 import type { QualityAssessment } from '@/lib/multi-agent/handoff-protocol';
 import type { BenchmarkReport } from '@/lib/eval/benchmark';
+import { StageTimeline } from './StageTimeline';
 
 /**
  * 流程调试与评测页面
@@ -187,6 +188,9 @@ export function FlowDebugClient() {
           {error}
         </div>
       )}
+
+      {/* P1 观测层：阶段时间线（不依赖评测是否成功，只要拿到 jobId 就能看执行过程） */}
+      {jobId && <StageTimeline jobId={jobId} />}
 
       {eval_ && dims && (
         <>

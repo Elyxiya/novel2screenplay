@@ -111,19 +111,35 @@ export class Phase2Segmenter {
             meta: { chapter: chapter.index, scenes: scenes.length },
           });
         }
+        // 模型的行号可能比我们数出来的行数大（空行/截断差异），甚至给出原书章号级别的越界值。
+        // 超出时按比例缩放到本文实际行数，避免整章所有场景都退化成 [0, 全文]。
+        const lineCount = Math.max(charOffsets.length - 1, 1);
+        const maxEnd = scenes.reduce((m, s) => Math.max(m, Number(s.endParagraph) || 0), 0);
+        const scale = maxEnd > lineCount ? lineCount / (maxEnd + 1) : 1;
+        const mapIdx = (n: number): number => Math.min(Math.max(Math.round(n * scale), 0), lineCount);
+
         for (let i = 0; i < scenes.length; i++) {
           const s = scenes[i];
-          // Expand boundary ±1 paragraph for complete capture
-          const startIdx2 = Math.max(0, (s.startParagraph ?? 0) - 1);
-          const endIdx2 = Math.min((s.endParagraph ?? 0) + 2, charOffsets.length - 1);
+          const rawStart = mapIdx(s.startParagraph ?? 0);
+          const rawEnd = mapIdx(s.endParagraph ?? 0);
+          // Expand boundary ±1 paragraph for complete capture，并夹紧到实际行数范围。
+          const lastIdx = charOffsets.length - 1;
+          const startIdx2 = Math.min(Math.max(0, rawStart - 1), lastIdx);
+          const endIdx2 = Math.min(Math.max(rawEnd + 2, startIdx2), lastIdx);
+          const originalStartOffset = charOffsets[startIdx2] ?? 0;
+          const originalEndOffset = charOffsets[endIdx2] ?? chapter.text.length;
+          if (originalEndOffset <= originalStartOffset) {
+            console.warn(`[Phase2]  章节 #${chapter.index} 场景 ${i + 1} 区间为空（${rawStart}-${rawEnd}），已跳过`);
+            continue;
+          }
           allScenes.push({
             sceneIndex: allScenes.length + 1,
             chapterIndex: chapter.index,
-            startParagraph: s.startParagraph ?? 0,
-            endParagraph: s.endParagraph ?? 0,
+            startParagraph: rawStart,
+            endParagraph: rawEnd,
             // Chapter-local offsets — used by Phase 3 to slice from the correct chapter
-            originalStartOffset: charOffsets[startIdx2] ?? 0,
-            originalEndOffset: charOffsets[endIdx2] ?? chapter.text.length,
+            originalStartOffset,
+            originalEndOffset,
             draftSlugline: s.draftSlugline || `${chapter.title} - 场景 ${i + 1}`,
             keyCharacterNames: s.keyCharacterNames || [],
             summary: s.summary || '',
@@ -313,22 +329,21 @@ export class Phase2Segmenter {
   }
 
   /**
-   * Calculate paragraph offsets for the text.
+   * 计算「每个非空行」结束位置的字符偏移（章节内坐标）。
    *
-   * P0：不再假设「段落分隔符恒为 2 字符」。旧实现按 `part.length + 2` 累加，
-   * CRLF（4 字符）或连续空行会让偏移逐段漂移，Phase 3 据此切出的原文错位且不报错。
-   * 现在改为在原文里定位每段真实起点，偏移一律由实际位置推出；
-   * 调用方（cleanNovelText / parseNovel）已做行尾归一，此处为兜底。
+   * P0：不再假设「段落分隔符恒为 2 字符」，改为在原文里定位真实位置。
+   * P1（实测 doupo-short）：段落口径必须与模型一致——中文网文几乎都是**单换行分段**，
+   * 按「空行分块」数段落会把整章算成 1 段，而模型按行返回 startParagraph/endParagraph；
+   * 越界索引经兜底后让整章所有场景退化成 [0, 全文]，后处理只留第一个（32 → 10）。
+   * 因此统一为「非空行 = 一段」，与模型看到的粒度一致。
    */
   private calculateCharOffsets(text: string): number[] {
     const offsets: number[] = [0];
-    const parts = text.split(/\n\s*\n/);
-    let cursor = 0;
-    for (const part of parts) {
-      const start = part.length > 0 ? text.indexOf(part, cursor) : cursor;
-      const end = start >= 0 ? start + part.length : cursor + part.length;
-      offsets.push(end);
-      cursor = Math.max(cursor, end);
+    const lineRe = /[^\n]+/g;
+    let m: RegExpExecArray | null;
+    while ((m = lineRe.exec(text)) !== null) {
+      if (!m[0].trim()) continue;
+      offsets.push(m.index + m[0].length);
     }
     return offsets;
   }

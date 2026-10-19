@@ -94,8 +94,8 @@ function chapterTextsFromFile(sampleId) {
 }
 
 async function scoreSample(sampleId, opts) {
-  const goldPath = path.join(SAMPLES_DIR, sampleId, 'annotation.json');
-  if (!existsSync(goldPath)) throw new Error(`样本 ${sampleId} 未冻结金标注（缺 annotation.json）`);
+  const goldPath = path.join(SAMPLES_DIR, sampleId, 'gold.json');
+  if (!existsSync(goldPath)) throw new Error(`样本 ${sampleId} 未冻结金标注（缺 gold.json）`);
 
   const gold = JSON.parse(readFileSync(goldPath, 'utf8'));
   const { ok, errors } = validateGold(gold);

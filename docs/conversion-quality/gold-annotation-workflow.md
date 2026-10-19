@@ -25,13 +25,17 @@ node scripts/eval/review-sheet.mjs --sample xiuzhen-short
 
 # ③ 人工抽检：改 annotation.draft.json → 另存 annotation.reviewed.json，
 #    并把 meta.reviewed 置 true、填 meta.reviewedBy
-#    然后冻结（校验 + 定稿 + 确定性切分 + 重建语料清单）
+#    然后冻结（校验 + 定稿 + 确定性切分 + 重建语料清单）→ 产出 gold.json
 node scripts/eval/freeze.mjs --sample xiuzhen-short
 
 # ④ 评分（单样本 / 全量）
 node scripts/eval/score.mjs --sample xiuzhen-short --job job_xxx
 node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 ```
+
+> 注意产物名：金标注是 **`gold.json`**，不是 `annotation.json`。
+> 后者在历史样本里已被 `identity-annotation/v1`（身份/死亡/揭示事件标注）占用，
+> 同名会直接覆盖旧文件——这是实测踩过的坑。
 
 ## 2. 为什么预标要用「真实运行产物」
 
@@ -93,6 +97,7 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 | 单段落场景 | 疑似过切 | 会把一个场景算成两个，拉低系统 precision |
 | 未在任何场景出现的角色 | 角色卡与场景脱节 | 模型可能凭空造人，或场景漏标出场 |
 | 没有别名的角色 | 疑似漏合并 | 同一人被拆成两条，后续会重复扣分 |
+| 场景中出现但角色卡未登记 | 反向漏抽 | 正向体检只查「卡里的人是否出现」，抓不到模型在场景里临时造的名字 |
 
 抽检不需要通读全文：先看体检项，再抽 2–3 章对照原文即可。
 
@@ -100,5 +105,5 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 
 - `annotate.mjs` 依赖一次真实转换（要 API Key 与跑批），不是离线可造的；
 - `keyDialogues` 字段已预留但当前评分未使用（先跑通 P/R，再谈对白保真度）；
-- 语料清单 `manifest.json` 只收录 `screenplay-gold/v1`，历史 `identity-annotation/v1` 是另一套口径，不混入；
+- 语料清单 `manifest.json` 只收录 `gold.json`（`screenplay-gold/v1`），历史 `annotation.json`（`identity-annotation/v1`）是另一套口径，不混入；
 - 评分报告写到 `pr-evidence/`（工作产物，不入库）。

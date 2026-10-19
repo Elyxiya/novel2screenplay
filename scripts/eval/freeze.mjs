@@ -83,14 +83,17 @@ if (!ok) {
   process.exit(1);
 }
 
-const outPath = path.join(dir, 'annotation.json');
+// 输出 gold.json：刻意不复用 annotation.json —— 历史样本已有同名的 identity-annotation/v1 文件，
+// 同名会直接把旧标注覆盖掉（本轮实测踩过）。
+const outPath = path.join(dir, 'gold.json');
 writeFileSync(outPath, `${JSON.stringify(gold, null, 2)}\n`, 'utf8');
 
-// 重建语料清单（只收 screenplay-gold/v1；历史 identity-annotation/v1 属于另一套口径，不混入）
+// 重建语料清单（只收 screenplay-gold/v1 的 gold.json；
+// 历史 identity-annotation/v1 的同名 annotation.json 属于另一套口径，且文件名不能复用）
 const entries = readdirSync(SAMPLES_DIR, { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => {
-    const p = path.join(SAMPLES_DIR, d.name, 'annotation.json');
+    const p = path.join(SAMPLES_DIR, d.name, 'gold.json');
     if (!existsSync(p)) return null;
     const g = JSON.parse(readFileSync(p, 'utf8'));
     if (g.schema !== GOLD_SCHEMA) return null;

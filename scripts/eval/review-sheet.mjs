@@ -62,6 +62,21 @@ const orphanCharacters = (draft.characters ?? []).filter((c) => {
 });
 const noAlias = (draft.characters ?? []).filter((c) => (c.aliases ?? []).length === 0);
 
+// 反向体检：场景里出现、但角色卡未登记的名字（潜在漏抽）
+// 为什么必须有：正向只查「角色卡里的人是否出现在场景」，抓不到模型在场景里临时造的名字。
+const registered = new Set();
+for (const c of draft.characters ?? []) for (const a of aliasSetOf(c)) registered.add(a);
+const unknownNames = new Map(); // 原始名 -> Set<章号(1-based)>
+for (const s of draft.scenes ?? []) {
+  for (const raw of s.keyCharacterNames ?? []) {
+    const norm = normalizeName(raw);
+    if (!norm || registered.has(norm)) continue;
+    const set = unknownNames.get(raw) ?? new Set();
+    set.add(s.chapterIndex + 1);
+    unknownNames.set(raw, set);
+  }
+}
+
 const lines = [];
 lines.push(`# 抽检审阅单 · ${sampleId}`);
 lines.push('');
@@ -81,6 +96,16 @@ lines.push(`- [ ] **未切出场景的章节**：${missingChapters.length === 0 
 lines.push(`- [ ] **疑似过切（单段落场景）**：${tinyScenes.length === 0 ? '无' : tinyScenes.map((s) => `ch${s.chapterIndex + 1}:${s.startParagraph}-${s.endParagraph}`).join('、')}`);
 lines.push(`- [ ] **未在任何场景出现的角色**：${orphanCharacters.length === 0 ? '无' : orphanCharacters.map((c) => c.name).join('、')}`);
 lines.push(`- [ ] **没有别名的角色**（可能是漏合并）：${noAlias.length === 0 ? '无' : noAlias.map((c) => c.name).join('、')}`);
+lines.push(
+  `- [ ] **场景中出现但角色卡未登记**（漏抽嫌疑）：${
+    unknownNames.size === 0
+      ? '无'
+      : [...unknownNames.entries()]
+          .slice(0, 12)
+          .map(([name, chapters]) => `${name}（ch${[...chapters].join('/')}）`)
+          .join('、') + (unknownNames.size > 12 ? ` 等 ${unknownNames.size} 个` : '')
+  }`,
+);
 lines.push('');
 lines.push('## 角色名单');
 lines.push('');
@@ -115,5 +140,5 @@ const outPath = path.join(SAMPLES_DIR, sampleId, 'review.md');
 writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
 
 console.log(`[review-sheet] ${sampleId}`);
-console.log(`  未切出场景章节 ${missingChapters.length} ｜ 单段落场景 ${tinyScenes.length} ｜ 孤儿角色 ${orphanCharacters.length} ｜ 无别名角色 ${noAlias.length}`);
+console.log(`  未切出场景章节 ${missingChapters.length} ｜ 单段落场景 ${tinyScenes.length} ｜ 孤儿角色 ${orphanCharacters.length} ｜ 无别名角色 ${noAlias.length} ｜ 未登记出场名 ${unknownNames.size}`);
 console.log(`  已写入 ${path.relative(ROOT, outPath)}`);

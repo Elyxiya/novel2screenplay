@@ -59,6 +59,23 @@ interface EventsResponse {
   artifacts: ArtifactDto[];
 }
 
+interface ReplayResult {
+  sceneIndex: number;
+  modelId: string;
+  durationMs: number;
+  diff: {
+    blocksBefore: number;
+    blocksAfter: number;
+    confidenceBefore: number | null;
+    confidenceAfter: number;
+    contentChanged: boolean;
+    summaryChanged: boolean;
+    timeOfDayChanged: boolean;
+  };
+  before: { content: unknown[]; summary: string; timeOfDay: string; confidence: number } | null;
+  after: { content: unknown[]; summary: string; timeOfDay: string; confidence: number };
+}
+
 function fmtMs(ms: number | null): string {
   if (ms === null || ms === undefined) return '—';
   if (ms < 1000) return `${ms}ms`;
@@ -84,6 +101,9 @@ export function StageTimeline({ jobId }: { jobId: string }) {
   const [error, setError] = useState('');
   const [openArtifact, setOpenArtifact] = useState<string | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [replayBusy, setReplayBusy] = useState<number | null>(null);
+  const [replayResult, setReplayResult] = useState<ReplayResult | null>(null);
+  const [replayError, setReplayError] = useState('');
 
   const load = useCallback(async (targetId: string) => {
     setLoading(true);
@@ -114,6 +134,32 @@ export function StageTimeline({ jobId }: { jobId: string }) {
       alive = false;
     };
   }, [jobId, load]);
+
+  const runReplay = useCallback(
+    async (sceneIndex: number) => {
+      setReplayBusy(sceneIndex);
+      setReplayError('');
+      setReplayResult(null);
+      try {
+        const res = await fetch('/api/debug/replay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, sceneIndex }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setReplayError(body.error ?? `回放失败 (${res.status})`);
+          return;
+        }
+        setReplayResult(body as unknown as ReplayResult);
+      } catch {
+        setReplayError('回放请求失败');
+      } finally {
+        setReplayBusy(null);
+      }
+    },
+    [jobId],
+  );
 
   if (!jobId) return null;
 
@@ -252,6 +298,51 @@ export function StageTimeline({ jobId }: { jobId: string }) {
                         <pre style={{ margin: 0, maxHeight: 220, overflow: 'auto', background: '#FAFAFA', padding: 8, borderRadius: 6, fontSize: 11, whiteSpace: 'pre-wrap' }}>
                           {a.outputText ?? '（未记录）'}
                         </pre>
+
+                        {a.stage === 'phase3.scene' && a.sceneIndex !== null ? (
+                          <div style={{ marginTop: 10 }}>
+                            <button
+                              onClick={() => void runReplay(a.sceneIndex as number)}
+                              disabled={replayBusy !== null}
+                              style={{
+                                padding: '4px 10px', fontSize: 12, borderRadius: 6,
+                                cursor: replayBusy !== null ? 'default' : 'pointer',
+                                border: '1px solid #D4D4D8', background: 'transparent',
+                              }}
+                            >
+                              {replayBusy === a.sceneIndex ? '回放中…（会真实调用一次 LLM）' : '用当前模型重放此场景'}
+                            </button>
+                            {replayError ? (
+                              <div style={{ color: '#B91C1C', fontSize: 12, marginTop: 6 }}>{replayError}</div>
+                            ) : null}
+                            {replayResult && replayResult.sceneIndex === a.sceneIndex ? (
+                              <div style={{ marginTop: 10, borderTop: '1px dashed #E4E4E7', paddingTop: 8 }}>
+                                <div style={{ fontSize: 12, color: '#3F3F46' }}>
+                                  回放完成（{replayResult.modelId} · {fmtMs(replayResult.durationMs)}）：内容
+                                  <b style={{ color: replayResult.diff.contentChanged ? '#B45309' : '#15803D' }}>
+                                    {replayResult.diff.contentChanged ? '已变化' : '无变化'}
+                                  </b>
+                                  · 块数 {replayResult.diff.blocksBefore} → {replayResult.diff.blocksAfter}
+                                  · 置信度 {replayResult.diff.confidenceBefore ?? '—'} → {replayResult.diff.confidenceAfter}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                                  <div>
+                                    <div style={{ fontSize: 11, color: '#71717A' }}>原输出</div>
+                                    <pre style={{ margin: 0, maxHeight: 200, overflow: 'auto', background: '#FAFAFA', padding: 8, borderRadius: 6, fontSize: 11 }}>
+                                      {JSON.stringify(replayResult.before?.content ?? null, null, 2)}
+                                    </pre>
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: 11, color: '#71717A' }}>回放输出</div>
+                                    <pre style={{ margin: 0, maxHeight: 200, overflow: 'auto', background: '#FAFAFA', padding: 8, borderRadius: 6, fontSize: 11 }}>
+                                      {JSON.stringify(replayResult.after.content, null, 2)}
+                                    </pre>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

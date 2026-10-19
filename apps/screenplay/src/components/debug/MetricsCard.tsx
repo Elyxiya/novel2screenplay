@@ -57,7 +57,15 @@ export function MetricsCard() {
   }, []);
 
   useEffect(() => {
-    void load(days);
+    // 延到微任务再触发：load 的首个动作是同步 setState（loading/error），
+    // 直接在 effect 体内调用会触发级联渲染（react-hooks/set-state-in-effect）。
+    let alive = true;
+    queueMicrotask(() => {
+      if (alive) void load(days);
+    });
+    return () => {
+      alive = false;
+    };
   }, [days, load]);
 
   const errorEntries = data

@@ -1,6 +1,7 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
 import { isAbortError, throwIfAborted } from './cancel-registry';
+import { recordArtifact, startSpan, type RunLogContext } from '../observability/run-log';
 import { safeJsonParse } from '../utils/safe-json';
 import {
   estimateMapPromptTokens,
@@ -98,6 +99,8 @@ export interface MapOptions {
   budget?: Phase1BudgetController;
   /** P0：取消信号——每章/每次重试前检查，取消后不再发起新的 LLM 调用 */
   signal?: AbortSignal;
+  /** P1：观测上下文（逐章抽取事件 + 采样产物） */
+  runLog?: RunLogContext;
 }
 
 /** 每章抽取的 LLM 返回结构（sourceChapterIndex 字段由 map 层忽略并覆盖） */
@@ -153,9 +156,42 @@ export async function mapChapters(
 
   const budget = options?.budget;
   const signal = options?.signal;
+  const runLog = options?.runLog;
   const budgetBefore = budget?.blockedCount ?? 0;
   const extracted = await Promise.all(
-    active.map((ch) => extractChapter(provider, ctxManager, ch, budget, signal)),
+    active.map(async (ch) => {
+      // P1：逐章 span——定位「哪一章没抽出来」
+      const span = runLog
+        ? startSpan({ ctx: runLog, stage: 'phase1.map', phase: 1, startPayload: { chapter: ch.index } })
+        : null;
+      try {
+        const r = await extractChapter(provider, ctxManager, ch, budget, signal);
+        span?.end({
+          chapter: ch.index,
+          characters: r.result.characters.length,
+          locations: r.result.locations.length,
+          threads: r.result.openThreads.length,
+          summaryChars: r.result.summary.length,
+        });
+        if (runLog) {
+          recordArtifact({
+            ctx: runLog,
+            stage: 'phase1.chapter',
+            sceneIndex: ch.index,
+            outputText: r.rawResponses.join('\n---\n'),
+            meta: {
+              chapter: ch.index,
+              characters: r.result.characters.length,
+              locations: r.result.locations.length,
+            },
+          });
+        }
+        return r;
+      } catch (err) {
+        span?.fail(err, { chapter: ch.index });
+        throw err;
+      }
+    }),
   );
 
   return {

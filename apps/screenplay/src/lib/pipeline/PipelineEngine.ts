@@ -13,6 +13,7 @@ import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
 import { abortJob, isAbortError, registerJobAbort, releaseJobAbort, throwIfAborted } from './cancel-registry';
+import { createTraceId, pruneRunLog, recordRunEvent, startSpan, type RunLogContext } from '../observability/run-log';
 import type { Phase1Output, StyleProfile, UserProfile } from '@novel/contracts/pipeline';
 import { cleanNovelText } from '../preprocess/clean';
 import { applyUserProfile } from './user-profile';
@@ -201,11 +202,33 @@ export class PipelineEngine {
     // P0：注册取消控制器——runPipeline 全链路持有 signal，cancelJob 才能真正中断执行链
     const abortController = registerJobAbort(jobId);
 
+    // P1：一次执行一个 trace（resume / 局部重转各自独立，时间线上可区分）
+    const runCtx: RunLogContext = { jobId, traceId: createTraceId('run') };
+    recordRunEvent({
+      ctx: runCtx,
+      stage: 'pipeline',
+      phase: 0,
+      event: 'start',
+      payload: {
+        modelId: provider.modelId,
+        chapters: selectedChapterObjs.length,
+        selected: input.selectedChapters?.length ?? null,
+      },
+    });
+
     // Start pipeline asynchronously (don't await — let it run in background)
-    this.runPipeline(jobId, provider, selectedChapterObjs, input, abortController.signal)
+    this.runPipeline(jobId, provider, selectedChapterObjs, input, abortController.signal, runCtx)
       .catch((err) => {
         // P0：用户主动取消不是失败。状态已由 cancelJob 落为 cancelled，此处只留痕不覆盖。
         if (isAbortError(err) || abortController.signal.aborted) {
+          recordRunEvent({
+            ctx: runCtx,
+            stage: 'pipeline',
+            phase: jobStore.get(jobId)?.currentPhase ?? 0,
+            event: 'skip',
+            level: 'warn',
+            payload: { reason: 'cancelled' },
+          });
           jobStore.update(jobId, (job) => ({
             ...job,
             logs: [
@@ -224,6 +247,15 @@ export class PipelineEngine {
           provider: provider.modelId,
         });
         const errorMsg = payload.message;
+        // P1：失败必须落在「哪一阶段」——这是时间线上定位问题的入口
+        recordRunEvent({
+          ctx: runCtx,
+          stage: 'pipeline',
+          phase: failedJob?.currentPhase ?? 0,
+          event: 'error',
+          level: 'error',
+          payload: { code: payload.code, message: errorMsg, provider: provider.modelId },
+        });
         jobStore.update(jobId, (job) => {
           const updated = {
             ...job,
@@ -266,6 +298,8 @@ export class PipelineEngine {
 
     // P0：恢复同样是一条长执行链，必须能被取消
     const abortController = registerJobAbort(jobId);
+    // P1：恢复是一次独立 trace
+    const resumeCtx: RunLogContext = { jobId, traceId: createTraceId('resume') };
 
     try {
       throwIfAborted(abortController.signal);
@@ -314,7 +348,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         abortController.signal,
-        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
+        { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots(), runLog: resumeCtx },
       );
       throwIfAborted(abortController.signal);
 
@@ -332,6 +366,16 @@ export class PipelineEngine {
         phase2Output,
         allOutputs,
       );
+
+      // P1：恢复完成留痕（同一 job 的多次运行靠 trace 区分）
+      recordRunEvent({
+        ctx: resumeCtx,
+        stage: 'pipeline',
+        phase: 4,
+        event: 'end',
+        payload: { mode: 'resume', scenes: failedScenes.length, fixes: fixes.length },
+      });
+      pruneRunLog(jobId);
 
       jobStore.update(jobId, (j) => ({
         ...j,
@@ -378,6 +422,8 @@ export class PipelineEngine {
     }
     // P0：局部重转也是一条长执行链，同样可取消
     const abortController = registerJobAbort(jobId);
+    // P1：局部重转是一次独立 trace
+    const cardEditCtx: RunLogContext = { jobId, traceId: createTraceId('card-edit') };
     try {
       throwIfAborted(abortController.signal);
       const newPhase1: Phase1Output = {
@@ -420,7 +466,7 @@ export class PipelineEngine {
         jobStore,
         jobId,
         abortController.signal,
-        { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
+        { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots(), runLog: cardEditCtx },
       );
       throwIfAborted(abortController.signal);
 
@@ -522,6 +568,7 @@ export class PipelineEngine {
     chapters: Array<{ index: number; title: string; text: string }>,
     input: { title?: string; author?: string },
     signal?: AbortSignal,
+    runCtx?: RunLogContext,
   ): Promise<void> {
 
     console.log(`[${jobId}] === PIPELINE STARTED ===`);
@@ -542,6 +589,13 @@ export class PipelineEngine {
 
     // ── Phase 1: Analyze（B-09：已导入历史设定卡时跳过 LLM 分析）──
     throwIfAborted(signal);
+    const spanP1 = startSpan({
+      ctx: runCtx ?? { jobId, traceId: jobId },
+      stage: 'phase1',
+      phase: 1,
+      emitStart: true,
+      startPayload: { chapters: chapters.length, modelId: provider.modelId },
+    });
     const t1 = Date.now();
     const existingPhase1 = jobStore.get(jobId)?.pipelineState.phase1Output;
     let phase1Output: Phase1Output;
@@ -593,7 +647,7 @@ export class PipelineEngine {
       );
       phase1Output = await phase1.analyze(
         chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
-        { signal },
+        { signal, runLog: runCtx },
       );
 
       console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
@@ -632,7 +686,19 @@ export class PipelineEngine {
     }
 
     // ── Phase 2: Segment ──
+    spanP1.end({
+      characters: phase1Output.characters.length,
+      locations: phase1Output.locations.length,
+      reusedSettingCard: Boolean(existingPhase1),
+    });
     throwIfAborted(signal);
+    const spanP2 = startSpan({
+      ctx: runCtx ?? { jobId, traceId: jobId },
+      stage: 'phase2',
+      phase: 2,
+      emitStart: true,
+      startPayload: { chapters: chapters.length },
+    });
     const t2 = Date.now();
     console.log(`[${jobId}] Phase 2: 开始场景切割...`);
     jobStore.update(jobId, (job) => {
@@ -653,6 +719,7 @@ export class PipelineEngine {
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
       phase1Output,
       signal,
+      runCtx,
     );
 
     console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);
@@ -674,7 +741,19 @@ export class PipelineEngine {
     });
 
     // ── Phase 3: Convert Scenes (Parallel) ──
+    spanP2.end({
+      scenes: phase2Output.scenes.length,
+      mergedPairs: phase2Output.stats?.mergedPairs ?? 0,
+      overlapFixes: phase2Output.stats?.overlapFixes ?? 0,
+    });
     throwIfAborted(signal);
+    const spanP3 = startSpan({
+      ctx: runCtx ?? { jobId, traceId: jobId },
+      stage: 'phase3',
+      phase: 3,
+      emitStart: true,
+      startPayload: { scenes: phase2Output.scenes.length },
+    });
     const t3 = Date.now();
     console.log(`[${jobId}] Phase 3: 开始并行转换 ${phase2Output.scenes.length} 个场景...`);
     jobStore.update(jobId, (job) => {
@@ -699,7 +778,7 @@ export class PipelineEngine {
       jobStore,
       jobId,
       signal,
-      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle, fewshots: loadFewshots() },
+      { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle, fewshots: loadFewshots(), runLog: runCtx },
     );
 
     throwIfAborted(signal);
@@ -723,7 +802,19 @@ export class PipelineEngine {
     });
 
     // ── Phase 4: Merge & Validate ──
+    spanP3.end({
+      scenes: phase3Outputs.length,
+      success: successCount,
+      degraded: phase3Outputs.length - successCount,
+    });
     throwIfAborted(signal);
+    const spanP4 = startSpan({
+      ctx: runCtx ?? { jobId, traceId: jobId },
+      stage: 'phase4',
+      phase: 4,
+      emitStart: true,
+      startPayload: { scenes: phase3Outputs.length },
+    });
     const t4 = Date.now();
     console.log(`[${jobId}] Phase 4: 开始合并校验...`);
     jobStore.update(jobId, (job) => {
@@ -781,6 +872,20 @@ export class PipelineEngine {
     });
 
     // ── 工作台联动：更新小说资产已转换章节 + 写入历史表 ──
+    spanP4.end({ scenes: screenplay.metadata.totalScenes, fixes: fixes.length });
+    recordRunEvent({
+      ctx: runCtx ?? { jobId, traceId: jobId },
+      stage: 'pipeline',
+      phase: 4,
+      event: 'end',
+      payload: {
+        scenes: screenplay.metadata.totalScenes,
+        characters: screenplay.metadata.totalCharacters,
+        locations: screenplay.metadata.totalLocations,
+        fixes: fixes.length,
+        dialoguePercentage: screenplay.analytics?.dialoguePercentage ?? null,
+      },
+    });
     try {
       const finished = jobStore.get(jobId);
       if (finished?.novelId) {
@@ -823,6 +928,9 @@ export class PipelineEngine {
     this.evaluatePipelineQuality(jobId, provider, screenplay).catch((err) => {
       console.warn(`[${jobId}] LLM 质量评估失败: ${(err as Error).message}`);
     });
+
+    // P1：收尾裁剪（保留最近 N 条事件 / M 条产物），防止只增不减
+    pruneRunLog(jobId);
 
     console.log(`[${jobId}] === PIPELINE COMPLETE ===`);
   }

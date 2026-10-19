@@ -4,6 +4,7 @@ import { ContextManager, MAX_SEGMENT_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
 import type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 import { isAbortError, throwIfAborted } from './cancel-registry';
+import { recordArtifact, startSpan, type RunLogContext } from '../observability/run-log';
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
 export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
@@ -24,6 +25,7 @@ export class Phase2Segmenter {
     chapters: Array<{ index: number; title: string; text: string }>,
     analysis: Phase1Output,
     signal?: AbortSignal,
+    runLog?: RunLogContext,
   ): Promise<Phase2Output> {
     const allScenes: SceneBoundary[] = [];
     const rawResponses: string[] = [];
@@ -32,6 +34,10 @@ export class Phase2Segmenter {
     for (const chapter of chapters) {
       // P0：逐章检查取消，避免取消后继续为剩余章节发起 LLM 调用
       throwIfAborted(signal);
+      // P1：逐章 span——「哪一章切歪了」看这里
+      const span = runLog
+        ? startSpan({ ctx: runLog, stage: 'phase2.chapter', phase: 2, startPayload: { chapter: chapter.index } })
+        : null;
       console.log(`[Phase2]  章节 #${chapter.index}: "${chapter.title}" (${chapter.text.length} 字)`);
       const truncatedText = await this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
 
@@ -90,6 +96,21 @@ export class Phase2Segmenter {
         const charOffsets = this.calculateCharOffsets(chapter.text);
 
         console.log(`[Phase2]  章节 #${chapter.index}: 检测到 ${scenes.length} 个场景`);
+        span?.end({
+          chapter: chapter.index,
+          scenes: scenes.length,
+          truncated: truncatedText !== chapter.text,
+          chars: chapter.text.length,
+        });
+        if (runLog) {
+          recordArtifact({
+            ctx: runLog,
+            stage: 'phase2.chapter',
+            sceneIndex: chapter.index,
+            outputText: response.content,
+            meta: { chapter: chapter.index, scenes: scenes.length },
+          });
+        }
         for (let i = 0; i < scenes.length; i++) {
           const s = scenes[i];
           // Expand boundary ±1 paragraph for complete capture
@@ -112,11 +133,17 @@ export class Phase2Segmenter {
         // P0：取消不是失败，不能降级成 fallback 继续跑
         if (isAbortError(err)) throw err;
         console.log(`[Phase2]  章节 #${chapter.index} LLM 调用失败: ${(err as Error).message}, 使用 fallback`);
+        span?.event('degrade', {
+          chapter: chapter.index,
+          reason: 'llm_failed',
+          error: (err as Error).message.slice(0, 300),
+        }, { level: 'warn' });
         rawResponses.push('Fallback: empty line split');
         const fallbackScenes = await this.fallbackSplit(chapter);
         for (const fs of fallbackScenes) {
           allScenes.push(fs);
         }
+        span?.end({ chapter: chapter.index, scenes: fallbackScenes.length, fallback: true });
       }
     }
     console.log(`[Phase2] 所有章节处理完成, 共 ${allScenes.length} 个场景`);

@@ -16,6 +16,7 @@ import {
 import type { MetricsSink } from './metrics';
 import { classifyJobError } from '../errors';
 import { isAbortError, throwIfAborted } from './cancel-registry';
+import { recordArtifact, startSpan, type RunLogContext, type RunSpan } from '../observability/run-log';
 import { formatUserProfileBlock } from './user-profile';
 import { formatStyleBlock } from './style-profile';
 import { formatFewshotBlock, type FewshotEntry } from './fewshots';
@@ -32,6 +33,8 @@ export interface Phase3ConvertOptions {
   styleProfile?: StyleProfile;
   /** B-06：Few-shot 最小对（仅 Phase3 注入；默认关闭，未传零变化） */
   fewshots?: FewshotEntry[];
+  /** P1：观测上下文（逐场景事件 + 产物快照） */
+  runLog?: RunLogContext;
 }
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
@@ -242,6 +245,7 @@ export class Phase3SceneConverter {
     summaries?: string, threads?: string,
     metrics?: MetricsSink,
     extraBlocks?: string[],
+    span?: RunSpan,
   ): Promise<Phase3Output> {
     const contextParts = [
       `角色: ${charContext}`,
@@ -270,6 +274,10 @@ export class Phase3SceneConverter {
         const t1 = Date.now();
         console.log(`[Phase3]  ${label} LLM 返回 (${t1-t0}ms), 输出: ${response.content.length} 字符, usage: ${response.usage ? `输入${response.usage.promptTokens}+输出${response.usage.completionTokens}` : 'N/A'}`);
         this.recordUsage(jobStore, jobId, response.usage || {}, partText.length, metrics);
+        span?.event('llm_call', { label, chars: partText.length }, {
+          promptTokens: response.usage?.promptTokens,
+          completionTokens: response.usage?.completionTokens,
+        });
 
         const parsed = safeJsonParse(response.content) as Record<string, unknown>;
         console.log(`[Phase3]  ${label} 解析结果: keys=[${Object.keys(parsed).join(',')}], error=${parsed.error ?? '无'}, confidence=${parsed.confidence}, hasContent=${'content' in parsed}`);
@@ -319,6 +327,11 @@ export class Phase3SceneConverter {
         // P0：取消不是场景失败——直接上抛，避免被记账成 degradedScene
         if (isAbortError(err)) throw err;
         lastError = err as Error;
+        span?.event('retry', {
+          label,
+          attempt: attempt + 1,
+          error: lastError.message.slice(0, 300),
+        }, { level: 'warn' });
         console.log(`[Phase3]  ${label} 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
         jobStore.update(jobId, j => ({
           ...j, logs: [...j.logs, { timestamp: Date.now(), level: 'warn' as const, message: `${label} 尝试 ${attempt + 1}/3 失败: ${lastError!.message.slice(0, 150)}` }],
@@ -328,6 +341,11 @@ export class Phase3SceneConverter {
     }
 
     // All retries failed
+    span?.event('degrade', {
+      label,
+      reason: 'retries_exhausted',
+      error: lastError?.message.slice(0, 300) ?? null,
+    }, { level: 'error' });
     jobStore.update(jobId, j => ({
       ...j, scenesStatus: (j.scenesStatus || []).map(s => s.sceneIndex === scene.sceneIndex ? { ...s, status: 'failed' as const } : s),
     }));
@@ -501,6 +519,11 @@ export class Phase3SceneConverter {
       if (abortSignal?.aborted) throw new DOMException('Aborted', 'AbortError');
       await this.rateLimiter.wait(abortSignal);
 
+      // P1：逐场景 span——时间线上每个场景一行，带耗时/块数/置信度
+      const sceneSpan = opts?.runLog
+        ? startSpan({ ctx: opts.runLog, stage: 'phase3.scene', phase: 3, sceneIndex: scene.sceneIndex })
+        : null;
+
       // Scene-scoped context: filter characters by keyCharacterNames,
       // locations by chapterIndex (falls back to full lists when empty).
       // Task 3：传入 settingCard 时启用主角常驻 + 滚动摘要 + open threads 注入。
@@ -533,6 +556,8 @@ export class Phase3SceneConverter {
       });
       if (!check.allowed) {
         this.recordBudgetBlocked(jobStore, jobId, scene, check.reason, opts?.metrics);
+        sceneSpan?.event('degrade', { reason: 'budget_blocked', detail: check.reason }, { level: 'warn' });
+        sceneSpan?.end({ scene: scene.sceneIndex, degraded: true });
         return this.degradedScene(scene, `预算超限已拦截: ${check.reason}`);
       }
 
@@ -540,7 +565,7 @@ export class Phase3SceneConverter {
       const convResults: Phase3Output[] = [];
       for (let pi = 0; pi < parts.length; pi++) {
         const label = parts.length > 1 ? `场景 #${scene.sceneIndex}[${pi + 1}/${parts.length}]` : `场景 #${scene.sceneIndex}`;
-        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, extraBlocks);
+        const result = await this.convertText(label, parts[pi], scene, sceneCtx.chars, sceneCtx.locs, charIdMap, jobStore, jobId, abortSignal, sceneCtx.summaries, sceneCtx.threads, opts?.metrics, extraBlocks, sceneSpan ?? undefined);
         convResults.push(result);
       }
 
@@ -562,9 +587,33 @@ export class Phase3SceneConverter {
         };
       });
 
+      // P1：场景收尾——块数/置信度/耗时；失败或低置信强制留产物，成功按采样
+      sceneSpan?.end({
+        scene: scene.sceneIndex,
+        blocks: merged.content.length,
+        confidence: merged.confidence,
+        parts: parts.length,
+      });
+      if (opts?.runLog) {
+        recordArtifact({
+          ctx: opts.runLog,
+          stage: 'phase3.scene',
+          sceneIndex: scene.sceneIndex,
+          inputText: sceneText,
+          outputText: JSON.stringify(merged.content),
+          meta: {
+            confidence: merged.confidence,
+            blocks: merged.content.length,
+            parts: parts.length,
+            charKept: sceneCtx.charKept,
+            charTotal: sceneCtx.charTotal,
+          },
+          force: merged.confidence <= 0.5,
+        });
+      }
+
       return merged;
     }));
-
     const results = await Promise.allSettled(tasks.map(t => t()));
     // P0：取消后不再产出「降级场景」蒙混过关——直接上抛，让调用方停止后续阶段
     throwIfAborted(abortSignal);

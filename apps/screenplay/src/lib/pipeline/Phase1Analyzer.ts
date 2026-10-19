@@ -13,6 +13,7 @@ import {
 } from './phase1-budget';
 import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
 import { isAbortError, throwIfAborted } from './cancel-registry';
+import type { RunLogContext } from '../observability/run-log';
 
 /**
  * Phase1 分析 LLM 的输出 token 上限。此前 4096 对长篇（截断后最多 ~30k token 输入）
@@ -26,6 +27,8 @@ export interface Phase1AnalyzeOptions {
   mode?: Phase1Mode;
   /** P0：取消信号（取消后不再发起新的 LLM 调用，且不把 AbortError 当作可降级的失败） */
   signal?: AbortSignal;
+  /** P1：观测上下文（逐章 map / reduce 事件与产物快照） */
+  runLog?: RunLogContext;
 }
 
 /** Shape of the JSON response expected from Phase 1 LLM */
@@ -66,11 +69,12 @@ export class Phase1Analyzer {
   ): Promise<Phase1Output> {
     const effectiveMode: Phase1Mode = resolvePhase1Mode(options?.mode);
     const signal = options?.signal;
+    const runLog = options?.runLog;
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线
       try {
-        return await this.analyzeMapReduce(chapters, signal);
+        return await this.analyzeMapReduce(chapters, signal, runLog);
       } catch (err) {
         if (isAbortError(err)) throw err;
         console.log(`[Phase1] map-reduce 路径失败，回退 truncate 路径: ${(err as Error).message}`);
@@ -240,7 +244,11 @@ export class Phase1Analyzer {
    * map-reduce 路径：按章并行抽取 → reduce 归并成全局 Phase1Output。
    * 校验输入为空给出空结果；超限经 mapChapters 内置 cap 优雅降级（degraded）。
    */
-  private async analyzeMapReduce(chapters: ChapterInput[], signal?: AbortSignal): Promise<Phase1Output> {
+  private async analyzeMapReduce(
+    chapters: ChapterInput[],
+    signal?: AbortSignal,
+    runLog?: RunLogContext,
+  ): Promise<Phase1Output> {
     if (chapters.length === 0) {
       console.log('[Phase1-mapreduce] 输入没有章节，返回空结果');
       return {
@@ -255,7 +263,7 @@ export class Phase1Analyzer {
       this.provider,
       this.ctxManager,
       chapters,
-      { budget: this.budget, signal },
+      { budget: this.budget, signal, runLog },
     );
 
     console.log(
@@ -265,6 +273,7 @@ export class Phase1Analyzer {
     const reduced = await reduceSetting(this.provider, results, rawResponses, {
       budget: this.budget,
       signal,
+      runLog,
     });
 
     console.log(

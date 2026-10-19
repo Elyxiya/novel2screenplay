@@ -13,6 +13,7 @@ import type { ChapterExtraction } from './phase1-map';
 import { buildAliasIndex } from './setting-card';
 import { detectNameConflicts, type NameConflictCandidate } from './phase1-name-conflicts';
 import { isAbortError, throwIfAborted } from './cancel-registry';
+import { startSpan, type RunLogContext } from '../observability/run-log';
 
 /** 合并决策：LLM 返回的归并分组 */
 export interface MergeMember {
@@ -59,6 +60,8 @@ export interface ReduceOptions {
   budget?: Phase1BudgetController;
   /** P0：取消信号——取消后不再发起合并决策调用 */
   signal?: AbortSignal;
+  /** P1：观测上下文（归并前后数量 / 冲突候选 / 是否降级） */
+  runLog?: RunLogContext;
 }
 
 /** 扁平化的单条角色抽取记录（跨章合并的输入单位） */
@@ -196,6 +199,25 @@ export async function reduceSetting(
       : budgetBlocked
         ? 'reduce 合并决策被预算拦截，已降级朴素 merge'
         : reduceRaw || (lastError ? `reduce 合并失败，已降级朴素 merge: ${lastError.message}` : '');
+
+  // P1：reduce 是「谁被合并掉了」的唯一证据来源
+  const span = options?.runLog
+    ? startSpan({ ctx: options.runLog, stage: 'phase1.reduce', phase: 1 })
+    : null;
+  span?.end({
+    inputCharacters: flatChars.length,
+    characters: characters.length,
+    locations: locations.length,
+    conflictCandidates: nameConflicts.length,
+    budgetBlocked,
+    mergeGroups: groups.length,
+  });
+  if (options?.runLog && (budgetBlocked || lastError)) {
+    span?.event('degrade', {
+      reason: budgetBlocked ? 'budget_blocked' : 'merge_decision_failed',
+      error: lastError?.message ?? null,
+    }, { level: 'warn' });
+  }
 
   return {
     characters,

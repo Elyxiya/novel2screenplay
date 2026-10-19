@@ -12,6 +12,7 @@ import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
 import { createHash } from 'crypto';
+import { abortJob, isAbortError, registerJobAbort, releaseJobAbort, throwIfAborted } from './cancel-registry';
 import type { Phase1Output, StyleProfile, UserProfile } from '@novel/contracts/pipeline';
 import { cleanNovelText } from '../preprocess/clean';
 import { applyUserProfile } from './user-profile';
@@ -197,30 +198,48 @@ export class PipelineEngine {
       }));
     }
 
+    // P0：注册取消控制器——runPipeline 全链路持有 signal，cancelJob 才能真正中断执行链
+    const abortController = registerJobAbort(jobId);
+
     // Start pipeline asynchronously (don't await — let it run in background)
-    this.runPipeline(jobId, provider, selectedChapterObjs, input).catch((err) => {
-      // FIX-22：持久化为结构化 payload（SSE/日志仍用可读文案）
-      const failedJob = jobStore.get(jobId);
-      const payload = toJobErrorPayload(err, {
-        phase: failedJob?.currentPhase,
-        provider: provider.modelId,
-      });
-      const errorMsg = payload.message;
-      jobStore.update(jobId, (job) => {
-        const updated = {
-          ...job,
-          status: 'failed' as const,
-          error: JSON.stringify(payload),
-          logs: [
-            ...job.logs,
-            { timestamp: Date.now(), level: 'error' as const, message: `流水线失败: ${errorMsg}` },
-          ],
-        };
-        this.emitSSE(jobId, 'error', { error: errorMsg });
-        this.emitSSE(jobId, 'log', { message: `流水线失败: ${errorMsg}`, level: 'error' });
-        return updated;
-      });
-    });
+    this.runPipeline(jobId, provider, selectedChapterObjs, input, abortController.signal)
+      .catch((err) => {
+        // P0：用户主动取消不是失败。状态已由 cancelJob 落为 cancelled，此处只留痕不覆盖。
+        if (isAbortError(err) || abortController.signal.aborted) {
+          jobStore.update(jobId, (job) => ({
+            ...job,
+            logs: [
+              ...job.logs,
+              { timestamp: Date.now(), level: 'info' as const, message: '转换已取消：执行链已停止，未再发起新的 LLM 调用' },
+            ],
+          }));
+          this.emitSSE(jobId, 'log', { message: '转换已取消', level: 'info' });
+          return;
+        }
+
+        // FIX-22：持久化为结构化 payload（SSE/日志仍用可读文案）
+        const failedJob = jobStore.get(jobId);
+        const payload = toJobErrorPayload(err, {
+          phase: failedJob?.currentPhase,
+          provider: provider.modelId,
+        });
+        const errorMsg = payload.message;
+        jobStore.update(jobId, (job) => {
+          const updated = {
+            ...job,
+            status: 'failed' as const,
+            error: JSON.stringify(payload),
+            logs: [
+              ...job.logs,
+              { timestamp: Date.now(), level: 'error' as const, message: `流水线失败: ${errorMsg}` },
+            ],
+          };
+          this.emitSSE(jobId, 'error', { error: errorMsg });
+          this.emitSSE(jobId, 'log', { message: `流水线失败: ${errorMsg}`, level: 'error' });
+          return updated;
+        });
+      })
+      .finally(() => releaseJobAbort(jobId));
 
     return jobId;
   }
@@ -245,7 +264,11 @@ export class PipelineEngine {
       jobStore.refreshRecoverLock(jobId);
     }, Math.floor(RECOVER_LOCK_TTL_MS / 3));
 
+    // P0：恢复同样是一条长执行链，必须能被取消
+    const abortController = registerJobAbort(jobId);
+
     try {
+      throwIfAborted(abortController.signal);
       const failedScenes = job.scenesStatus
         .filter((s) => s.status === 'failed' || s.status === 'pending')
         .map((s) => s.sceneIndex);
@@ -290,9 +313,10 @@ export class PipelineEngine {
         job.chapterTexts,
         jobStore,
         jobId,
-        undefined,
+        abortController.signal,
         { settingCard: phase1Output.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
       );
+      throwIfAborted(abortController.signal);
 
       // Merge old + new results
       const oldOutputs = job.pipelineState.phase3Output || [];
@@ -321,9 +345,13 @@ export class PipelineEngine {
           { timestamp: Date.now(), level: 'info' as const, message: `恢复完成，共 ${fixes.length} 项修正` },
         ],
       }));
+    } catch (err) {
+      // P0：取消不是失败，静默收尾（状态由 cancelJob 落为 cancelled）
+      if (!isAbortError(err) && !abortController.signal.aborted) throw err;
     } finally {
       clearInterval(heartbeat);
       jobStore.unlockRecover(jobId);
+      releaseJobAbort(jobId);
     }
   }
 
@@ -348,7 +376,10 @@ export class PipelineEngine {
     if (!jobStore.tryLockRecover(jobId)) {
       throw new Error(`任务 ${jobId} 正在恢复/重转中，请勿重复操作`);
     }
+    // P0：局部重转也是一条长执行链，同样可取消
+    const abortController = registerJobAbort(jobId);
     try {
+      throwIfAborted(abortController.signal);
       const newPhase1: Phase1Output = {
         ...oldPhase1,
         characters: edited.characters,
@@ -388,9 +419,10 @@ export class PipelineEngine {
         job.chapterTexts,
         jobStore,
         jobId,
-        undefined,
+        abortController.signal,
         { settingCard: newPhase1.settingCard, metrics, userProfile: job.pipelineState.userProfile, styleProfile: job.pipelineState.styleProfile, fewshots: loadFewshots() },
       );
+      throwIfAborted(abortController.signal);
 
       const oldOutputs = job.pipelineState.phase3Output || [];
       const allOutputs = oldOutputs.map((o) => results.find((r) => r.sceneNumber === o.sceneNumber) || o);
@@ -423,32 +455,54 @@ export class PipelineEngine {
         ],
       }));
       return { invalidatedScenes: invalidated, reconvertedScenes: invalidated };
+    } catch (err) {
+      // P0：取消不是失败，静默收尾（状态由 cancelJob 落为 cancelled）
+      if (!isAbortError(err) && !abortController.signal.aborted) throw err;
+      return { invalidatedScenes: [], reconvertedScenes: [] };
     } finally {
       jobStore.unlockRecover(jobId);
+      releaseJobAbort(jobId);
     }
   }
 
   /**
    * Cancel a running job.
    */
+  /**
+   * Cancel a running job.
+   *
+   * P0：取消必须真正中断执行链——先 abort（命中注册表里的 AbortController），
+   * 再把状态落为终态 `cancelled`。旧实现只把 job 重置为 pending，执行链察觉不到，
+   * 于是取消后仍在调用 LLM，稍后还会把状态改回 completed。
+   * pipelineState 保留不清理：产物与日志是事后定位问题的证据。
+   */
   cancelJob(jobId: string): void {
     const job = jobStore.get(jobId);
     if (!job) return;
+    // 终态任务无需取消（避免把 completed/failed 覆盖成 cancelled）
+    if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') return;
+
+    const wasRunning = abortJob(jobId);
 
     jobStore.update(jobId, (j) => ({
       ...j,
-      status: 'pending' as const,
-      currentPhase: 0 as StoredJob['currentPhase'],
-      progress: 0,
+      status: 'cancelled' as const,
       subProgress: null,
-      scenesStatus: [],
-      pipelineState: {},
+      error: undefined,
       logs: [
         ...j.logs,
-        { timestamp: Date.now(), level: 'info' as const, message: '用户取消了转换' },
+        {
+          timestamp: Date.now(),
+          level: 'info' as const,
+          message: wasRunning
+            ? '用户取消了转换（执行链已中断，不再发起新的 LLM 调用）'
+            : '用户取消了转换（任务未在执行中）',
+        },
       ],
-      error: undefined,
     }));
+
+    this.emitSSE(jobId, 'phase', { phase: job.currentPhase ?? 0, status: 'cancelled', progress: job.progress });
+    this.emitSSE(jobId, 'log', { message: '用户取消了转换', level: 'info' });
   }
 
   /**
@@ -467,10 +521,12 @@ export class PipelineEngine {
     provider: LLMProvider,
     chapters: Array<{ index: number; title: string; text: string }>,
     input: { title?: string; author?: string },
+    signal?: AbortSignal,
   ): Promise<void> {
 
     console.log(`[${jobId}] === PIPELINE STARTED ===`);
     console.log(`[${jobId}] provider=${provider.name}(${provider.modelId}), chapters=${chapters.length}`);
+    throwIfAborted(signal);
 
     // 运行期指标累积（FIX-02b）：耗时/usage/预算拦截/占位统一进 MetricsAccumulator，
     // 在阶段边界与终态随 pipelineState.metrics 一起落库（run-local 累积，避免
@@ -485,6 +541,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 1: Analyze（B-09：已导入历史设定卡时跳过 LLM 分析）──
+    throwIfAborted(signal);
     const t1 = Date.now();
     const existingPhase1 = jobStore.get(jobId)?.pipelineState.phase1Output;
     let phase1Output: Phase1Output;
@@ -536,6 +593,7 @@ export class PipelineEngine {
       );
       phase1Output = await phase1.analyze(
         chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
+        { signal },
       );
 
       console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
@@ -574,6 +632,7 @@ export class PipelineEngine {
     }
 
     // ── Phase 2: Segment ──
+    throwIfAborted(signal);
     const t2 = Date.now();
     console.log(`[${jobId}] Phase 2: 开始场景切割...`);
     jobStore.update(jobId, (job) => {
@@ -593,6 +652,7 @@ export class PipelineEngine {
     const phase2Output = await phase2.segment(
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
       phase1Output,
+      signal,
     );
 
     console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);
@@ -614,6 +674,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 3: Convert Scenes (Parallel) ──
+    throwIfAborted(signal);
     const t3 = Date.now();
     console.log(`[${jobId}] Phase 3: 开始并行转换 ${phase2Output.scenes.length} 个场景...`);
     jobStore.update(jobId, (job) => {
@@ -637,10 +698,11 @@ export class PipelineEngine {
       chapters.map((c) => c.text),
       jobStore,
       jobId,
-      undefined,
+      signal,
       { settingCard: phase1Output.settingCard, metrics, userProfile: activeProfile, styleProfile: activeStyle, fewshots: loadFewshots() },
     );
 
+    throwIfAborted(signal);
     const successCount = phase3Outputs.filter((o) => o.confidence > 0.5).length;
     console.log(`[${jobId}] Phase 3 完成: ${successCount}/${phase3Outputs.length} 场景成功`);
     recordTiming('convert', t3);
@@ -661,6 +723,7 @@ export class PipelineEngine {
     });
 
     // ── Phase 4: Merge & Validate ──
+    throwIfAborted(signal);
     const t4 = Date.now();
     console.log(`[${jobId}] Phase 4: 开始合并校验...`);
     jobStore.update(jobId, (job) => {
@@ -690,6 +753,8 @@ export class PipelineEngine {
 
     console.log(`[${jobId}] ✅ 转换完成! fixes=${fixes?.length ?? 0}`);
     recordTiming('merge', t4);
+    // P0：落终态前最后一道守卫——取消发生在合并期间的，不允许把状态改回 completed
+    throwIfAborted(signal);
     jobStore.update(jobId, (job) => {
       const updated = {
         ...job,

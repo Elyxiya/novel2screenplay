@@ -6,7 +6,9 @@ export type PipelinePhase =
   | 'converting'
   | 'merging'
   | 'completed'
-  | 'failed';
+  | 'failed'
+  /** P0：用户主动取消（终态；不可 resume，产物保留供排查） */
+  | 'cancelled';
 
 /** Scene-level status for resume support */
 export interface SceneStatus {

@@ -1,5 +1,6 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { ContextManager, MAX_ANALYSIS_TOKENS } from './ContextManager';
+import { isAbortError, throwIfAborted } from './cancel-registry';
 import { safeJsonParse } from '../utils/safe-json';
 import {
   estimateMapPromptTokens,
@@ -95,6 +96,8 @@ export interface MapResult {
 export interface MapOptions {
   /** Phase1 预算守卫（Task 5：canRequest 接到 Phase1 map 调用点） */
   budget?: Phase1BudgetController;
+  /** P0：取消信号——每章/每次重试前检查，取消后不再发起新的 LLM 调用 */
+  signal?: AbortSignal;
 }
 
 /** 每章抽取的 LLM 返回结构（sourceChapterIndex 字段由 map 层忽略并覆盖） */
@@ -149,9 +152,10 @@ export async function mapChapters(
   }
 
   const budget = options?.budget;
+  const signal = options?.signal;
   const budgetBefore = budget?.blockedCount ?? 0;
   const extracted = await Promise.all(
-    active.map((ch) => extractChapter(provider, ctxManager, ch, budget)),
+    active.map((ch) => extractChapter(provider, ctxManager, ch, budget, signal)),
   );
 
   return {
@@ -167,7 +171,9 @@ async function extractChapter(
   ctxManager: ContextManager,
   chapter: ChapterInput,
   budget?: Phase1BudgetController,
+  signal?: AbortSignal,
 ): Promise<{ result: ChapterExtraction; rawResponses: string[] }> {
+  throwIfAborted(signal);
   const tokenEstimate = estimateTokensByChars(chapter.text);
   if (tokenEstimate > MAP_CHAPTER_TOKEN_THRESHOLD) {
     const chunks = ctxManager.splitIntoChunks(chapter.text, MAP_CHAPTER_TOKEN_THRESHOLD);
@@ -175,7 +181,7 @@ async function extractChapter(
       `[Phase1-map] 章节 #${chapter.index} "${chapter.title}" token 预估 ${tokenEstimate} 超过 ${MAP_CHAPTER_TOKEN_THRESHOLD}，二次分块为 ${chunks.length} 块`,
     );
     const perChunk = await Promise.all(
-      chunks.map((chunk, ci) => extractSingle(provider, chapter, chunk, ci, budget)),
+      chunks.map((chunk, ci) => extractSingle(provider, chapter, chunk, ci, budget, signal)),
     );
     return {
       result: mergeChapterExtractions(chapter.index, perChunk.map((p) => p.result)),
@@ -183,7 +189,7 @@ async function extractChapter(
     };
   }
 
-  const single = await extractSingle(provider, chapter, chapter.text, 0, budget);
+  const single = await extractSingle(provider, chapter, chapter.text, 0, budget, signal);
   return { result: single.result, rawResponses: single.rawResponses };
 }
 
@@ -194,6 +200,7 @@ async function extractSingle(
   text: string,
   chunkIndex: number,
   budget?: Phase1BudgetController,
+  signal?: AbortSignal,
 ): Promise<{ result: ChapterExtraction; rawResponses: string[] }> {
   const messages: LLMMessage[] = [
     { role: 'system', content: MAP_SYSTEM_PROMPT },
@@ -216,11 +223,14 @@ async function extractSingle(
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
+    // P0：每轮重试前检查取消，确保取消后不再发起新的 LLM 调用
+    throwIfAborted(signal);
     try {
       const response = await provider.chat(messages, {
         responseFormat: 'json_object',
         temperature: 0.3,
         maxTokens: 4096,
+        signal,
       });
       const parsed = safeJsonParse(response.content) as ChapterExtractionLLMResponse;
       return {
@@ -235,6 +245,8 @@ async function extractSingle(
         rawResponses: [response.content],
       };
     } catch (err) {
+      // 取消不是失败：直接向上抛，避免被重试逻辑吞掉
+      if (isAbortError(err)) throw err;
       lastError = err as Error;
       console.log(
         `[Phase1-map] 章节 #${chapter.index}${chunkIndex > 0 ? ` 分块${chunkIndex + 1}` : ''} 尝试 ${attempt + 1}/3 失败: ${lastError.message}`,

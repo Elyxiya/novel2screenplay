@@ -3,6 +3,7 @@ import { SYSTEM_PROMPT as SEGMENT_PROMPT } from '../llm/prompts/segment';
 import { ContextManager, MAX_SEGMENT_TOKENS } from './ContextManager';
 import { safeJsonParse } from '../utils/safe-json';
 import type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
+import { isAbortError, throwIfAborted } from './cancel-registry';
 
 // 类型统一由 @novel/contracts/pipeline 提供（Re-export 保持导入面兼容）
 export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
@@ -22,12 +23,15 @@ export class Phase2Segmenter {
   async segment(
     chapters: Array<{ index: number; title: string; text: string }>,
     analysis: Phase1Output,
+    signal?: AbortSignal,
   ): Promise<Phase2Output> {
     const allScenes: SceneBoundary[] = [];
     const rawResponses: string[] = [];
 
     console.log(`[Phase2] 开始处理 ${chapters.length} 个章节, 已知角色: ${analysis.characters.length}`);
     for (const chapter of chapters) {
+      // P0：逐章检查取消，避免取消后继续为剩余章节发起 LLM 调用
+      throwIfAborted(signal);
       console.log(`[Phase2]  章节 #${chapter.index}: "${chapter.title}" (${chapter.text.length} 字)`);
       const truncatedText = await this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
 
@@ -64,6 +68,7 @@ export class Phase2Segmenter {
           responseFormat: 'json_object',
           temperature: 0.3,
           maxTokens: 4096,
+          signal,
         });
         const t1 = Date.now();
         console.log(`[Phase2]  章节 #${chapter.index} LLM 返回 (${t1-t0}ms), 长度: ${response.content.length}`);
@@ -104,6 +109,8 @@ export class Phase2Segmenter {
           });
         }
       } catch (err) {
+        // P0：取消不是失败，不能降级成 fallback 继续跑
+        if (isAbortError(err)) throw err;
         console.log(`[Phase2]  章节 #${chapter.index} LLM 调用失败: ${(err as Error).message}, 使用 fallback`);
         rawResponses.push('Fallback: empty line split');
         const fallbackScenes = await this.fallbackSplit(chapter);
@@ -280,14 +287,21 @@ export class Phase2Segmenter {
 
   /**
    * Calculate paragraph offsets for the text.
+   *
+   * P0：不再假设「段落分隔符恒为 2 字符」。旧实现按 `part.length + 2` 累加，
+   * CRLF（4 字符）或连续空行会让偏移逐段漂移，Phase 3 据此切出的原文错位且不报错。
+   * 现在改为在原文里定位每段真实起点，偏移一律由实际位置推出；
+   * 调用方（cleanNovelText / parseNovel）已做行尾归一，此处为兜底。
    */
   private calculateCharOffsets(text: string): number[] {
     const offsets: number[] = [0];
     const parts = text.split(/\n\s*\n/);
-    let offset = 0;
+    let cursor = 0;
     for (const part of parts) {
-      offsets.push(offset + part.length);
-      offset += part.length + 2;
+      const start = part.length > 0 ? text.indexOf(part, cursor) : cursor;
+      const end = start >= 0 ? start + part.length : cursor + part.length;
+      offsets.push(end);
+      cursor = Math.max(cursor, end);
     }
     return offsets;
   }

@@ -12,6 +12,7 @@ import {
   type Phase1Mode,
 } from './phase1-budget';
 import type { Phase1Output, TimelineHint } from '@novel/contracts/pipeline';
+import { isAbortError, throwIfAborted } from './cancel-registry';
 
 /**
  * Phase1 分析 LLM 的输出 token 上限。此前 4096 对长篇（截断后最多 ~30k token 输入）
@@ -23,6 +24,8 @@ export const MAX_ANALYSIS_MAX_TOKENS = 8192;
 export { Phase1Mode };
 export interface Phase1AnalyzeOptions {
   mode?: Phase1Mode;
+  /** P0：取消信号（取消后不再发起新的 LLM 调用，且不把 AbortError 当作可降级的失败） */
+  signal?: AbortSignal;
 }
 
 /** Shape of the JSON response expected from Phase 1 LLM */
@@ -62,32 +65,35 @@ export class Phase1Analyzer {
     options?: Phase1AnalyzeOptions,
   ): Promise<Phase1Output> {
     const effectiveMode: Phase1Mode = resolvePhase1Mode(options?.mode);
+    const signal = options?.signal;
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线
       try {
-        return await this.analyzeMapReduce(chapters);
+        return await this.analyzeMapReduce(chapters, signal);
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.log(`[Phase1] map-reduce 路径失败，回退 truncate 路径: ${(err as Error).message}`);
-        return this.analyzeTruncate(chapters);
+        return this.analyzeTruncate(chapters, signal);
       }
     }
     if (effectiveMode === 'longctx') {
       // B-01：长上下文单次分析（不截断）；窗口/预算不满足时同步降级回 truncate
       try {
-        return await this.analyzeLongContext(chapters);
+        return await this.analyzeLongContext(chapters, signal);
       } catch (err) {
+        if (isAbortError(err)) throw err;
         console.log(`[Phase1] longctx 路径失败，回退 truncate 路径: ${(err as Error).message}`);
-        return this.analyzeTruncate(chapters);
+        return this.analyzeTruncate(chapters, signal);
       }
     }
-    return this.analyzeTruncate(chapters);
+    return this.analyzeTruncate(chapters, signal);
   }
 
   /**
    * baseline：旧截断路径（整本截断到 MAX_ANALYSIS_TOKENS 后单次分析）。
    */
-  private async analyzeTruncate(chapters: ChapterInput[]): Promise<Phase1Output> {
+  private async analyzeTruncate(chapters: ChapterInput[], signal?: AbortSignal): Promise<Phase1Output> {
     const fullText = chapters
       .map((c) => `[${c.title}]\n${c.text}`)
       .join('\n\n');
@@ -121,7 +127,7 @@ export class Phase1Analyzer {
       };
     }
 
-    return this.callAnalyze(messages, 'truncate');
+    return this.callAnalyze(messages, 'truncate', signal);
   }
 
   /**
@@ -129,7 +135,7 @@ export class Phase1Analyzer {
    * ① 估算 token ≤ 模型窗口×0.9（超出会触发 provider 400 或被上游截断 → 直接降级）；
    * ② 预算门（site='longctx'，与 truncate 同语义：超限即降级回 truncate）。
    */
-  private async analyzeLongContext(chapters: ChapterInput[]): Promise<Phase1Output> {
+  private async analyzeLongContext(chapters: ChapterInput[], signal?: AbortSignal): Promise<Phase1Output> {
     const fullText = chapters
       .map((c) => `[${c.title}]\n${c.text}`)
       .join('\n\n');
@@ -159,17 +165,18 @@ export class Phase1Analyzer {
       return this.analyzeTruncate(chapters);
     }
 
-    return this.callAnalyze(messages, 'longctx');
+    return this.callAnalyze(messages, 'longctx', signal);
   }
 
   /**
    * 单次分析调用（3 次重试 + 解析防护）——truncate / longctx 共用。
    */
-  private async callAnalyze(messages: LLMMessage[], label: string): Promise<Phase1Output> {
+  private async callAnalyze(messages: LLMMessage[], label: string, signal?: AbortSignal): Promise<Phase1Output> {
     let lastError: Error | null = null;
 
     // Retry up to 3 times for JSON parse failures
     for (let attempt = 0; attempt < 3; attempt++) {
+      throwIfAborted(signal);
       try {
         console.log(`[Phase1] ${label} 调用 LLM (attempt ${attempt + 1}/3)...`);
         const t0 = Date.now();
@@ -177,6 +184,7 @@ export class Phase1Analyzer {
           responseFormat: 'json_object',
           temperature: 0.3,
           maxTokens: MAX_ANALYSIS_MAX_TOKENS,
+          signal,
         });
         const t1 = Date.now();
         console.log(`[Phase1] ${label} LLM 返回耗时 ${t1 - t0}ms, 输出长度: ${response.content.length}, usage:`, JSON.stringify(response.usage));
@@ -209,6 +217,8 @@ export class Phase1Analyzer {
           rawResponse: response.content,
         };
       } catch (err) {
+        // 取消不是失败：直接上抛，不进入重试
+        if (isAbortError(err)) throw err;
         lastError = err as Error;
         console.log(`[Phase1] ${label} 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
         // Wait before retry
@@ -230,7 +240,7 @@ export class Phase1Analyzer {
    * map-reduce 路径：按章并行抽取 → reduce 归并成全局 Phase1Output。
    * 校验输入为空给出空结果；超限经 mapChapters 内置 cap 优雅降级（degraded）。
    */
-  private async analyzeMapReduce(chapters: ChapterInput[]): Promise<Phase1Output> {
+  private async analyzeMapReduce(chapters: ChapterInput[], signal?: AbortSignal): Promise<Phase1Output> {
     if (chapters.length === 0) {
       console.log('[Phase1-mapreduce] 输入没有章节，返回空结果');
       return {
@@ -245,7 +255,7 @@ export class Phase1Analyzer {
       this.provider,
       this.ctxManager,
       chapters,
-      { budget: this.budget },
+      { budget: this.budget, signal },
     );
 
     console.log(
@@ -254,6 +264,7 @@ export class Phase1Analyzer {
 
     const reduced = await reduceSetting(this.provider, results, rawResponses, {
       budget: this.budget,
+      signal,
     });
 
     console.log(

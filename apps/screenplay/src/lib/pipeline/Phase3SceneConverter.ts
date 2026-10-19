@@ -15,6 +15,7 @@ import {
 } from './phase3-context';
 import type { MetricsSink } from './metrics';
 import { classifyJobError } from '../errors';
+import { isAbortError, throwIfAborted } from './cancel-registry';
 import { formatUserProfileBlock } from './user-profile';
 import { formatStyleBlock } from './style-profile';
 import { formatFewshotBlock, type FewshotEntry } from './fewshots';
@@ -315,7 +316,8 @@ export class Phase3SceneConverter {
           confidence,
         };
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') throw err;
+        // P0：取消不是场景失败——直接上抛，避免被记账成 degradedScene
+        if (isAbortError(err)) throw err;
         lastError = err as Error;
         console.log(`[Phase3]  ${label} 尝试 ${attempt + 1}/3 失败: ${lastError.message}`);
         jobStore.update(jobId, j => ({
@@ -564,6 +566,12 @@ export class Phase3SceneConverter {
     }));
 
     const results = await Promise.allSettled(tasks.map(t => t()));
+    // P0：取消后不再产出「降级场景」蒙混过关——直接上抛，让调用方停止后续阶段
+    throwIfAborted(abortSignal);
+    const aborted = results.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected' && isAbortError(r.reason),
+    );
+    if (aborted) throw aborted.reason;
     return results.map((r, i) => {
       if (r.status === 'fulfilled') return r.value;
       return this.degradedScene(scenes[i], '请求被取消或异常终止');

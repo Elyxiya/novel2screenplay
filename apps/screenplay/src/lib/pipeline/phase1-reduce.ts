@@ -12,6 +12,7 @@ import type {
 import type { ChapterExtraction } from './phase1-map';
 import { buildAliasIndex } from './setting-card';
 import { detectNameConflicts, type NameConflictCandidate } from './phase1-name-conflicts';
+import { isAbortError, throwIfAborted } from './cancel-registry';
 
 /** 合并决策：LLM 返回的归并分组 */
 export interface MergeMember {
@@ -56,6 +57,8 @@ export interface ReduceResult extends Omit<Phase1Output, 'aliasIndex'> {
 export interface ReduceOptions {
   /** Phase1 预算守卫（Task 5：canRequest 接到 Phase1 reduce 调用点） */
   budget?: Phase1BudgetController;
+  /** P0：取消信号——取消后不再发起合并决策调用 */
+  signal?: AbortSignal;
 }
 
 /** 扁平化的单条角色抽取记录（跨章合并的输入单位） */
@@ -127,6 +130,7 @@ export async function reduceSetting(
   const flatThreads = flattenOpenThreads(results);
 
   const budget = options?.budget;
+  const signal = options?.signal;
   let budgetBlocked = false;
 
   // LLM 合并决策（尝试 1 次 + 重试 2 次），失败回退朴素 merge
@@ -134,6 +138,7 @@ export async function reduceSetting(
   let reduceRaw = '';
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
+    throwIfAborted(signal);
     // Task 5：canRequest 守卫接到 Phase1 reduce 调用点——超限直接回退朴素 merge
     const promptTokens = estimateReducePromptTokens(
       flatChars.map((f) => `${f.sourceChapterIndex}|${f.name}`).join('\n'),
@@ -148,11 +153,13 @@ export async function reduceSetting(
       break;
     }
     try {
-      const decision = await requestMergeDecision(provider, flatChars);
+      const decision = await requestMergeDecision(provider, flatChars, signal);
       groups = decision.groups;
       reduceRaw = decision.raw;
       break;
     } catch (err) {
+      // 取消不是失败：直接向上抛，避免被降级逻辑吞掉
+      if (isAbortError(err)) throw err;
       lastError = err as Error;
       console.log(`[Phase1-reduce] LLM 合并决策失败 (attempt ${attempt + 1}/3): ${lastError.message}`);
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -221,6 +228,7 @@ function flattenCharacters(results: ChapterExtraction[]): FlatCharacter[] {
 async function requestMergeDecision(
   provider: LLMProvider,
   flat: FlatCharacter[],
+  signal?: AbortSignal,
 ): Promise<{ groups: MergeGroup[]; raw: string }> {
   const listing = flat
     .map((f) => `${f.sourceChapterIndex}|${f.name}|${f.aliases.join(',')}|${f.description}|${f.isMajor ? 'major' : 'minor'}`)
@@ -238,6 +246,7 @@ async function requestMergeDecision(
     responseFormat: 'json_object',
     temperature: 0.1,
     maxTokens: 8192,
+    signal,
   });
   const parsed = safeJsonParse(response.content) as { mergeGroups?: MergeGroup[] };
   const groups = parsed.mergeGroups;

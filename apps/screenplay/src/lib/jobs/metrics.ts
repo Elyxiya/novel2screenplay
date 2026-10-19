@@ -23,6 +23,8 @@ export interface JobMetricsSummary {
     jobs: number;
     completed: number;
     failed: number;
+    /** 用户主动取消（终态；不计入成功率分母，也不归入 pending） */
+    cancelled: number;
     active: number;
     pending: number;
     successRate: number | null;
@@ -51,7 +53,7 @@ export interface JobMetricsSummary {
     totalScenes: number;
   };
   errorCodes: Record<string, number>;
-  series: Array<{ date: string; jobs: number; completed: number; failed: number }>;
+  series: Array<{ date: string; jobs: number; completed: number; failed: number; cancelled: number }>;
 }
 
 /** FIX-01 读时聚合：统计 Phase2 fallback 切分占比（rawResponses 已随 pipelineState 落库） */
@@ -122,7 +124,7 @@ export function aggregateJobMetrics(
   jobs: StoredJob[],
   window: { from: number; to: number; days: number },
 ): JobMetricsSummary {
-  const totals = { jobs: jobs.length, completed: 0, failed: 0, active: 0, pending: 0 };
+  const totals = { jobs: jobs.length, completed: 0, failed: 0, cancelled: 0, active: 0, pending: 0 };
   const durations: number[] = [];
   const tokens = { promptTokens: 0, completionTokens: 0, totalTokens: 0, inputChars: 0, calls: 0 };
   let budgetBlocked = 0;
@@ -130,11 +132,13 @@ export function aggregateJobMetrics(
   const fallback = { fallbackChapters: 0, totalChapters: 0 };
   const unverified = { emptyRefBlocks: 0, totalBlocks: 0, lowConfScenes: 0, unknownConfScenes: 0, totalScenes: 0 };
   const errorCodes: Record<string, number> = {};
-  const dayBuckets = new Map<string, { jobs: number; completed: number; failed: number }>();
+  const dayBuckets = new Map<string, { jobs: number; completed: number; failed: number; cancelled: number }>();
 
   for (const job of jobs) {
     if (job.status === 'completed') totals.completed += 1;
     else if (job.status === 'failed') totals.failed += 1;
+    // P0 跟进：取消是独立终态——既不是失败，也不是「待执行」
+    else if (job.status === 'cancelled') totals.cancelled += 1;
     else if (ACTIVE_STATUSES.has(job.status)) totals.active += 1;
     else totals.pending += 1;
 
@@ -168,10 +172,11 @@ export function aggregateJobMetrics(
     if (code) errorCodes[code] = (errorCodes[code] ?? 0) + 1;
 
     const dayKey = utcDate(job.completedAt ?? job.createdAt);
-    const bucket = dayBuckets.get(dayKey) ?? { jobs: 0, completed: 0, failed: 0 };
+    const bucket = dayBuckets.get(dayKey) ?? { jobs: 0, completed: 0, failed: 0, cancelled: 0 };
     bucket.jobs += 1;
     if (job.status === 'completed') bucket.completed += 1;
     if (job.status === 'failed') bucket.failed += 1;
+    if (job.status === 'cancelled') bucket.cancelled += 1;
     dayBuckets.set(dayKey, bucket);
   }
 

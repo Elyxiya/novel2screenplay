@@ -148,7 +148,7 @@ describe('aggregateJobMetrics', () => {
     ];
     const s = aggregateJobMetrics(jobs, window);
 
-    expect(s.totals).toEqual({ jobs: 6, completed: 4, failed: 1, active: 1, pending: 0, successRate: 0.8 });
+    expect(s.totals).toEqual({ jobs: 6, completed: 4, failed: 1, cancelled: 0, active: 1, pending: 0, successRate: 0.8 });
     expect(s.duration.samples).toBe(4);
     expect(s.duration.p50).toBe(2000);
     expect(s.duration.p95).toBe(4000);
@@ -220,8 +220,36 @@ describe('aggregateJobMetrics', () => {
     const s = aggregateJobMetrics(jobs, window);
 
     expect(s.series).toEqual([
-      { date: '2026-09-01', jobs: 2, completed: 1, failed: 1 },
-      { date: '2026-09-02', jobs: 1, completed: 1, failed: 0 },
+      { date: '2026-09-01', jobs: 2, completed: 1, failed: 1, cancelled: 0 },
+      { date: '2026-09-02', jobs: 1, completed: 1, failed: 0, cancelled: 0 },
+    ]);
+  });
+
+  it('取消任务单独计数：不落入 pending，也不进成功率分母', () => {
+    const jobs = [
+      mkJob({ id: 'a', status: 'completed', startedAt: T0, completedAt: T0 + 1000 }),
+      mkJob({ id: 'b', status: 'failed' }),
+      mkJob({ id: 'c', status: 'cancelled' }),
+      mkJob({ id: 'd', status: 'cancelled' }),
+    ];
+    const s = aggregateJobMetrics(jobs, window);
+
+    expect(s.totals.cancelled).toBe(2);
+    expect(s.totals.pending).toBe(0);
+    // 成功率分母 = 完成 + 失败，取消被排除
+    expect(s.totals.successRate).toBe(0.5);
+    expect(s.duration.samples).toBe(1);
+  });
+
+  it('series 按日分桶也区分 cancelled', () => {
+    const jobs = [
+      mkJob({ id: 'a', status: 'cancelled', completedAt: Date.UTC(2026, 8, 3, 10) }),
+      mkJob({ id: 'b', status: 'cancelled', completedAt: Date.UTC(2026, 8, 3, 11) }),
+    ];
+    const s = aggregateJobMetrics(jobs, window);
+
+    expect(s.series).toEqual([
+      { date: '2026-09-03', jobs: 2, completed: 0, failed: 0, cancelled: 2 },
     ]);
   });
 

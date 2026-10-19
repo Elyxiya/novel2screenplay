@@ -100,7 +100,7 @@ export function MetricsCard() {
       {data ? (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            <Stat label="任务数" value={String(data.totals.jobs)} hint={`完成 ${data.totals.completed} · 失败 ${data.totals.failed} · 进行中 ${data.totals.active}`} />
+            <Stat label="任务数" value={String(data.totals.jobs)} hint={`完成 ${data.totals.completed} · 失败 ${data.totals.failed} · 取消 ${data.totals.cancelled} · 进行中 ${data.totals.active}`} />
             <Stat label="成功率" value={pct(data.totals.successRate)} hint="完成 / (完成+失败)" />
             <Stat label="耗时 P50 / P95" value={`${ms(data.duration.p50)} / ${ms(data.duration.p95)}`} hint={`均值 ${ms(data.duration.avg)} · ${data.duration.samples} 样本`} />
             <Stat label="Token 总量" value={String(data.tokens.totalTokens)} hint={`输入 ${data.tokens.promptTokens} · 输出 ${data.tokens.completionTokens} · 调用 ${data.tokens.calls} 次`} />

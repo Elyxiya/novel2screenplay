@@ -236,9 +236,14 @@ class JobRepositoryImpl implements JobRepository {
 
   /**
    * 删除任务
+   *
+   * P1：显式级联清理观测数据（jobs 表无外键约束，run_events / stage_artifacts
+   * 以 job_id 弱关联），否则删任务后事件会变成孤儿、无限累积。
    */
   delete(jobId: string): void {
     const db = getEngine();
+    db.prepare('DELETE FROM run_events WHERE job_id = ?').run(jobId);
+    db.prepare('DELETE FROM stage_artifacts WHERE job_id = ?').run(jobId);
     db.prepare('DELETE FROM jobs WHERE id = ?').run(jobId);
   }
 
@@ -275,6 +280,9 @@ class JobRepositoryImpl implements JobRepository {
 
   deleteByUser(userId: string): number {
     const db = getEngine();
+    // P1：先清观测数据（同 delete），再删任务
+    db.prepare('DELETE FROM run_events WHERE job_id IN (SELECT id FROM jobs WHERE user_id = ?)').run(userId);
+    db.prepare('DELETE FROM stage_artifacts WHERE job_id IN (SELECT id FROM jobs WHERE user_id = ?)').run(userId);
     return db.prepare('DELETE FROM jobs WHERE user_id = ?').run(userId).changes;
   }
 

@@ -15,13 +15,18 @@ const JWT_RE = /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const PHONE_RE = /(?<!\d)1[3-9]\d{9}(?!\d)/g;
 
-export function redactString(value: string): string {
-  let out = value
+/** 只替换密钥/PII，不做长文本 hash —— 供需要保留正文的场景（如阶段产物快照）使用 */
+export function scrubSecrets(value: string): string {
+  return value
     .replace(API_KEY_RE, 'sk-***')
     .replace(BEARER_RE, 'Bearer ***')
     .replace(JWT_RE, 'jwt:***')
     .replace(EMAIL_RE, '***@***')
     .replace(PHONE_RE, '[phone]');
+}
+
+export function redactString(value: string): string {
+  let out = scrubSecrets(value);
 
   if (out.length > LONG_TEXT_LIMIT) {
     const hash = createHash('sha256').update(out).digest('hex').slice(0, 16);

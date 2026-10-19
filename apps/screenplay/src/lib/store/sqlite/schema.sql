@@ -229,3 +229,47 @@ VALUES (5, strftime('%s', 'now') * 1000, 'Add user_llm: per-user custom LLM impo
 -- 密文格式 enc:v1:<iv>.<tag>.<ciphertext>；迁移由 db.ts migrateLegacyLLMKeys 执行。
 INSERT OR IGNORE INTO schema_version (version, applied_at, description)
 VALUES (6, strftime('%s', 'now') * 1000, 'Encrypt user_llm.api_key (AES-GCM), migrate legacy plaintext');
+
+-- ── P1 观测层：运行事件流（append-only）────────────────────────────────────
+-- 为什么不复用 jobs.logs：logs 是单列 JSON 数组，每次 update 全量重写（O(n²)），
+-- 而埋点是「每章 / 每场景 / 每次重试」级别的高频写入，必须独立成表、只追加不更新。
+-- 一次转换 = 一个 trace_id；resume / 局部重转 = 新 trace（同 job 多次运行的证据可区分）。
+CREATE TABLE IF NOT EXISTS run_events (
+  id TEXT PRIMARY KEY,                 -- 可排序：<13 位毫秒>-<6 位序号>
+  job_id TEXT NOT NULL,
+  trace_id TEXT NOT NULL,
+  phase INTEGER NOT NULL DEFAULT 0,    -- 1..4；0 = 任务级
+  scene_index INTEGER,                 -- 场景级事件才有
+  stage TEXT NOT NULL,                 -- 'phase1.map' / 'phase3.scene' 等
+  event TEXT NOT NULL,                 -- start / end / llm_call / retry / degrade / skip / error
+  level TEXT NOT NULL DEFAULT 'info',  -- info / warn / error
+  payload TEXT,                        -- JSON（脱敏 + 截断）
+  prompt_tokens INTEGER,
+  completion_tokens INTEGER,
+  latency_ms INTEGER,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_run_events_job ON run_events(job_id);
+CREATE INDEX IF NOT EXISTS idx_run_events_created_at ON run_events(created_at);
+
+-- ── P1 观测层：阶段产物快照 ────────────────────────────────────────────────
+-- 只保留「有价值的样本」：失败/降级一律留，成功按采样留（见 run-log.ts），
+-- 否则一次百场景任务就是几百 KB 冗余。input/output 均截断到 ARTIFACT_MAX_CHARS。
+CREATE TABLE IF NOT EXISTS stage_artifacts (
+  id TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL,
+  trace_id TEXT NOT NULL,
+  stage TEXT NOT NULL,
+  scene_index INTEGER,
+  attempt INTEGER NOT NULL DEFAULT 0,
+  input_text TEXT,
+  output_text TEXT,
+  meta TEXT,                           -- JSON：modelId / confidence / 截断标记等
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_stage_artifacts_job ON stage_artifacts(job_id);
+
+INSERT OR IGNORE INTO schema_version (version, applied_at, description)
+VALUES (8, strftime('%s', 'now') * 1000, 'Add run_events + stage_artifacts: P1 observability');

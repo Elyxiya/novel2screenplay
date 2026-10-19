@@ -98,13 +98,37 @@ async function splitSceneText(text: string): Promise<string[]> {
 
 // ── Content sanitization ──
 
-function sanitizeContent(content: unknown[]): Array<{
+type SourceRef = { chapterIndex: number; paragraphIndex: number; excerpt: string };
+
+/**
+ * 归一 sourceRefs 的章号。
+ *
+ * 实测问题：模型会返回**原书绝对章号**（例如切片来自原书第 65 章，它就写 chapterIndex: 65），
+ * 而管线的 chapterIndex 是本次输入的 0-based 序号。原样保留的后果是溯源全失效——
+ * 结果页跳原文跳错章，金标注评分里「excerpt 是否在原文出现」几乎恒为假（实测 4%）。
+ *
+ * 一个场景必然落在单章内（SceneBoundary.chapterIndex），因此章号以场景为准即为正确值；
+ * 模型只需保证 excerpt 是原文片段，不需要它数章。
+ */
+function normalizeSourceRefs(refs: unknown, chapterIndex: number): SourceRef[] {
+  if (!Array.isArray(refs)) return [];
+  return refs.map((raw) => {
+    const r = (raw ?? {}) as Record<string, unknown>;
+    return {
+      chapterIndex,
+      paragraphIndex: typeof r.paragraphIndex === 'number' ? r.paragraphIndex : 0,
+      excerpt: typeof r.excerpt === 'string' ? r.excerpt : '',
+    };
+  });
+}
+
+function sanitizeContent(content: unknown[], chapterIndex: number): Array<{
   type: 'action' | 'dialogue';
   description?: string;
   characterId?: string;
   line?: string;
   direction?: string;
-  sourceRefs: Array<{ chapterIndex: number; paragraphIndex: number; excerpt: string }>;
+  sourceRefs: SourceRef[];
 }> {
   return content.map(item => {
     const c = item as Record<string, unknown>;
@@ -114,7 +138,7 @@ function sanitizeContent(content: unknown[]): Array<{
       return {
         type: 'action' as const,
         description: String(c.description || ''),
-        sourceRefs: (c.sourceRefs as Array<{ chapterIndex: number; paragraphIndex: number; excerpt: string }>) || [],
+        sourceRefs: normalizeSourceRefs(c.sourceRefs, chapterIndex),
       };
     }
 
@@ -122,7 +146,7 @@ function sanitizeContent(content: unknown[]): Array<{
       const characterId = c.characterId as string | undefined;
       const line = c.line as string | undefined;
       const direction = c.direction as string | undefined;
-      const sourceRefs = (c.sourceRefs as Array<{ chapterIndex: number; paragraphIndex: number; excerpt: string }>) || [];
+      const sourceRefs = normalizeSourceRefs(c.sourceRefs, chapterIndex);
 
       if (!characterId || !line) {
         // Dialogue without required fields → convert to action
@@ -146,7 +170,7 @@ function sanitizeContent(content: unknown[]): Array<{
     return {
       type: 'action' as const,
       description: String(c.description || c.line || '[未知内容]'),
-      sourceRefs: (c.sourceRefs as Array<{ chapterIndex: number; paragraphIndex: number; excerpt: string }>) || [],
+      sourceRefs: normalizeSourceRefs(c.sourceRefs, chapterIndex),
     };
   });
 }
@@ -307,7 +331,7 @@ export class Phase3SceneConverter {
             ...block,
             characterId: mappedId,
           };
-        }));
+        }), scene.chapterIndex);
 
         const summary = parsed.summary as string || scene.summary;
         const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.8;

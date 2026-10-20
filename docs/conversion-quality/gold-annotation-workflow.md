@@ -122,7 +122,36 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 
 抽检不需要通读全文：先看体检项，再抽 2–3 章对照原文即可。
 
-## 7. 已知边界
+## 7. 背景解释与人物关系放在哪
+
+原文里大量信息不是「戏」，而是解释：某人是谁的孙女、谁的师父、和谁有旧交。
+这类内容如果被写成场景里的动作块，剧本就会变成有声书。按落点分三类：
+
+| 类型 | 原文形态 | 应该落到哪 | 例子（doupo） |
+|------|----------|-----------|---------------|
+| **对话交代** | 由在场角色说出口 | 保留为 `dialogue` 块；说话人进 `keyCharacterNames`，被谈及者进 `mentionedCharacterNames` | 熏儿向萧炎解释婚约来历 |
+| **叙述/旁白** | 叙述者概述，无人在说 | **不进场景**；抽为角色卡的 `description` / 关系 | 「纳兰桀在家族中拥有绝对的话语权……」 |
+| **关系设定** | 祖孙 / 师徒 / 婚约 / 旧交 | 角色卡的 `description`（现在是自由文本），后续升级为结构化 `relationships` | 纳兰桀–纳兰嫣然（祖孙）、云韵–纳兰嫣然（师徒） |
+
+**实测结论**：Phase 1 其实已经把这些写进了 `description`，例如
+`纳兰桀 = 加玛帝国狮心元帅，纳兰嫣然的爷爷，与萧炎爷爷是生死好友，定下婚约`。
+问题不在抽取，而在下游：
+
+1. 早期 `buildDraftAnnotation` 把 `description` / `personalityTags` 丢了（已修，金标注现在保留）；
+2. Phase 3 注入上下文时只截 `description` 前 20 字（`buildSceneContext`），关系信息基本没用上；
+3. `description` 是自由文本，无法查询、无法校验一致性——「谁是谁的爷爷」只能靠人读。
+
+**建议的最小演进**（不做图数据库也能做）：
+
+1. `RawCharacter` 增加可选 `relationships: [{ target, type, chapterIndex }]`，Phase 1 prompt 要求输出；
+2. Phase 3 只注入「该场景出场角色的 1-hop 关系」，而不是整段背景（控制 token）；
+3. `convert-scene` prompt 增加硬约束：**不得把旁白式背景改写成动作或内心独白**；
+   需要交代时只能通过在場角色的对白，且对白必须在原文出现；
+4. 评测加一个 `expositionRatio`（无 sourceRef 的解释性块占比），把「信息倾倒」变成可测指标。
+
+这条路线同时也是 GraphRAG 的最小前置：先有字段级关系，再决定是否值得上图存储。
+
+## 8. 已知边界
 
 - `annotate.mjs` 依赖一次真实转换（要 API Key 与跑批），不是离线可造的；
 - `keyDialogues` 字段已预留但当前评分未使用（先跑通 P/R，再谈对白保真度）；

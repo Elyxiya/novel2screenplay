@@ -296,7 +296,15 @@ export function extractPrediction(pipelineState) {
   const chars = pipelineState?.phase1Output?.characters ?? [];
   const scenes = pipelineState?.phase2Output?.scenes ?? [];
   return {
-    characters: chars.map((c) => ({ name: c.name, aliases: c.aliases ?? [], isMajor: c.isMajor ?? false })),
+    characters: chars.map((c) => ({
+      name: c.name,
+      aliases: c.aliases ?? [],
+      isMajor: c.isMajor ?? false,
+      // 背景与人物关系就写在 description / personalityTags 里（如「纳兰桀的孙女、云韵的弟子」），
+      // 早期版本在这里丢掉，导致金标注只剩名字、关系信息无法进入评测。
+      description: c.description ?? '',
+      personalityTags: c.personalityTags ?? [],
+    })),
     scenes: scenes.map((s) => ({
       chapterIndex: s.chapterIndex,
       startParagraph: s.startParagraph,
@@ -333,6 +341,8 @@ export function buildDraftAnnotation({ sampleId, title, chapterCount, pipelineSt
       name: c.name,
       aliases: c.aliases,
       isMajor: c.isMajor,
+      description: c.description,
+      personalityTags: c.personalityTags,
     })),
     scenes: pred.scenes,
     keyDialogues: [],

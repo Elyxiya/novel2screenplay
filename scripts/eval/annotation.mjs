@@ -98,6 +98,21 @@ export function validateGold(gold) {
     } else if (s.startParagraph > s.endParagraph) {
       errors.push(`scenes[${i}] startParagraph(${s.startParagraph}) > endParagraph(${s.endParagraph})`);
     }
+    // 口径：keyCharacterNames = 实际在场（允许未点名的角色，如「戴玉坠的少女」）；
+    //       mentionedCharacterNames = 对话/背景中提及、但不在场的角色。
+    if (s?.mentionedCharacterNames !== undefined) {
+      if (!Array.isArray(s.mentionedCharacterNames)) {
+        errors.push(`scenes[${i}].mentionedCharacterNames 必须是数组`);
+      } else {
+        for (const n of s.mentionedCharacterNames) {
+          if (!normalizeName(n)) {
+            errors.push(`scenes[${i}].mentionedCharacterNames 含空名字`);
+          } else if (!seenCanonical.has(normalizeName(n)) && !seenAlias.has(normalizeName(n))) {
+            warnings.push(`scenes[${i}] 提及的角色「${n}」不在角色卡中（可能是漏抽或别名未归一）`);
+          }
+        }
+      }
+    }
   });
 
   if ((gold.scenes ?? []).length === 0) warnings.push('scenes 为空：Phase 2 指标将无意义');

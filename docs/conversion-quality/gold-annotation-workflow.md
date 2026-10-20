@@ -60,13 +60,34 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
     "provenance": { "source": "llm-draft", "modelId": "deepseek-chat", "jobId": "job_x", "promptHash": "..." }
   },
   "characters": [{ "name": "白冷叶", "aliases": ["韩晓龙"], "isMajor": true }],
-  "scenes": [{ "chapterIndex": 0, "startParagraph": 0, "endParagraph": 3, "keyCharacterNames": ["白冷叶"] }],
+  "scenes": [{
+    "chapterIndex": 0,
+    "startParagraph": 0,
+    "endParagraph": 3,
+    "keyCharacterNames": ["白冷叶"],          // 实际在场（允许未点名的角色）
+    "mentionedCharacterNames": ["云韵"]       // 对话/背景提及、但不在场
+  }],
   "keyDialogues": []
 }
 ```
 
+### 出场 vs 提及（实测口径）
+
+抽检 `doupo-short` 时暴露过一个必须写死的问题：**「提到」和「在场」不是一回事**。
+
+- **`keyCharacterNames` = 实际在场**。允许「在场但未点名」——例如《斗破苍穹》第 3 章那位
+  「戴绿色玉坠、三星斗者的少女」就是纳兰嫣然，全章没写她的名字，但她确实在厅上。
+  金标注按事实把她计入，模型的漏标就是真实漏标。
+- **`mentionedCharacterNames` = 对话/背景中提及、但不在场**。例如云韵（只出现在
+  「被云韵收为弟子」「云岚宗宗主云韵」这类叙述里）、纳兰桀、古河。
+
+这条区分同时修掉了抽检单的一个误报：只按 `keyCharacterNames` 判「孤儿角色」时，
+云韵/纳兰桀/古河会被误判成「角色卡里有、场景里没有」；实际他们是**提及型**角色。
+（Phase 3 构造上下文时只应注入「在场」角色，所以两个字段不能合并。）
+
 校验规则（`validateGold`）：schema 与 sampleId 必填、角色 canonical 不重名、别名冲突给 warning、
-章号不越界、段落区间不倒置、空 scenes 给 warning。
+章号不越界、段落区间不倒置、空 scenes 给 warning、`mentionedCharacterNames` 里出现角色卡之外的
+名字给 warning（可能是漏抽或别名未归一）。
 
 ## 4. 指标口径
 
@@ -95,7 +116,7 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 |----|------|-----------|
 | 未切出场景的章节 | Phase2 整章丢失 | 会让 Phase2 的 recall 虚高（金标注也缺），必须人工补 |
 | 单段落场景 | 疑似过切 | 会把一个场景算成两个，拉低系统 precision |
-| 未在任何场景出现的角色 | 角色卡与场景脱节 | 模型可能凭空造人，或场景漏标出场 |
+| 未在任何场景出现的角色 | 角色卡与场景脱节 | 模型可能凭空造人，或场景漏标出场（判孤儿时把 `mentionedCharacterNames` 也算上） |
 | 没有别名的角色 | 疑似漏合并 | 同一人被拆成两条，后续会重复扣分 |
 | 场景中出现但角色卡未登记 | 反向漏抽 | 正向体检只查「卡里的人是否出现」，抓不到模型在场景里临时造的名字 |
 

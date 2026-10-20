@@ -56,9 +56,11 @@ for (const s of draft.scenes ?? []) {
 
 const missingChapters = chapters.map((_, i) => i).filter((i) => !scenesByChapter.has(i));
 const tinyScenes = (draft.scenes ?? []).filter((s) => s.endParagraph - s.startParagraph <= 0);
+/** 场景涉及的角色 = 实际在场（keyCharacterNames）+ 对话/背景提及（mentionedCharacterNames） */
+const namesOfScene = (s) => [...(s.keyCharacterNames ?? []), ...(s.mentionedCharacterNames ?? [])];
 const orphanCharacters = (draft.characters ?? []).filter((c) => {
   const names = aliasSetOf(c);
-  return !(draft.scenes ?? []).some((s) => (s.keyCharacterNames ?? []).some((n) => names.has(normalizeName(n))));
+  return !(draft.scenes ?? []).some((s) => namesOfScene(s).some((n) => names.has(normalizeName(n))));
 });
 const noAlias = (draft.characters ?? []).filter((c) => (c.aliases ?? []).length === 0);
 
@@ -68,7 +70,7 @@ const registered = new Set();
 for (const c of draft.characters ?? []) for (const a of aliasSetOf(c)) registered.add(a);
 const unknownNames = new Map(); // 原始名 -> Set<章号(1-based)>
 for (const s of draft.scenes ?? []) {
-  for (const raw of s.keyCharacterNames ?? []) {
+  for (const raw of namesOfScene(s)) {
     const norm = normalizeName(raw);
     if (!norm || registered.has(norm)) continue;
     const set = unknownNames.get(raw) ?? new Set();

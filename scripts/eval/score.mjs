@@ -29,6 +29,7 @@ import {
   scorePhase1,
   scorePhase2,
   scoreTraceability,
+  scoreExposition,
   summarizeEvaluation,
   validateGold,
 } from './annotation.mjs';
@@ -110,6 +111,7 @@ async function scoreSample(sampleId, opts) {
   const phase1 = scorePhase1(gold.characters, pred.characters);
   const phase2 = scorePhase2(gold.scenes, pred.scenes);
   const traceability = scoreTraceability(pred.phase3Scenes, chapterTexts);
+  const exposition = scoreExposition(pred.phase3Scenes);
 
   const warnings = [];
   const circular = checkIndependence(gold, { modelId: run.modelId, promptHash: opts['prompt-hash'] });
@@ -123,6 +125,7 @@ async function scoreSample(sampleId, opts) {
     phase1,
     phase2,
     traceability,
+    exposition,
     warnings,
   };
 }
@@ -132,6 +135,7 @@ function printRecord(r) {
   console.log(`  Phase1 角色   P ${r.phase1.precision}  R ${r.phase1.recall}  F1 ${r.phase1.f1}  (命中 ${r.phase1.matched}/${r.phase1.goldCount})`);
   console.log(`  Phase2 场景   P ${r.phase2.precision}  R ${r.phase2.recall}  F1 ${r.phase2.f1}  (命中 ${r.phase2.matched}/${r.phase2.goldCount})`);
   console.log(`  Phase3 溯源   命中率 ${r.traceability.hitRate}  有据块 ${r.traceability.withRefs}/${r.traceability.blocks}`);
+  console.log(`  Phase3 倾倒   action 关系断言 ${r.exposition.relationAssertions}/${r.exposition.actions} = ${r.exposition.expositionRate}（旁白语气 ${r.exposition.narrationMarkers}）`);
   if (r.phase1.missing.length) console.log(`  漏抽角色: ${r.phase1.missing.join('、')}`);
   if (r.phase2.missing.length) console.log(`  漏切场景: ${r.phase2.missing.join('、')}`);
   for (const w of r.warnings) console.log(`  ! ${w}`);

@@ -257,6 +257,45 @@ export function scorePhase2(goldScenes, predictedScenes, threshold = SCENE_IOU_T
 // ── Phase 3：可溯源性评分 ────────────────────────────────────────────────
 
 /**
+ * 「关系/身份断言」句式：A 是 B 的爷爷 / 与 C 是旧交 / 身为… / 出身于…
+ * 只匹配**断言型**表述，避免把「三位长老坐在上方」这类场面描写算进来。
+ */
+const RELATION_ASSERTION_RE = /(是[^，。；]{0,14}的?(爷爷|奶奶|父亲|母亲|儿子|女儿|孙女|孙子|外孙|弟子|徒弟|师父|老师|未婚妻|未婚夫|未婚妻)|与[^，。；]{0,10}是[^，。；]{0,8}(好友|旧交|世交|生死之交)|身为|出身于|师承|血脉|血统|一族的|家族的嫡系)/;
+
+/**
+ * 信息倾倒检测（P2 新增指标）。
+ *
+ * 为什么只看 action：对白里说「我爷爷和纳兰桀是生死好友」是正常的戏；
+ * 只有把背景/关系写成 **action** 才是「有声书化」。
+ * 为什么不再看 sourceRef：实测 348/348 块都带引用，模型会给背景块也挂出处，
+ * 「无出处」筛不出问题（第一版口径就是这么错的）。
+ */
+export function scoreExposition(scenes) {
+  let actions = 0;
+  let relationAssertions = 0;
+  let narrationMarkers = 0;
+
+  for (const scene of scenes ?? []) {
+    for (const block of scene?.content ?? []) {
+      if (block?.type !== 'action') continue;
+      actions += 1;
+      const text = String(block.description ?? '');
+      if (RELATION_ASSERTION_RE.test(text)) relationAssertions += 1;
+      // 次级信号：动作句里出现「心中/原来/其实」等叙述语气，通常也不是可拍动作
+      if (/(心中|心想|暗想|暗道|原来|其实|不禁想起)/.test(text)) narrationMarkers += 1;
+    }
+  }
+
+  return {
+    actions,
+    relationAssertions,
+    narrationMarkers,
+    /** 信息倾倒率：action 块中的关系断言占比 */
+    expositionRate: actions === 0 ? 0 : round(relationAssertions / actions),
+  };
+}
+
+/**
  * sourceRef 命中率：剧本块声明的 excerpt 是否真的出现在该章原文中。
  * 这是「有没有编」的最直接信号，且不需要人工标注，任何运行都能算。
  */

@@ -98,6 +98,20 @@ async function splitSceneText(text: string): Promise<string[]> {
 
 // ── Content sanitization ──
 
+/**
+ * 角色卡的「身份句」：取 description 的第一个分句，供 Phase 3 注入上下文。
+ *
+ * 背景与关系信息就写在 description 里（「纳兰桀的孙女、云韵的弟子、萧炎的未婚妻」），
+ * 旧实现只截前 20 字，常常截在关系词中间（如「加玛帝国狮心元帅，纳兰嫣然的孙…」）。
+ * 这里按句读切第一个完整分句（上限 40 字），既保住身份与关系，又控制 token。
+ */
+function identityClause(description?: string): string {
+  const text = (description ?? '').trim();
+  if (!text) return '';
+  const first = text.split(/[。；;]/)[0] ?? text;
+  return first.length > 40 ? `${first.slice(0, 40)}…` : first;
+}
+
 type SourceRef = { chapterIndex: number; paragraphIndex: number; excerpt: string };
 
 /**
@@ -425,7 +439,7 @@ export class Phase3SceneConverter {
           view.status ? `状态:${view.status}` : '',
           view.personalityTags.length > 0 ? view.personalityTags.slice(0, 3).join('/') : '',
         ].filter(Boolean).join(' ');
-        return `${charIdMap.get(c.name)}=${c.name}(${view.description?.slice(0, 20) || ''}${extra ? ` ${extra}` : ''})`;
+        return `${charIdMap.get(c.name)}=${c.name}(${identityClause(view.description)}${extra ? ` ${extra}` : ''})`;
       })
       .join(', ');
     const locs = locsForCtx

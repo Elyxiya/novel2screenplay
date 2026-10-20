@@ -21,6 +21,7 @@ import {
   scorePhase1,
   scorePhase2,
   scoreTraceability,
+  scoreExposition,
   splitFor,
   summarizeEvaluation,
   validateGold,
@@ -216,6 +217,31 @@ check('excerpt 命中原文才算溯源成功', () => {
   assert.equal(r.hits, 1);
   assert.equal(r.refCoverage, Number((2 / 3).toFixed(4)));
   assert.equal(r.hitRate, 0.5);
+});
+
+// ── Phase 3 信息倾倒 ────────────────────────────────────────────────────
+check('exposition：只统计 action 块里的关系断言（对白不算）', () => {
+  const scenes = [
+    {
+      content: [
+        { type: 'action', description: '纳兰桀是纳兰嫣然的爷爷', sourceRefs: [] },                 // 计数
+        { type: 'action', description: '他攥紧了拳头', sourceRefs: [] },                             // 不计数
+        { type: 'action', description: '纳兰桀是纳兰嫣然的爷爷', sourceRefs: [{ excerpt: 'x' }] },   // 有出处也计数（按内容判）
+        { type: 'dialogue', line: '我爷爷当年与纳兰桀是生死好友', sourceRefs: [] },                  // 对白不计数
+      ],
+    },
+  ];
+  const r = scoreExposition(scenes);
+  assert.equal(r.actions, 3);
+  assert.equal(r.relationAssertions, 2);
+  assert.equal(r.expositionRate, Number((2 / 3).toFixed(4)));
+});
+
+check('exposition：场面描写不算关系断言', () => {
+  const scenes = [{ content: [{ type: 'action', description: '萧战与三位长老坐在大厅最上方', sourceRefs: [] }] }];
+  const r = scoreExposition(scenes);
+  assert.equal(r.relationAssertions, 0);
+  assert.equal(r.expositionRate, 0);
 });
 
 // ── 草稿标注与独立性 ────────────────────────────────────────────────────

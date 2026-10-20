@@ -141,13 +141,20 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 2. Phase 3 注入上下文时只截 `description` 前 20 字（`buildSceneContext`），关系信息基本没用上；
 3. `description` 是自由文本，无法查询、无法校验一致性——「谁是谁的爷爷」只能靠人读。
 
-**建议的最小演进**（不做图数据库也能做）：
+**建议的最小演进**（不做图数据库也能做，按优先级）：
 
-1. `RawCharacter` 增加可选 `relationships: [{ target, type, chapterIndex }]`，Phase 1 prompt 要求输出；
-2. Phase 3 只注入「该场景出场角色的 1-hop 关系」，而不是整段背景（控制 token）；
-3. `convert-scene` prompt 增加硬约束：**不得把旁白式背景改写成动作或内心独白**；
-   需要交代时只能通过在場角色的对白，且对白必须在原文出现；
-4. 评测加一个 `expositionRatio`（无 sourceRef 的解释性块占比），把「信息倾倒」变成可测指标。
+1. ✅ `convert-scene` prompt 已加硬约束（合并进规则 7，保持 8 条规则 / <900 token 的既有护栏）：
+   **身世、关系、师承、恩怨等设定信息不得写成 action 或「心想」，只能由在场角色逐字对白交代，旁白直述一律丢弃**；
+2. ✅ Phase 3 上下文改为注入「身份分句」（`identityClause`：按句读切第一个分句、上限 40 字），
+   取代原来硬截 20 字（旧实现常截在「纳兰嫣然的孙…」处，关系词被切断）；
+3. ✅ 评测新增 `expositionRate`（action 块中的关系断言占比），**实测口径**：
+   只看 action、不看 sourceRef——第一版按「无出处」筛，结果 348/348 块都带引用，筛不出任何东西；
+4. ⬜ `RawCharacter` 增加 `relationships: [{ target, type, chapterIndex }]`，Phase 3 只注入 1-hop 关系；
+5. ⬜ 关系结构化之后，再决定要不要上图存储。
+
+**实测结论（doupo-short，改 prompt 前 3 次 / 后 2 次）**：`action` 块里的关系断言始终是 **0**
+（166 / 192 / 186 / 179 / 177 个 action 块）。也就是说现有提示词本来就基本挡住了这类泄漏——
+这次改动是**护栏**，不是修 bug；它的价值在于把「不许做」写死，防止后续调提示词时回退。
 
 这条路线同时也是 GraphRAG 的最小前置：先有字段级关系，再决定是否值得上图存储。
 

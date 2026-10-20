@@ -1,0 +1,419 @@
+{
+  "schema": "screenplay-gold-draft/v1",
+  "sampleId": "zhanlan-short",
+  "title": "两方的运气",
+  "meta": {
+    "chapterCount": 13,
+    "reviewed": false,
+    "provenance": {
+      "source": "llm-draft",
+      "jobId": "job_1792421566811_8we0fn",
+      "modelId": "deepseek-chat",
+      "promptHash": null,
+      "draftedAt": "2026-10-19T14:54:43.893Z"
+    }
+  },
+  "characters": [
+    {
+      "name": "黎恩·怀特",
+      "aliases": [
+        "黎恩",
+        "万物怀表之主",
+        "北地佣兵之王"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "尼斯·拉尔森",
+      "aliases": [
+        "尼斯",
+        "传奇骗子"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "琼斯·博诺佛尔",
+      "aliases": [
+        "琼斯",
+        "万年老鬼"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "维克托·莫特森",
+      "aliases": [
+        "维克托",
+        "城主",
+        "守密人"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "艾瑞克·弗瑞德里希",
+      "aliases": [
+        "艾瑞克",
+        "艾瑞克船长",
+        "裂须海盗头子"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "摩根·狄福尔特",
+      "aliases": [
+        "摩根爵士"
+      ],
+      "isMajor": false
+    },
+    {
+      "name": "胡安",
+      "aliases": [],
+      "isMajor": false
+    }
+  ],
+  "scenes": [
+    {
+      "chapterIndex": 0,
+      "startParagraph": 0,
+      "endParagraph": 21,
+      "keyCharacterNames": [
+        "尼斯",
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 22,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 28,
+      "endParagraph": 48,
+      "keyCharacterNames": [
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 0,
+      "endParagraph": 29,
+      "keyCharacterNames": []
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 30,
+      "endParagraph": 45,
+      "keyCharacterNames": []
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 46,
+      "endParagraph": 51,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 0,
+      "endParagraph": 1,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 2,
+      "endParagraph": 11,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 12,
+      "endParagraph": 23,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 24,
+      "endParagraph": 28,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 0,
+      "endParagraph": 11,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 12,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 20,
+      "endParagraph": 43,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯",
+        "维克托"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 0,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "维克托·莫特森",
+        "黎恩·怀特",
+        "摩根·狄福尔特"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 28,
+      "endParagraph": 43,
+      "keyCharacterNames": [
+        "维克托·莫特森",
+        "黎恩·怀特"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 0,
+      "endParagraph": 23,
+      "keyCharacterNames": [
+        "维克托·莫特森",
+        "黎恩·怀特",
+        "尼斯·拉尔森"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 24,
+      "endParagraph": 47,
+      "keyCharacterNames": [
+        "黎恩·怀特",
+        "尼斯·拉尔森"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 48,
+      "endParagraph": 63,
+      "keyCharacterNames": [
+        "黎恩·怀特",
+        "尼斯·拉尔森"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 0,
+      "endParagraph": 20,
+      "keyCharacterNames": [
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 21,
+      "endParagraph": 22,
+      "keyCharacterNames": [
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 23,
+      "endParagraph": 46,
+      "keyCharacterNames": [
+        "艾瑞克",
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 11,
+      "endParagraph": 25,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克",
+        "大副"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 26,
+      "endParagraph": 50,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克",
+        "大副"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 0,
+      "endParagraph": 17,
+      "keyCharacterNames": [
+        "黎恩",
+        "琼斯",
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 18,
+      "endParagraph": 25,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 26,
+      "endParagraph": 45,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 0,
+      "endParagraph": 34,
+      "keyCharacterNames": [
+        "艾瑞克",
+        "胡安",
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 35,
+      "endParagraph": 51,
+      "keyCharacterNames": [
+        "艾瑞克",
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 0,
+      "endParagraph": 1,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 2,
+      "endParagraph": 32,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 33,
+      "endParagraph": 34,
+      "keyCharacterNames": [
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 35,
+      "endParagraph": 57,
+      "keyCharacterNames": [
+        "黎恩",
+        "艾瑞克"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 58,
+      "endParagraph": 68,
+      "keyCharacterNames": [
+        "尼斯",
+        "黎恩"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 0,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "黎恩",
+        "尼斯"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 28,
+      "endParagraph": 41,
+      "keyCharacterNames": [
+        "黎恩",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 0,
+      "endParagraph": 24,
+      "keyCharacterNames": [
+        "黎恩",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 24,
+      "endParagraph": 35,
+      "keyCharacterNames": [
+        "黎恩",
+        "琼斯"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 36,
+      "endParagraph": 46,
+      "keyCharacterNames": [
+        "黎恩",
+        "琼斯"
+      ]
+    }
+  ],
+  "keyDialogues": []
+}

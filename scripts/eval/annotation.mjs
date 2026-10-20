@@ -14,6 +14,15 @@
 export const GOLD_SCHEMA = 'screenplay-gold/v1';
 export const DRAFT_SCHEMA = 'screenplay-gold-draft/v1';
 
+/**
+ * 「外观/身份描述」而非名字：中年男子、青衫老者、妇女、胖子…
+ *
+ * 为什么单独标出来：别名表是**双向同一性**断言（提到 X 就是该角色），
+ * 而描述是**场景内单向**指代（这一场的中年男子是方晓语父亲；别处的中年男子可能是别人）。
+ * 把描述塞进别名，会把全书所有「中年男子」并进同一个角色——这是错误的合并，不是归一。
+ */
+export const DESCRIPTOR_ALIAS_RE = /(男子|女子|少女|少年|青年|老者|老人|老头|妇女|胖子|瘦子|大汉|女孩|男孩|妇人|汉子)$/;
+
 /** 场景匹配阈值：段落区间 IoU ≥ 0.5 视为同一场景 */
 export const SCENE_IOU_THRESHOLD = 0.5;
 /** holdout 比例：约 1/N 的样本进 holdout（按 sampleId 哈希确定性分配） */
@@ -79,6 +88,12 @@ export function validateGold(gold) {
       const a = normalizeName(raw);
       if (!a) continue;
       if (a === canonical) continue;
+      if (DESCRIPTOR_ALIAS_RE.test(String(raw))) {
+        warnings.push(
+          `「${c.name}」的别名「${raw}」是外观/身份描述而非名字：描述只在具体场景内单向指代（「这一场的中年男子是方晓语父亲」），` +
+          `不等于「所有中年男子都是他」。应改为场景级指代，不要进全局别名表（否则会把无关人物并进同一角色）。`,
+        );
+      }
       if (seenAlias.has(a) && seenAlias.get(a) !== canonical) {
         warnings.push(`别名「${raw}」同时指向多个角色（${seenAlias.get(a)} 与 ${canonical}），匹配时会算作重叠`);
       }

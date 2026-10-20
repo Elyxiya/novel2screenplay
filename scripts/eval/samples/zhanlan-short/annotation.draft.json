@@ -11,7 +11,8 @@
       "modelId": "deepseek-chat",
       "promptHash": null,
       "draftedAt": "2026-10-19T14:54:43.893Z"
-    }
+    },
+    "reviewNote": "人工抽检：大副（职务称谓，无姓名）在 #8 有对话、#11 被艾瑞克斩首，Phase1 漏抽，已补入角色卡并标注死亡场景。"
   },
   "characters": [
     {
@@ -68,6 +69,13 @@
       "name": "胡安",
       "aliases": [],
       "isMajor": false
+    },
+    {
+      "name": "大副",
+      "aliases": [],
+      "isMajor": false,
+      "description": "艾瑞克船长的大副，私藏黑雪莲毒药与珠宝，分赃时被艾瑞克斩首。",
+      "personalityTags": []
     }
   ],
   "scenes": [
@@ -357,7 +365,8 @@
       "endParagraph": 57,
       "keyCharacterNames": [
         "黎恩",
-        "艾瑞克"
+        "艾瑞克",
+        "大副"
       ]
     },
     {

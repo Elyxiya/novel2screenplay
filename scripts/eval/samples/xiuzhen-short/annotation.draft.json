@@ -11,7 +11,8 @@
       "modelId": "deepseek-chat",
       "promptHash": null,
       "draftedAt": "2026-10-19T14:58:22.229Z"
-    }
+    },
+    "reviewNote": "人工抽检：#10 原文无「豆豆」→ 删除误标；#14「中年男子」即方晓语父亲 → 统一为角色卡名；另补 Phase1 因截断漏抽的方晓语与方晓语父亲。 别名表去描述化：外观/身份描述（中年男子、青衫老者等）只在场景内单向指代，不作为全局别名。"
   },
   "characters": [
     {
@@ -49,9 +50,7 @@
     },
     {
       "name": "刘哥",
-      "aliases": [
-        "开马六的男子"
-      ],
+      "aliases": [],
       "isMajor": false
     },
     {
@@ -61,9 +60,7 @@
     },
     {
       "name": "老头",
-      "aliases": [
-        "烧伤疤痕老头"
-      ],
+      "aliases": [],
       "isMajor": false
     },
     {
@@ -73,10 +70,22 @@
     },
     {
       "name": "豆豆妈",
-      "aliases": [
-        "妇女"
-      ],
+      "aliases": [],
       "isMajor": false
+    },
+    {
+      "name": "方晓语",
+      "aliases": [],
+      "isMajor": true,
+      "description": "白冷叶的恋人，方家女儿；其父反对两人交往，后被迫与白冷叶分离。",
+      "personalityTags": []
+    },
+    {
+      "name": "方晓语父亲",
+      "aliases": [],
+      "isMajor": false,
+      "description": "方晓语之父，看重钱权，反对女儿与白冷叶交往。",
+      "personalityTags": []
     }
   ],
   "scenes": [
@@ -762,8 +771,7 @@
       "startParagraph": 34,
       "endParagraph": 50,
       "keyCharacterNames": [
-        "白冷叶",
-        "豆豆"
+        "白冷叶"
       ]
     },
     {
@@ -771,8 +779,7 @@
       "startParagraph": 51,
       "endParagraph": 57,
       "keyCharacterNames": [
-        "白冷叶",
-        "豆豆"
+        "白冷叶"
       ]
     },
     {
@@ -790,8 +797,7 @@
       "endParagraph": 84,
       "keyCharacterNames": [
         "白冷叶",
-        "张秀",
-        "豆豆"
+        "张秀"
       ]
     },
     {
@@ -972,7 +978,7 @@
       "keyCharacterNames": [
         "白冷叶",
         "方晓语",
-        "中年男子"
+        "方晓语父亲"
       ]
     },
     {

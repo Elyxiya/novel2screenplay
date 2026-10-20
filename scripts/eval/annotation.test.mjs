@@ -111,6 +111,21 @@ check('未抽检样本给 warning 而非 error', () => {
   assert.ok(r.warnings.some((w) => w.includes('尚未抽检')));
 });
 
+check('描述性指代进别名 → warning（别名是双向同一性，描述只是场景内单向指代）', () => {
+  const gold = baseGold();
+  gold.characters[1].aliases = ['中年男子'];
+  const r = validateGold(gold);
+  assert.equal(r.ok, true, '只告警不报错');
+  assert.ok(r.warnings.some((w) => w.includes('外观/身份描述')), r.warnings.join('; '));
+});
+
+check('稳定绰号/称号不算描述性指代', () => {
+  const gold = baseGold();
+  gold.characters[0].aliases = ['万物怀表之主', '老家伙'];
+  const r = validateGold(gold);
+  assert.equal(r.warnings.some((w) => w.includes('外观/身份描述')), false);
+});
+
 // ── 确定性切分 ──────────────────────────────────────────────────────────
 check('hashString 稳定且非负', () => {
   assert.equal(hashString('abc'), hashString('abc'));

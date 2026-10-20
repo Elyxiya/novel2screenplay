@@ -6,13 +6,20 @@
  * - activeBackends：无 DATABASE_URL 时仅 SQLite（有 URL 的分支在 R6 配好环境后由契约测试实跑）
  */
 
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, beforeEach } from 'vitest';
 import { activeBackends, resolveTestPgUrl } from './helpers/dual-backend';
 
 const ORIG = {
   databaseUrl: process.env.DATABASE_URL,
   testDb: process.env.PG_TEST_DATABASE,
 };
+
+beforeEach(() => {
+  // CI 会注入 PG_TEST_DATABASE（指向 _test 库）来跑 PG 分支；
+  // 但本文件验证的是「未注入时的追加逻辑」，必须显式清空，
+  // 否则用例结果取决于外部环境——CI 曾因此变红（只验「显式覆盖」的用例自己再设置）。
+  delete process.env.PG_TEST_DATABASE;
+});
 
 afterEach(() => {
   if (ORIG.databaseUrl === undefined) delete process.env.DATABASE_URL;

@@ -56,8 +56,15 @@ for (const s of draft.scenes ?? []) {
 
 const missingChapters = chapters.map((_, i) => i).filter((i) => !scenesByChapter.has(i));
 const tinyScenes = (draft.scenes ?? []).filter((s) => s.endParagraph - s.startParagraph <= 0);
-/** 场景涉及的角色 = 实际在场（keyCharacterNames）+ 对话/背景提及（mentionedCharacterNames） */
-const namesOfScene = (s) => [...(s.keyCharacterNames ?? []), ...(s.mentionedCharacterNames ?? [])];
+/**
+ * 场景涉及的角色 = 实际在场（keyCharacterNames）+ 对话/背景提及（mentionedCharacterNames）
+ * + 场景级指代（characterRefs 的 name）。
+ */
+const namesOfScene = (s) => [
+  ...(s.keyCharacterNames ?? []),
+  ...(s.mentionedCharacterNames ?? []),
+  ...(s.characterRefs ?? []).map((r) => r?.name).filter(Boolean),
+];
 const orphanCharacters = (draft.characters ?? []).filter((c) => {
   const names = aliasSetOf(c);
   return !(draft.scenes ?? []).some((s) => namesOfScene(s).some((n) => names.has(normalizeName(n))));
@@ -133,7 +140,13 @@ for (let i = 0; i < chapters.length; i++) {
   lines.push('|------|----------|----------|------|');
   for (const s of list) {
     const names = (s.keyCharacterNames ?? []).join('、') || '—';
-    lines.push(`| [ ] | ${s.startParagraph}–${s.endParagraph} | ${names} | — |`);
+    // 场景级指代：展示「规范名（本场称呼）」，供人工核对是否同一人
+    const refs = (s.characterRefs ?? [])
+      .map((r) => (r?.referredAs?.length ? `${r.name}（${r.referredAs.join('/')}）` : r?.name))
+      .filter(Boolean)
+      .join('、');
+    const shown = refs ? `${names} ｜ 指代: ${refs}` : names;
+    lines.push(`| [ ] | ${s.startParagraph}–${s.endParagraph} | ${shown} | — |`);
   }
   lines.push('');
 }

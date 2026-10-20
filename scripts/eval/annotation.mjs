@@ -128,6 +128,29 @@ export function validateGold(gold) {
         }
       }
     }
+    // 场景级指代：记录「这一场里他被称为 X」，单向、不参与全局匹配。
+    // 与 aliases 的区别见文档：别名是双向同一性，指代只是本场的称呼。
+    if (s?.characterRefs !== undefined) {
+      if (!Array.isArray(s.characterRefs)) {
+        errors.push(`scenes[${i}].characterRefs 必须是数组`);
+      } else {
+        s.characterRefs.forEach((ref, j) => {
+          const n = normalizeName(ref?.name);
+          if (!n) {
+            errors.push(`scenes[${i}].characterRefs[${j}] 缺少 name`);
+            return;
+          }
+          if (!seenCanonical.has(n) && !seenAlias.has(n)) {
+            warnings.push(`scenes[${i}].characterRefs[${j}] 的角色「${ref.name}」不在角色卡中`);
+          }
+          if (ref?.referredAs !== undefined) {
+            if (!Array.isArray(ref.referredAs) || ref.referredAs.some((x) => typeof x !== 'string' || !x.trim())) {
+              errors.push(`scenes[${i}].characterRefs[${j}].referredAs 必须是非空字符串数组`);
+            }
+          }
+        });
+      }
+    }
   });
 
   if ((gold.scenes ?? []).length === 0) warnings.push('scenes 为空：Phase 2 指标将无意义');

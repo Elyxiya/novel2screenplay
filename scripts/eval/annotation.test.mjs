@@ -126,6 +126,29 @@ check('稳定绰号/称号不算描述性指代', () => {
   assert.equal(r.warnings.some((w) => w.includes('外观/身份描述')), false);
 });
 
+check('characterRefs：场景级指代合法时不报错', () => {
+  const gold = baseGold();
+  gold.scenes[0].characterRefs = [{ name: '方晓语', referredAs: ['中年男子'] }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, true, r.errors.join('; '));
+  assert.equal(r.warnings.some((w) => w.includes('characterRefs')), false);
+});
+
+check('characterRefs：指代对象不在角色卡 → warning', () => {
+  const gold = baseGold();
+  gold.scenes[0].characterRefs = [{ name: '路人甲', referredAs: ['中年男子'] }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, true);
+  assert.ok(r.warnings.some((w) => w.includes('characterRefs')), r.warnings.join('; '));
+});
+
+check('characterRefs：referredAs 类型错误 → error', () => {
+  const gold = baseGold();
+  gold.scenes[0].characterRefs = [{ name: '方晓语', referredAs: [123] }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, false);
+});
+
 // ── 确定性切分 ──────────────────────────────────────────────────────────
 check('hashString 稳定且非负', () => {
   assert.equal(hashString('abc'), hashString('abc'));

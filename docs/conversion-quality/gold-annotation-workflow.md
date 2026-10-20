@@ -100,8 +100,26 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 等价于宣称「所有中年男子都是方晓语父亲」，后续任何出现「中年男子」的场景都会被错误并入。
 
 正确处理：场景的 `keyCharacterNames` 写规范名 `方晓语父亲`，把「这一场他是中年男子」
-留在抽检记录/场景备注里；描述不进全局别名表。校验器 `validateGold` 对描述性别名给 warning
+留在**场景级指代**里（见下），描述不进全局别名表。校验器 `validateGold` 对描述性别名给 warning
 （`DESCRIPTOR_ALIAS_RE`）。
+
+**场景级指代字段**（单向、只在本场景生效，不参与全局匹配）：
+
+```jsonc
+"scenes": [{
+  "chapterIndex": 13, "startParagraph": 0, "endParagraph": 19,
+  "keyCharacterNames": ["白冷叶", "方晓语", "方晓语父亲"],
+  "characterRefs": [{ "name": "方晓语父亲", "referredAs": ["中年男子"] }]
+}]
+```
+
+评分只用 `keyCharacterNames`；`characterRefs` 是给人工复核看的证据（`review.md` 会渲染成
+「出场角色 ｜ 指代: 方晓语父亲（中年男子）」）。**同一个描述在不同场景可以指向不同角色**——
+这正是它不能进 `aliases` 的原因。
+
+> 实测教训：批量回填 `characterRefs` 时，我一度把 13 处「妇女」全映射给豆豆妈；
+> 查原文发现「妇女」在这份文本里至少指了 4 个人——白冷叶的母亲（#1/#5）、火车上的陌生妇人（#6）、
+> 他救下的豆豆妈（#7/#14/#15）。**描述必须逐处核对，不能批量推断**，这也是它只能做场景级的原因。
 
 > 注意与上一条的区别：「在场但未点名」是**场景事实**（计入 `keyCharacterNames`），
 > 而「用某个描述指代他」是**称呼问题**（不进 `aliases`）。纳兰嫣然那次只补了场景，没有加别名，是对的。

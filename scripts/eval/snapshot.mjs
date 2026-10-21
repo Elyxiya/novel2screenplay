@@ -123,6 +123,7 @@ ${currentRefRows.join('\n')}
 
 > 配置：\`scripts/eval/current-ref.json\`（换运行后改这里再重跑 snapshot）。
 > 单次运行不足以判「v2 是否提升 P2」，差异落在跨运行噪声内。
+> 溯源基准：job 落库的 \`chapter_texts\`（管线实际输入）；\`score.mjs\` 已统一为同一来源。
 
 ## ③ Phase1 A/B（对 reviewed 金标注；读 Phase1 原始输出）
 

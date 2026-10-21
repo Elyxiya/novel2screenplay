@@ -44,6 +44,24 @@ export function readPipelineState(jobId, dbDir, dbFile) {
 }
 
 /**
+ * 读取 job 落库的分章正文（`chapter_texts` 列）。
+ *
+ * 为什么单独提供：这是**管线实际输入**，也是溯源检查的正确基准。
+ * 此前 score.mjs 只读 pipelineState.chapterTexts（该字段不存在）→ 静默回退到 chapters.txt，
+ * 与 snapshot 的 DB 列口径不一致，同一运行出现 95.1% 与 95.4% 两个数。
+ */
+export function readChapterTexts(jobId, dbDir, dbFile) {
+  const dbPath = path.join(dbDir, dbFile);
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const row = db.prepare('SELECT chapter_texts FROM jobs WHERE id = ?').get(jobId);
+    return row?.chapter_texts ? JSON.parse(row.chapter_texts) : null;
+  } finally {
+    db.close();
+  }
+}
+
+/**
  * 读取 job 行内的落库 config（含 **实际使用的 modelId**）。
  * 为什么需要：resolveProvider 对未知 modelId 会静默回退默认 provider——
  * 横评矩阵必须记录 actual 模型，避免"请求 gpt-4o 实际跑了 deepseek"这类串标签。

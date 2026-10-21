@@ -33,7 +33,12 @@ import {
   summarizeEvaluation,
   validateGold,
 } from './annotation.mjs';
-import { readJobConfig, readPipelineState, splitChapters } from './convert-driver.mjs';
+import {
+  readChapterTexts,
+  readJobConfig,
+  readPipelineState,
+  splitChapters,
+} from './convert-driver.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const SAMPLES_DIR = path.join(ROOT, 'scripts', 'eval', 'samples');
@@ -72,7 +77,10 @@ async function loadRun(sampleId, opts) {
     const dbFile = opts['db-file'] ?? '1b-data.db';
     const pipelineState = readPipelineState(opts.job, dbDir, dbFile);
     const config = readJobConfig(opts.job, dbDir, dbFile);
-    return { pipelineState, chapterTexts: null, modelId: config?.modelId ?? null };
+    // 优先用 job 落库的 chapter_texts（管线实际输入），与 snapshot.mjs 保持同一口径；
+    // 读不到才回退到 chapters.txt。
+    const chapterTexts = readChapterTexts(opts.job, dbDir, dbFile);
+    return { pipelineState, chapterTexts, modelId: config?.modelId ?? null };
   }
 
   const fallback = path.join(SAMPLES_DIR, sampleId, 'run.json');

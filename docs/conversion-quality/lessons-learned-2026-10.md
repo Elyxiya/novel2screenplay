@@ -463,3 +463,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 回退路径改为显式告警；原则新增「不要静默回退」；账本第 30 条 | `63e6fdd` |
 | 2026-10-21 | 补齐 phase1-ab / snapshot 的回退与缺失告警（原则 10 覆盖五个脚本） | `39444a3` |
 | 2026-10-21 | 成本守卫改用实测 token（修正 2.2 倍低估）；原则第 11 条；账本第 31 条 | `7e7a5ac` |
+| 2026-10-21 | 兜底切分统一为「非空行」口径（抽 phase2-fallback + 6 条单测）；账本第 32 条 | `f6d90e7` |

@@ -115,6 +115,11 @@ async function scoreSample(sampleId, opts) {
 
   const pred = extractPrediction(run.pipelineState);
   const chapterTexts = run.chapterTexts ?? chapterTextsFromFile(sampleId);
+  if (!run.chapterTexts) {
+    // 静默回退会让溯源率与 snapshot（用 job 的 chapter_texts）对不上，
+    // 曾经因此出现同一运行 95.1% 与 95.4% 两个数。
+    console.warn(`[score] ${sampleId}: 未拿到 job 落库的 chapter_texts，已回退 chapters.txt（与快照口径可能不一致）`);
+  }
 
   const phase1 = scorePhase1(gold.characters, pred.characters);
   const phase2 = scorePhase2(gold.scenes, pred.scenes);

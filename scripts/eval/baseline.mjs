@@ -52,6 +52,11 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
   const goldPath = path.join(dir, 'gold.json');
   const draftPath = path.join(dir, 'annotation.draft.json');
   const goldFile = fs.existsSync(goldPath) ? goldPath : draftPath;
+  if (!fs.existsSync(goldPath)) {
+    // 拿草案当参考等于「用未抽检的标注算准确率」，必须在输出里显式提示，
+    // 否则同一张表会混着 reviewed 与 unreviewed 两种口径。
+    console.warn(`[baseline] ${sampleId}: 缺少 gold.json，回退 annotation.draft.json（准确率仅供参考，非 official）`);
+  }
   const draft = JSON.parse(fs.readFileSync(goldFile, 'utf8'));
   const goldJobId = draft.meta?.provenance?.jobId ?? null;
   const runs = jobIds.map((jobId, i) => {

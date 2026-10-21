@@ -11,7 +11,7 @@
  * 漏章、过切、漏人、别名没合并、角色卡与场景矛盾。
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { aliasSetOf, normalizeName } from './annotation.mjs';
@@ -44,6 +44,10 @@ if (!sampleId) {
 }
 
 const draftPath = path.resolve(ROOT, args.draft ?? path.join(SAMPLES_DIR, sampleId, 'annotation.draft.json'));
+// gold.json 存在却仍默认读草案：会让「审查结果」与「冻结金标注」脱节，必须提示。
+if (!args.draft && existsSync(path.join(SAMPLES_DIR, sampleId, 'gold.json'))) {
+  console.warn(`[review-sheet] ${sampleId}: 已有 gold.json，但默认仍读草案；审查金标注请传 --draft scripts/eval/samples/${sampleId}/gold.json`);
+}
 const draft = JSON.parse(readFileSync(draftPath, 'utf8'));
 const chapters = splitChapters(readFileSync(path.join(SAMPLES_DIR, sampleId, 'chapters.txt'), 'utf8'));
 

@@ -53,8 +53,8 @@ describe('createPhase1Budget', () => {
 });
 
 describe('resolveDefaultPhase1Mode', () => {
-  it('数据门槛未过（Task 2.4/2.5 未出数）→ 默认保持 truncate，翻默认开关不触发', () => {
-    expect(resolveDefaultPhase1Mode()).toBe('truncate');
+  it('2026-10-21 起默认翻到 auto（短文仍走 truncate），偏离理由见 flip 记录 §7', () => {
+    expect(resolveDefaultPhase1Mode()).toBe('auto');
   });
 });
 
@@ -65,9 +65,9 @@ describe('auto 分流', () => {
     expect(decideAutoMode(30001, 30000)).toBe('mapreduce');
   });
 
-  it('env PHASE1_MODE=auto 可解析（但默认仍为 truncate）', () => {
+  it('env PHASE1_MODE=auto 可解析；空 env 时用默认 auto', () => {
     expect(resolvePhase1Mode(undefined, { PHASE1_MODE: 'auto' })).toBe('auto');
-    expect(resolvePhase1Mode(undefined, {})).toBe('truncate');
+    expect(resolvePhase1Mode(undefined, {})).toBe('auto');
   });
 
   it('显式 mode 优先于 env', () => {

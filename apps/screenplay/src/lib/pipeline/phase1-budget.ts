@@ -91,7 +91,13 @@ export function estimateReducePromptTokens(listing: string): number {
  * 且必须已接 canRequest 守卫（本文件）堵住无守卫窗口。
  */
 export function resolveDefaultPhase1Mode(): Phase1Mode {
-  return 'truncate';
+  // 2026-10-21：默认翻到 auto（长文 mapreduce / 短文 truncate）。
+  //
+  // 这是一次**显式偏离**：预注册的 R1/R2/R3（尾段占位率 / judge 分层）仍未满足，
+  // 推动翻默认的是 Phase1 F1 证据（mapreduce 在 2/3 样本领先，均值 +0.14），
+  // 理由与风险写在 docs/conversion-quality/flip-decision-record.md §7。
+  // 回滚：设 PHASE1_MODE=truncate（或改回本函数），无需改其它代码。
+  return 'auto';
 }
 
 /**

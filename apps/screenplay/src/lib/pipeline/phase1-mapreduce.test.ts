@@ -367,7 +367,7 @@ describe('Phase1Analyzer - mode 双路径', () => {
     expect(output.settingCard?.openThreads.length).toBeGreaterThan(0);
   });
 
-  it('无 mode 无 env → 走默认 truncate（resolveDefaultPhase1Mode 尚未翻默认）', async () => {
+  it('无 mode 无 env + 短文 → auto 判定为 truncate（默认已翻到 auto，短文行为不变）', async () => {
     const analyzer = new Phase1Analyzer(provider, ctxManager);
     const output = await analyzer.analyze([{ index: 0, title: '第一章', text: '林墨从山里来。' }]);
     expect(output.settingCard).toBeUndefined();

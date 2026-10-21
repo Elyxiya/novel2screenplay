@@ -356,3 +356,31 @@ mapreduce，否则沿用 truncate。**默认仍是 truncate**，`resolveDefaultP
 随后走 map-reduce 路径（10 章 53 个抽取 → reduce 22 个 → 净化 5 个描述性实体 → 17 角色）。
 单测 `phase1-budget.test.ts` 覆盖边界（30000 取 truncate、30001 取 mapreduce）与
 「显式 mode 优先于 env」。
+
+## 7. 决定：默认翻到 auto（2026-10-21，显式偏离记录）
+
+**决定**：`resolveDefaultPhase1Mode()` 返回 `auto`——超过 30000 token 走 mapreduce，否则 truncate。
+回滚：设 `PHASE1_MODE=truncate` 即可，无需改代码。
+
+**依据（Phase1 F1，reviewed 金标注，2026-10-21 实测）**：
+
+| 样本 | truncate | mapreduce | Δ |
+|---|---|---|---|
+| doupo-short | 0.987 | 0.897 | −0.090 |
+| zhanlan-short | 0.737 | 0.923 | +0.186 |
+| xiuzhen-short | 0.531 | 0.839 | +0.308 |
+| **均值** | 0.752 | 0.886 | **+0.135** |
+
+**为什么这是「显式偏离」**：R1/R2/R3 的判据是**尾段占位率与 judge 分层**，本次两者的数据仍不满足
+（`Δ_tail` 无实测、噪声带算不出来）。推动翻默认的是上面这组 F1——它只覆盖 Phase1 的角色识别，
+不覆盖「尾部场景是否被写崩」。因此本次记录为**所有者决策覆盖预注册门槛**，而不是「门槛已通过」。
+
+**已知风险**：
+
+- doupo 是唯一变差的样本（−0.090），且三样本都超 30k → `auto` 实际对三者都走 mapreduce；
+  「按长度分流」在当前样本上等于「全部走 mapreduce」；
+- 成本上升：mapreduce 的输入 token 约为 truncate 的 1.5–2.5 倍，长文上更明显；
+- Phase1 变慢（多轮 map + reduce）。
+
+**后续必须补的**：把 `Δ_tail` 与分层占位率的数据补上，让本条记录与 R1/R2/R3 自洽；
+若补数后结论反转，按 §4 禁忌回滚并记录。

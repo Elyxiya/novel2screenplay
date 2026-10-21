@@ -488,3 +488,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 兜底切分统一为「非空行」口径（抽 phase2-fallback + 6 条单测）；账本第 32 条 | `f6d90e7` |
 | 2026-10-21 | 新增可调参数表；doc-check 第 12 类（表与代码一致）；温度消融列入待办 | `6825f79` |
 | 2026-10-21 | 温度可配置 + 初步消融（temp=0 组内 F1 0.759 vs 0.596）；账本第 33 条 | `d7d28ff` |
+| 2026-10-21 | 基线刷新到当前代码（3×3）；温度消融未复现、降级；下线 ②′ 与 current-ref.json | `9a87bab` |

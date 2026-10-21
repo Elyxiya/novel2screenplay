@@ -1,6 +1,7 @@
 import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as SEGMENT_PROMPT } from '../llm/prompts/segment';
-import { ContextManager, MAX_SEGMENT_TOKENS } from './ContextManager';
+import { ContextManager, MAX_SCENE_TOKENS, MAX_SEGMENT_TOKENS } from './ContextManager';
+import { groupParagraphsIntoScenes, splitParagraphsWithOffsets } from './phase2-fallback';
 import { safeJsonParse } from '../utils/safe-json';
 import type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 import { isAbortError, throwIfAborted } from './cancel-registry';
@@ -177,59 +178,34 @@ export class Phase2Segmenter {
   }
 
   /**
-   * Fallback: split by empty lines and sentence boundaries.
+   * Fallback：LLM 切分不可用时的兜底。
+   *
+   * 口径必须与主路径一致：**段落 = 一个非空行**。旧实现按空行分块，
+   * 段号会指向块序号而不是行号，后续按段号取原文会错位且不报错。
    */
   private async fallbackSplit(chapter: {
     index: number;
     text: string;
   }): Promise<SceneBoundary[]> {
-    const scenes: SceneBoundary[] = [];
-    const sections = chapter.text.split(/\n\s*\n/).filter(s => s.trim().length > 0);
+    const paragraphs = splitParagraphsWithOffsets(chapter.text);
+    if (paragraphs.length === 0) return [];
 
-    let globalSceneIndex = 0;
-    let charOffset = 0;
+    const tokens = await Promise.all(
+      paragraphs.map((p) => this.ctxManager.countTokens(p.text)),
+    );
+    const spans = groupParagraphsIntoScenes(paragraphs, tokens, MAX_SCENE_TOKENS);
 
-    for (let i = 0; i < sections.length; i++) {
-      const section = sections[i];
-      if (section.trim().length === 0) continue;
-
-      const tokenCount = await this.ctxManager.countTokens(section);
-      if (tokenCount > 1500) {
-        const sentences = section.split(/(?<=[。！？\n])/);
-        for (const sentence of sentences) {
-          if (sentence.trim().length === 0) continue;
-          scenes.push({
-            sceneIndex: globalSceneIndex + 1,
-            chapterIndex: chapter.index,
-            startParagraph: i,
-            endParagraph: i,
-            originalStartOffset: charOffset,
-            originalEndOffset: charOffset + sentence.length,
-            draftSlugline: `场景 ${globalSceneIndex + 1}`,
-            keyCharacterNames: [],
-            summary: sentence.slice(0, 50) + '...',
-          });
-          globalSceneIndex++;
-          charOffset += sentence.length;
-        }
-      } else {
-        scenes.push({
-          sceneIndex: globalSceneIndex + 1,
-          chapterIndex: chapter.index,
-          startParagraph: i,
-          endParagraph: i,
-          originalStartOffset: charOffset,
-          originalEndOffset: charOffset + section.length,
-          draftSlugline: `场景 ${globalSceneIndex + 1}`,
-          keyCharacterNames: [],
-          summary: section.slice(0, 50) + '...',
-        });
-        globalSceneIndex++;
-        charOffset += section.length + 2;
-      }
-    }
-
-    return scenes;
+    return spans.map((span, i) => ({
+      sceneIndex: i + 1,
+      chapterIndex: chapter.index,
+      startParagraph: span.startParagraph,
+      endParagraph: span.endParagraph,
+      originalStartOffset: span.originalStartOffset,
+      originalEndOffset: span.originalEndOffset,
+      draftSlugline: `场景 ${i + 1}`,
+      keyCharacterNames: [],
+      summary: span.summary,
+    }));
   }
 
   /**

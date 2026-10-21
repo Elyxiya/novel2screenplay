@@ -452,3 +452,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 当前代码参考纳入快照（current-ref.json 登记 jobId，脚本现场打分） | `12605bb` |
 | 2026-10-21 | 统一溯源取数来源（job 的 chapter_texts），账本第 29 条 | `231134e` |
 | 2026-10-21 | 回退路径改为显式告警；原则新增「不要静默回退」；账本第 30 条 | `63e6fdd` |
+| 2026-10-21 | 补齐 phase1-ab / snapshot 的回退与缺失告警（原则 10 覆盖五个脚本） | `39444a3` |

@@ -227,9 +227,11 @@ async function main() {
   const scenesFile = path.join(sampleDir, `${tag}.scenes.json`);
   writeFileSync(scenesFile, JSON.stringify(scenesJson, null, 2));
 
-  // cost estimate（二道保险）——按真实 token 估算，旧系数 0.6 会低估约 2.2 倍
+  // 成本估算：**只覆盖 Phase1 输入**，Phase2/Phase3 与输出都没算。
+  // 真实花费约为该值 2–3 倍（2026-10-22 复盘）；这里同时给出折算后的粗估，避免账面过乐观。
   const estimatedInputTokens = estimateInputTokens(novelText);
-  const estimateCny = (estimatedInputTokens / 1_000_000) * costPerMTokenCny;
+  const phase1OnlyCny = (estimatedInputTokens / 1_000_000) * costPerMTokenCny;
+  const estimateCny = phase1OnlyCny * 2.5;
   const runFile = path.join(sampleDir, `${tag}.run.json`);
   const run = {
     sample, tag, model: modelId, jobId, finalStatus, elapsedMs,
@@ -238,6 +240,7 @@ async function main() {
     charIdSet: charIdSet.length,
     inputEstimateTokens: estimatedInputTokens,
     estimatedCostCny: Math.round(estimateCny * 100) / 100,
+    costCoverage: 'phase1-input × 2.5（粗估全链路）',
     costCapCny,
     gridCells: { scenes: phase4.scenes.length, charIdToName: Object.keys(charIdToName).length, deadCharacters: 2 },
     generatedAt: new Date().toISOString(),
@@ -246,7 +249,7 @@ async function main() {
 
   console.log(`[run-conversion] 产物已导出：`);
   console.log(`  scenes    → ${scenesFile}（scenes=${run.scenes} charIdSet=${run.charIdSet}）`);
-  console.log(`  run 记录  → ${runFile}（estimate ¥${run.estimatedCostCny} ≤ ¥${costCapCny}）`);
+  console.log(`  run 记录  → ${runFile}（estimate ¥${run.estimatedCostCny} ≤ ¥${costCapCny}）（Phase1 输入 ¥${phase1OnlyCny.toFixed(2)} × 2.5 粗估）`);
   console.log(`[run-conversion] 停点：验收 <tag>.run.json 格子数>0、规则格非占位、占位率非全段严格为 0 后再付第二步。`);
 }
 

@@ -142,9 +142,21 @@ export async function driveConversion(opts) {
   if (!setCookie) throw new Error(`${side}: 登录失败（register=${regRes.status}${regRes.data?.error ? ` ${regRes.data.error}` : ''}；用户名 ${usr}）`);
   const cookie = setCookie.split(';')[0];
 
+  // 成本守卫：**只覆盖 Phase1 的输入 token**。
+  //
+  // 这是一个已知的**低估**：Phase2（每章一次切分）与 Phase3（每场景一次转换，输出占大头）
+  // 的调用完全没算进来，输出 token 也没算。实测下来真实花费约为该值 2–3 倍
+  // （2026-10-22 复盘，见 lessons-learned 第 36 条）。
+  // 因此这里把红线按 2.5 倍折算，宁可早停，也不要在长样本上「估着便宜、实际很贵」。
   const estimatedInputTokens = estimateInputTokens(novelText);
-  const estimateCny = Math.round(((estimatedInputTokens / 1_000_000) * 2) * 100) / 100;
-  if (estimateCny > costCapCny) throw new Error(`${side}: 预估成本 ¥${estimateCny} 超红线 ¥${costCapCny}，中止`);
+  const FULL_COST_MULTIPLIER = 2.5;
+  const phase1OnlyCny = (estimatedInputTokens / 1_000_000) * 2;
+  const estimateCny = Math.round(phase1OnlyCny * FULL_COST_MULTIPLIER * 100) / 100;
+  if (estimateCny > costCapCny) {
+    throw new Error(
+      `${side}: 预估成本 ¥${estimateCny}（Phase1 输入 ¥${phase1OnlyCny.toFixed(2)} × ${FULL_COST_MULTIPLIER}）超红线 ¥${costCapCny}，中止`,
+    );
+  }
 
   const started = Date.now();
   const startRes = await req('/api/pipeline/start', {
@@ -201,7 +213,9 @@ export async function driveConversion(opts) {
     characters: phase4.characters?.length ?? 0,
     charIdSet: charIdSet.length,
     inputEstimateTokens: estimatedInputTokens,
+    // 估算口径：Phase1 输入 × 2.5（含 Phase2/3 与输出的粗估），见上方注释
     estimatedCostCny: estimateCny,
+    costCoverage: 'phase1-input × 2.5（粗估全链路）',
     costCapCny,
     generatedAt: new Date().toISOString(),
   };

@@ -246,6 +246,24 @@ function hasToken(src, token) {
     : ok('关键数字都带时效标记');
 }
 
+// ── 10. 术语一致性：三份文档不得使用已废弃的异名 ────────────────────────
+//
+// 异名靠人眼很难长期维持：同一次改动里，一份文档写「描述性实体」、另一份写「描述名」，
+// 读的人会以为是两个东西。这里维护一份黑名单，出现即 FAIL。
+{
+  const DEPRECATED = ['描述名', '描述性称呼', '交叉运行'];
+  const bad = [];
+  for (const doc of DOCS) {
+    const text = read(doc);
+    for (const term of DEPRECATED) {
+      if (text.includes(term)) bad.push(`${path.basename(doc)} 使用了废弃术语「${term}」`);
+    }
+  }
+  bad.length
+    ? fail('三份文档术语一致', bad.join('；'))
+    : ok('三份文档术语一致', `废弃词 ${DEPRECATED.length} 个均未出现`);
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

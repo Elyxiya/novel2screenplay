@@ -34,10 +34,10 @@ describe('resolvePhase1Mode（B-01 三模式）', () => {
     expect(resolvePhase1Mode(undefined, { PHASE1_MODE: 'truncate' })).toBe('truncate');
   });
 
-  it('非法值/缺省 → 单点默认 truncate', () => {
-    expect(resolvePhase1Mode(undefined, { PHASE1_MODE: 'bogus' })).toBe('truncate');
-    expect(resolvePhase1Mode(undefined, {})).toBe('truncate');
-    expect(resolvePhase1Mode()).toBe('truncate');
+  it('非法值/缺省 → 回落到单点默认 auto（2026-10-21 起）', () => {
+    expect(resolvePhase1Mode(undefined, { PHASE1_MODE: 'bogus' })).toBe('auto');
+    expect(resolvePhase1Mode(undefined, {})).toBe('auto');
+    expect(resolvePhase1Mode()).toBe('auto');
   });
 });
 

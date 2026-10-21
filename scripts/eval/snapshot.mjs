@@ -45,7 +45,7 @@ const health = SAMPLES.map((id) => {
   return `| ${id} | ${cells} |`;
 });
 
-// ② 基线（默认 truncate，3 次均值）：只取第一张表（输出里还有逐次运行的子表）
+// ② 基线（默认 auto：长文 mapreduce / 短文 truncate，3 次均值）：只取第一张表
 const baselineOut = runNode('baseline.mjs');
 const baselineLines = baselineOut.split('\n');
 const tableStart = baselineLines.findIndex((l) => l.startsWith('| 样本'));
@@ -73,7 +73,7 @@ const md = `# 状态快照（${date}）
 |---|---|---|---|---|---|
 ${health.join('\n')}
 
-## ② 基线（默认 truncate，每样本 3 次；**当前代码**）
+## ② 基线（默认 auto，每样本 3 次；**当前代码**）
 
 ${baselineRows.join('\n')}
 

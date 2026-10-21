@@ -119,7 +119,7 @@ fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.json`), JSON.stringify(re
 // ── Markdown ──
 const fmt = (m) => (m === null || m === undefined ? '—' : m);
 const lines = [];
-lines.push(`# 基线（${stamp}）· 默认 truncate · 每样本 3 次`);
+lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· 每样本 3 次`);
 lines.push('');
 lines.push('> 「跨运行」= 剔除自证运行后，其余运行与金标注的一致性（衡量稳定性）。');
 lines.push('> 「准确率」= 对**人工抽检后**的金标注（仅 reviewed=true 且非自证的运行计入）。');

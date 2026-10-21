@@ -495,3 +495,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | Phase1 按长度分流做成可选能力（PHASE1_MODE=auto，默认不变）；doc-check 第 8 类改三态 | `38e3d29` |
 | 2026-10-21 | 实测后降级「实体归一」（描述词仅 4 处，多为卡不全）；新增「别名覆盖」待办 | `6269b92` |
 | 2026-10-21 | 别名归一（简称/异体字，唯一候选才合并）；第五节状态更新 | `45e3532` |
+| 2026-10-21 | 默认翻到 auto（长文 mapreduce / 短文 truncate）；flip 记录 §7 登记为显式偏离；基线/快照标注同步 | `d026876` `b5775e3` |

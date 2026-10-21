@@ -115,6 +115,31 @@ function read(rel) {
   bad.length ? fail('三份文档互链', bad.join('；')) : ok('三份文档互链');
 }
 
+// ── 5. 文档承诺的口径/规则，在实现里真实存在 ────────────────────────────
+//
+// 这一类最容易「文档写了、代码没有」——上次发现的墓碑字段漏记就是反过来的版本。
+// 规则：文档里出现 phrase 时，对应实现文件必须包含 token；文档没提则跳过。
+{
+  const RULES = [
+    { doc: 'gold-annotation-workflow.md', phrase: '描述性别名', file: 'scripts/eval/annotation.mjs', token: 'DESCRIPTOR_ALIAS_RE' },
+    { doc: 'gold-annotation-workflow.md', phrase: '墓碑', file: 'scripts/eval/annotation.mjs', token: 'excludedCharacters' },
+    { doc: 'gold-annotation-workflow.md', phrase: 'IoU', file: 'scripts/eval/annotation.mjs', token: 'iou' },
+    { doc: 'gold-annotation-workflow.md', phrase: '宏平均', file: 'scripts/eval/annotation.mjs', token: 'macroAverage' },
+    { doc: 'gold-annotation-workflow.md', phrase: 'characterRefs', file: 'scripts/eval/annotation.mjs', token: 'characterRefs' },
+    { doc: 'lessons-learned-2026-10.md', phrase: '剔除自证', file: 'scripts/eval/annotation.mjs', token: 'checkIndependence' },
+    { doc: 'flip-decision-record.md', phrase: 'R1/R2/R3', file: 'apps/screenplay/src/lib/eval/flip-decision.ts', token: 'R1' },
+  ];
+  const bad = [];
+  for (const rule of RULES) {
+    const docText = read(`docs/conversion-quality/${rule.doc}`);
+    if (!docText.includes(rule.phrase)) continue;
+    if (!read(rule.file).includes(rule.token)) {
+      bad.push(`${rule.doc} 承诺「${rule.phrase}」，但 ${path.basename(rule.file)} 缺少 ${rule.token}`);
+    }
+  }
+  bad.length ? fail('文档承诺的规则在实现中存在', bad.join('；')) : ok('文档承诺的规则在实现中存在', `${RULES.length} 条`);
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

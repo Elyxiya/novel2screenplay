@@ -367,7 +367,8 @@
 | `scripts/eval/review-sheet.mjs` | 抽检单（自动体检） |
 | `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证） |
 | `scripts/eval/phase1-ab.mjs` | Phase1 模式 A/B |
-| `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/A/B/文档一致性） |
+| `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/当前参考/A/B/文档一致性） |
+| `scripts/eval/current-ref.json` | 登记「当前代码参考」的 jobId（snapshot 据此现场打分） |
 | `docs/conversion-quality/snapshots/` | 快照归档（脚本生成，勿手改） |
 | `scripts/eval/doc-check.mjs` | 文档一致性校对（路径/阈值/开关/互链） |
 | `docs/conversion-quality/gold-annotation-workflow.md` | 标注口径（在场/提及/指代/别名） |
@@ -399,7 +400,7 @@
 ### 状态快照（2026-10-21）
 
 **完整快照由脚本生成，不再手抄**：[snapshots/snapshot-2026-10-21.md](snapshots/snapshot-2026-10-21.md)
-（含体检、基线、A/B 全额表格与生成时的提交号）。
+（含体检、基线、当前代码参考、A/B 全额表格与生成时的提交号）。
 
 ```bash
 node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snapshot-<date>.md

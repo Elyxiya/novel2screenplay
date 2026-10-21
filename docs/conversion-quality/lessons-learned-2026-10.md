@@ -52,10 +52,11 @@
 2. **未解决事项**（第五节）是否该划掉/新增；
 3. **关键数字**（第七节）是否过期；
 4. **文件索引**（第六节）是否漏了新模块；
-5. 跑一遍 `node scripts/eval/doc-check.mjs`，**必须 11/11 PASS**：
+5. 跑一遍 `node scripts/eval/doc-check.mjs`，**必须 12/12 PASS**：
    路径存在、阈值与代码常量一致、开关真实被读取、三份文档互链、文档承诺的规则在实现中存在、
    文档示例的 gold 字段都被校验器覆盖、文档的体检项在 `review-sheet` 中实现、
-   「未解决事项」的状态与代码一致、关键数字都带时效标记、三份文档术语一致、维护日志可追溯；
+   「未解决事项」的状态与代码一致、关键数字都带时效标记、三份文档术语一致、维护日志可追溯、
+   可调参数表与代码一致；
 6. **重大改动后**（改了 Phase1 模式、评分口径、参考卡）跑 `node scripts/eval/snapshot.mjs`
    重新生成快照，并在第七节把链接指向新文件——**不要手抄数字**（手抄必然过期）。
 
@@ -366,6 +367,7 @@
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
 | 版权样本 | `doupo-short` 仅本地 | `.git/info/exclude` 命中 `scripts/eval/samples/doupo-*/`，不入库 |
+| Phase2 温度消融（0 vs 0.3） | 未做 | 直接对应 P2 跨运行 F1 只有 0.56–0.70，是当前最弱环节的首要候选；`temperature: 0.3` 目前无测试/文档依据 |
 | 基线刷新（3×3，当前代码） | 待做 | 现有 3 次基线运行早于 prompt v2；已补 n=1 参考（§七②′），但不足以判 v2 是否提升 P2 |
 
 ---
@@ -393,6 +395,24 @@
 | `apps/screenplay/src/__tests__/scene-character-grounding.test.ts` | 接地校验回归 |
 | `apps/screenplay/src/__tests__/convert-scene.test.ts` | Phase3 prompt 预算 + 规则 7 硬约束 |
 | `apps/screenplay/src/__tests__/segment-prompt.test.ts` | Phase2 prompt 口径（候选池/段落） |
+| `apps/screenplay/src/lib/pipeline/phase2-fallback.ts` | 兜底切分（非空行口径 + token 分组） |
+
+### 可调参数（活参数表）
+
+这些数字直接决定输出形态与稳定性。**值变动必须同步本表**，否则它又会变成一份过期的说明。
+
+| 参数 | 值 | 位置 | 影响 | 证据状态 |
+|---|---|---|---|---|
+| Phase2 `temperature` | **0.3** | `Phase2Segmenter.ts:76` | 切分稳定性——直接对应跨运行 P2 F1 只有 0.56–0.70 | ⚠️ **未做消融**（0 vs 0.3 未对比），无测试/文档引用 |
+| `MIN_MERGE_CHARS` | 800 | `Phase2Segmenter.ts:219` | 相邻短场景是否合并 | 未实测 |
+| `MAX_SCENE_TOKENS` | 1500 | `ContextManager.ts:1` | 兜底切分粒度 | 口径有测试，值未调优 |
+| `MAX_SEGMENT_TOKENS` | 8000 | `ContextManager.ts:3` | 单章送模型上限 | 未实测 |
+| `MAX_ANALYSIS_TOKENS` | 30000 | `ContextManager.ts:2` | Phase1 截断阈值 | ✅ 有对照：三样本均超限（78% / 78% / 41%），见 mapreduce A/B |
+| Phase3 并发 / 限速 | 3 / 50 每 60s | `Phase3SceneConverter.ts:240-241` | 吞吐与限流 | 未实测 |
+| 失败重试 | 3 次 | `Phase3SceneConverter.ts:375` | 稳定性 | 未实测 |
+| 净化证据门槛 | 跨章 ≥2 / 提及 ≥3 | `character-sanitizer.ts:22-23` | 描述性实体去留 | ✅ 单测覆盖；阈值本身未调优 |
+| 同指紧邻窗口 | ≤12 字 | `character-sanitizer.ts:25` | 描述→具名合并的误判率 | ✅ 三条反例测试 |
+| 接地校验模式 | 默认 `warn` | `scene-character-grounding.ts` | 是否真删无据引用 | ✅ 有误杀证据（二长老/萧薰儿等） |
 
 ---
 

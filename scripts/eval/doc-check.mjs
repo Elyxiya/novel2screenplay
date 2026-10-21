@@ -287,6 +287,34 @@ function hasToken(src, token) {
       : ok('维护日志可追溯', `${rows.length} 行均有提交号`);
 }
 
+// ── 12. 「可调参数」表的值必须与代码一致 ──────────────────────────────────
+//
+// 表里登记的是会改变输出形态的数字。代码调了、表没跟，读者会按错的值理解系统。
+{
+  const doc = read('docs/conversion-quality/lessons-learned-2026-10.md');
+  const CONSTANTS = [
+    { name: 'MAX_SCENE_TOKENS', file: 'apps/screenplay/src/lib/pipeline/ContextManager.ts' },
+    { name: 'MAX_SEGMENT_TOKENS', file: 'apps/screenplay/src/lib/pipeline/ContextManager.ts' },
+    { name: 'MAX_ANALYSIS_TOKENS', file: 'apps/screenplay/src/lib/pipeline/ContextManager.ts' },
+  ];
+  const bad = [];
+  for (const { name, file } of CONSTANTS) {
+    const codeMatch = read(file).match(new RegExp(`${name}\\s*=\\s*(\\d+)`));
+    const docMatch = doc.match(new RegExp('`' + name + '`\\s*\\|\\s*(\\d+)'));
+    if (!codeMatch) { bad.push(`${name} 在代码中未找到`); continue; }
+    if (!docMatch) { bad.push(`${name} 未登记到可调参数表`); continue; }
+    if (codeMatch[1] !== docMatch[1]) bad.push(`${name} 代码 ${codeMatch[1]} ≠ 文档 ${docMatch[1]}`);
+  }
+  // 温度是小数，单独处理
+  const tCode = read('apps/screenplay/src/lib/pipeline/Phase2Segmenter.ts').match(/temperature:\s*([\d.]+)/);
+  const tDoc = doc.match(/Phase2 `temperature`\s*\|\s*\*\*([\d.]+)\*\*/);
+  if (tCode && tDoc && tCode[1] !== tDoc[1]) bad.push(`temperature 代码 ${tCode[1]} ≠ 文档 ${tDoc[1]}`);
+
+  bad.length
+    ? fail('可调参数表与代码一致', bad.join('；'))
+    : ok('可调参数表与代码一致', `${CONSTANTS.length + 1} 项`);
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

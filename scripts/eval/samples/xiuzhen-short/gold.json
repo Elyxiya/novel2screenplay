@@ -1,0 +1,1362 @@
+{
+  "schema": "screenplay-gold/v1",
+  "sampleId": "xiuzhen-short",
+  "title": "背井离乡",
+  "meta": {
+    "chapterCount": 15,
+    "reviewed": true,
+    "provenance": {
+      "source": "llm-draft",
+      "jobId": "job_1792421684668_hzmwlo",
+      "modelId": "deepseek-chat",
+      "promptHash": null,
+      "draftedAt": "2026-10-19T14:58:22.229Z"
+    },
+    "reviewNote": "人工抽检：#10 原文无「豆豆」→ 删除误标；#14「中年男子」即方晓语父亲 → 统一为角色卡名；另补 Phase1 因截断漏抽的方晓语与方晓语父亲。 别名表去描述化：外观/身份描述（中年男子、青衫老者等）只在场景内单向指代，不作为全局别名。 按用户判定补入真实配角；背景人物记入 excludedCharacters（保留证据、不参与匹配）。",
+    "excludedCharacters": [
+      {
+        "name": "金链子男子",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 1,
+          "mentions": 4
+        }
+      },
+      {
+        "name": "瓜子脸女孩",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 1,
+          "mentions": 4
+        }
+      },
+      {
+        "name": "胖子",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 3,
+          "mentions": 16
+        }
+      },
+      {
+        "name": "平头男子",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 2,
+          "mentions": 4
+        }
+      },
+      {
+        "name": "洗车场同事",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 0,
+          "mentions": 0
+        }
+      },
+      {
+        "name": "现代车男",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 0,
+          "mentions": 0
+        }
+      },
+      {
+        "name": "情侣男",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 0,
+          "mentions": 0
+        }
+      },
+      {
+        "name": "酒吧服务员",
+        "reason": "用户抽检判定为背景人物",
+        "evidence": {
+          "chapters": 0,
+          "mentions": 0
+        }
+      },
+      {
+        "name": "情侣女",
+        "reason": "公园背景人物，原文无专名",
+        "evidence": {
+          "chapters": 0,
+          "mentions": 0
+        }
+      }
+    ],
+    "reviewedBy": "用户抽检（2026-10-21）",
+    "reviewedAt": "2026-10-21T05:04:30.733Z",
+    "split": "train",
+    "frozenAt": "2026-10-21T05:05:24.392Z",
+    "frozenFrom": "scripts\\eval\\samples\\xiuzhen-short\\annotation.reviewed.json"
+  },
+  "characters": [
+    {
+      "name": "白冷叶",
+      "aliases": [
+        "冷叶",
+        "小白"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "白爱玲",
+      "aliases": [
+        "冷叶妈",
+        "妈"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "张秀",
+      "aliases": [
+        "秀"
+      ],
+      "isMajor": true
+    },
+    {
+      "name": "王麻子",
+      "aliases": [],
+      "isMajor": true
+    },
+    {
+      "name": "大龙",
+      "aliases": [],
+      "isMajor": false
+    },
+    {
+      "name": "刘哥",
+      "aliases": [],
+      "isMajor": false
+    },
+    {
+      "name": "财务经理",
+      "aliases": [],
+      "isMajor": false
+    },
+    {
+      "name": "老头",
+      "aliases": [],
+      "isMajor": false
+    },
+    {
+      "name": "豆豆",
+      "aliases": [],
+      "isMajor": false
+    },
+    {
+      "name": "长孙无香",
+      "aliases": [
+        "豆豆妈",
+        "长孙无香",
+        "无香"
+      ],
+      "isMajor": true,
+      "description": "豆豆的母亲，穿着简单但气质不俗，身份不凡，能直接联系市长，对白冷叶伸出援手。"
+    },
+    {
+      "name": "方晓语",
+      "aliases": [],
+      "isMajor": true,
+      "description": "白冷叶的恋人，方家女儿；其父反对两人交往，后被迫与白冷叶分离。",
+      "personalityTags": []
+    },
+    {
+      "name": "方晓语父亲",
+      "aliases": [],
+      "isMajor": false,
+      "description": "方晓语之父，看重钱权，反对女儿与白冷叶交往。",
+      "personalityTags": []
+    },
+    {
+      "name": "后爸",
+      "aliases": [
+        "后爸",
+        "废物父亲",
+        "王八蛋",
+        "白冷叶的父亲"
+      ],
+      "isMajor": true,
+      "description": "白冷叶的继父，嗜赌成性，酗酒，拖累家庭，最终离婚时索要十万。",
+      "personalityTags": [
+        "酗酒",
+        "赌博",
+        "不负责任",
+        "无赖",
+        "贪婪",
+        "废物"
+      ]
+    },
+    {
+      "name": "销售经理",
+      "aliases": [
+        "销售经理"
+      ],
+      "isMajor": false,
+      "description": "二手车行的销售经理，向白冷叶推销奥迪A4，暗示车是走私的，但包过户。",
+      "personalityTags": [
+        "精明",
+        "圆滑"
+      ]
+    },
+    {
+      "name": "韩夫人",
+      "aliases": [
+        "韩夫人"
+      ],
+      "isMajor": true,
+      "description": "沐家的夫人，接待白冷叶时态度轻蔑，以金钱羞辱白冷叶，试图用十万打发他。",
+      "personalityTags": [
+        "势利",
+        "冷漠",
+        "高傲"
+      ]
+    },
+    {
+      "name": "郭强",
+      "aliases": [
+        "郭强",
+        "教导主任"
+      ],
+      "isMajor": false,
+      "description": "十二中教导主任，四十多岁，身材健壮，带白冷叶去教室。",
+      "personalityTags": [
+        "健壮",
+        "严肃"
+      ]
+    },
+    {
+      "name": "李方法",
+      "aliases": [
+        "李方法"
+      ],
+      "isMajor": true,
+      "description": "戴眼镜的男生，起初嘲笑胖妹，被白冷叶教训后成为其小弟，崇拜白冷叶。",
+      "personalityTags": [
+        "欺软怕硬",
+        "冲动",
+        "忠诚",
+        "搞笑",
+        "仗义",
+        "激动",
+        "仰慕"
+      ]
+    },
+    {
+      "name": "高旺",
+      "aliases": [
+        "高旺",
+        "高老大",
+        "旺哥"
+      ],
+      "isMajor": true,
+      "description": "十二中的老大，身高一米八，平头剑眉，手下众多，在厕所围殴白冷叶，后被教训不再找麻烦。",
+      "personalityTags": [
+        "嚣张",
+        "狠辣",
+        "自负",
+        "霸道",
+        "识时务"
+      ]
+    },
+    {
+      "name": "嫣然",
+      "aliases": [
+        "嫣然"
+      ],
+      "isMajor": true,
+      "description": "京城来的女孩，似乎被爷爷安排与白冷叶相亲，但对白冷叶印象一般。",
+      "personalityTags": [
+        "冰冷",
+        "高傲",
+        "失望"
+      ]
+    },
+    {
+      "name": "李宇",
+      "aliases": [
+        "李宇"
+      ],
+      "isMajor": false,
+      "description": "酒吧老板，因出国急转酒吧，与白冷叶完成交易。",
+      "personalityTags": [
+        "急于出手",
+        "和善"
+      ]
+    },
+    {
+      "name": "副局长",
+      "aliases": [
+        "副局长"
+      ],
+      "isMajor": false,
+      "description": "当地公安局副局长，被白冷叶用金钱美女打点，保证酒吧安全。",
+      "personalityTags": [
+        "好色",
+        "贪婪"
+      ]
+    },
+    {
+      "name": "大队长",
+      "aliases": [
+        "大队长"
+      ],
+      "isMajor": false,
+      "description": "白道方面的大队长，酒吧开业时来捧场。",
+      "personalityTags": []
+    },
+    {
+      "name": "喝醉男",
+      "aliases": [
+        "喝醉男"
+      ],
+      "isMajor": false,
+      "description": "在酒吧外骚扰胖妹的醉汉，被白冷叶一脚踢倒。",
+      "personalityTags": [
+        "醉酒闹事"
+      ]
+    },
+    {
+      "name": "汤浩晨",
+      "aliases": [
+        "汤浩晨"
+      ],
+      "isMajor": false,
+      "description": "大一新生，身材健壮，长相帅气，对方晓语有好感，公然挑衅白冷叶并约架。",
+      "personalityTags": [
+        "傲慢",
+        "好斗",
+        "厚脸皮"
+      ]
+    },
+    {
+      "name": "瘦猴",
+      "aliases": [
+        "瘦猴"
+      ],
+      "isMajor": false,
+      "description": "白冷叶雇来看酒吧场子的人，对白冷叶毕恭毕敬。",
+      "personalityTags": [
+        "精明",
+        "巴结",
+        "能干"
+      ]
+    },
+    {
+      "name": "保镖",
+      "aliases": [
+        "保镖"
+      ],
+      "isMajor": false,
+      "description": "长孙无香的保镖，听从其命令打电话给市长。",
+      "personalityTags": [
+        "服从",
+        "专业"
+      ]
+    },
+    {
+      "name": "胖妹",
+      "aliases": [],
+      "isMajor": false,
+      "description": "十二中同班同学，因被嘲笑与白冷叶结识，后成为朋友。",
+      "personalityTags": []
+    }
+  ],
+  "scenes": [
+    {
+      "chapterIndex": 0,
+      "startParagraph": 0,
+      "endParagraph": 6,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 7,
+      "endParagraph": 16,
+      "keyCharacterNames": [
+        "白冷叶",
+        "老头"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 17,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "白冷叶",
+        "老头"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 20,
+      "endParagraph": 23,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 24,
+      "endParagraph": 44,
+      "keyCharacterNames": [
+        "白冷叶",
+        "财务经理"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 45,
+      "endParagraph": 49,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 50,
+      "endParagraph": 77,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 78,
+      "endParagraph": 86,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 87,
+      "endParagraph": 90,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 0,
+      "startParagraph": 91,
+      "endParagraph": 99,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 0,
+      "endParagraph": 21,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 22,
+      "endParagraph": 26,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 27,
+      "endParagraph": 40,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 41,
+      "endParagraph": 49,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 50,
+      "endParagraph": 84,
+      "keyCharacterNames": [
+        "白冷叶",
+        "大龙"
+      ]
+    },
+    {
+      "chapterIndex": 1,
+      "startParagraph": 85,
+      "endParagraph": 99,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 0,
+      "endParagraph": 18,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 19,
+      "endParagraph": 26,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 27,
+      "endParagraph": 39,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 40,
+      "endParagraph": 44,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 45,
+      "endParagraph": 51,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 2,
+      "startParagraph": 52,
+      "endParagraph": 82,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀",
+        "刘哥"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 0,
+      "endParagraph": 8,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 9,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 20,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 28,
+      "endParagraph": 34,
+      "keyCharacterNames": [
+        "白冷叶",
+        "销售经理"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 35,
+      "endParagraph": 41,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 42,
+      "endParagraph": 45,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 3,
+      "startParagraph": 46,
+      "endParagraph": 55,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 0,
+      "endParagraph": 5,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 6,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 20,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 28,
+      "endParagraph": 47,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 48,
+      "endParagraph": 71,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲",
+        "王麻子"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 72,
+      "endParagraph": 78,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 79,
+      "endParagraph": 89,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 4,
+      "startParagraph": 90,
+      "endParagraph": 99,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 0,
+      "endParagraph": 7,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 8,
+      "endParagraph": 8,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 9,
+      "endParagraph": 9,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 10,
+      "endParagraph": 25,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲",
+        "张秀",
+        "刘哥"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 26,
+      "endParagraph": 26,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 27,
+      "endParagraph": 31,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 32,
+      "endParagraph": 44,
+      "keyCharacterNames": [
+        "白冷叶",
+        "豆豆",
+        "长孙无香"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 45,
+      "endParagraph": 49,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 50,
+      "endParagraph": 52,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 5,
+      "startParagraph": 53,
+      "endParagraph": 76,
+      "keyCharacterNames": [
+        "白冷叶",
+        "韩夫人"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 0,
+      "endParagraph": 8,
+      "keyCharacterNames": [
+        "白冷叶",
+        "韩夫人"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 9,
+      "endParagraph": 12,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 13,
+      "endParagraph": 24,
+      "keyCharacterNames": [
+        "白冷叶",
+        "长孙无香",
+        "豆豆"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 25,
+      "endParagraph": 34,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 35,
+      "endParagraph": 43,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 44,
+      "endParagraph": 52,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 53,
+      "endParagraph": 60,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 61,
+      "endParagraph": 65,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 6,
+      "startParagraph": 66,
+      "endParagraph": 71,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 0,
+      "endParagraph": 3,
+      "keyCharacterNames": []
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 4,
+      "endParagraph": 11,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 12,
+      "endParagraph": 17,
+      "keyCharacterNames": [
+        "白冷叶",
+        "郭强"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 18,
+      "endParagraph": 36,
+      "keyCharacterNames": [
+        "白冷叶",
+        "胖妹",
+        "李方法"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 37,
+      "endParagraph": 55,
+      "keyCharacterNames": [
+        "白冷叶",
+        "李方法",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 56,
+      "endParagraph": 70,
+      "keyCharacterNames": [
+        "白冷叶",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 71,
+      "endParagraph": 85,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲",
+        "张秀",
+        "刘哥"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 86,
+      "endParagraph": 91,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 92,
+      "endParagraph": 95,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 7,
+      "startParagraph": 96,
+      "endParagraph": 128,
+      "keyCharacterNames": [
+        "白冷叶",
+        "李方法",
+        "高旺"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 0,
+      "endParagraph": 17,
+      "keyCharacterNames": [
+        "白冷叶",
+        "李方法",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 18,
+      "endParagraph": 23,
+      "keyCharacterNames": [
+        "白冷叶",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 24,
+      "endParagraph": 26,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 27,
+      "endParagraph": 40,
+      "keyCharacterNames": [
+        "白冷叶",
+        "李方法",
+        "胖妹"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 41,
+      "endParagraph": 53,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 8,
+      "startParagraph": 54,
+      "endParagraph": 63,
+      "keyCharacterNames": [
+        "白冷叶",
+        "嫣然"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 0,
+      "endParagraph": 4,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 5,
+      "endParagraph": 12,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 13,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "白冷叶",
+        "刘哥",
+        "李宇"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 20,
+      "endParagraph": 22,
+      "keyCharacterNames": [
+        "白冷叶",
+        "副局长"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 23,
+      "endParagraph": 27,
+      "keyCharacterNames": [
+        "白冷叶",
+        "大队长"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 28,
+      "endParagraph": 33,
+      "keyCharacterNames": [
+        "白冷叶",
+        "喝醉男"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 34,
+      "endParagraph": 50,
+      "keyCharacterNames": [
+        "白冷叶",
+        "喝醉男"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 51,
+      "endParagraph": 57,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 58,
+      "endParagraph": 63,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 9,
+      "startParagraph": 64,
+      "endParagraph": 84,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 0,
+      "endParagraph": 17,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 18,
+      "endParagraph": 22,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 23,
+      "endParagraph": 36,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 37,
+      "endParagraph": 44,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 45,
+      "endParagraph": 71,
+      "keyCharacterNames": [
+        "白冷叶",
+        "张秀"
+      ]
+    },
+    {
+      "chapterIndex": 10,
+      "startParagraph": 72,
+      "endParagraph": 80,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 0,
+      "endParagraph": 4,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 5,
+      "endParagraph": 10,
+      "keyCharacterNames": [
+        "白冷叶",
+        "李方法"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 11,
+      "endParagraph": 17,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 18,
+      "endParagraph": 40,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲",
+        "后爸"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 41,
+      "endParagraph": 48,
+      "keyCharacterNames": [
+        "白冷叶",
+        "后爸"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 49,
+      "endParagraph": 56,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 11,
+      "startParagraph": 57,
+      "endParagraph": 73,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 0,
+      "endParagraph": 5,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 6,
+      "endParagraph": 7,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 8,
+      "endParagraph": 8,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 9,
+      "endParagraph": 26,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语",
+        "汤浩晨"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 27,
+      "endParagraph": 45,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 12,
+      "startParagraph": 46,
+      "endParagraph": 77,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语",
+        "方晓语父亲"
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 0,
+      "endParagraph": 19,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语",
+        "方晓语父亲"
+      ],
+      "characterRefs": [
+        {
+          "name": "方晓语父亲",
+          "referredAs": [
+            "中年男子"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 20,
+      "endParagraph": 38,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 39,
+      "endParagraph": 47,
+      "keyCharacterNames": [
+        "白冷叶"
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 48,
+      "endParagraph": 49,
+      "keyCharacterNames": [
+        "白冷叶",
+        "白爱玲"
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 50,
+      "endParagraph": 67,
+      "keyCharacterNames": [
+        "白冷叶",
+        "瘦猴"
+      ]
+    },
+    {
+      "chapterIndex": 13,
+      "startParagraph": 68,
+      "endParagraph": 82,
+      "keyCharacterNames": [
+        "白冷叶",
+        "豆豆",
+        "长孙无香",
+        "副局长"
+      ]
+    },
+    {
+      "chapterIndex": 14,
+      "startParagraph": 0,
+      "endParagraph": 31,
+      "keyCharacterNames": [
+        "白冷叶",
+        "豆豆",
+        "长孙无香",
+        "保镖"
+      ]
+    },
+    {
+      "chapterIndex": 14,
+      "startParagraph": 32,
+      "endParagraph": 47,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 14,
+      "startParagraph": 48,
+      "endParagraph": 62,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语"
+      ]
+    },
+    {
+      "chapterIndex": 14,
+      "startParagraph": 63,
+      "endParagraph": 67,
+      "keyCharacterNames": [
+        "白冷叶",
+        "方晓语",
+        "长孙无香",
+        "豆豆",
+        "方晓语父亲"
+      ]
+    }
+  ],
+  "keyDialogues": []
+}

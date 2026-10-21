@@ -153,6 +153,24 @@ export function validateGold(gold) {
     }
   });
 
+  // 墓碑记录：被判定为「背景人物」而移出角色卡的名字。
+  // 为什么要留：删了即遗忘会导致下次抽检反复横跳；留档可回答「当初为什么判它是背景」。
+  // 它不参与匹配，只做审计。
+  if (gold.meta?.excludedCharacters !== undefined) {
+    if (!Array.isArray(gold.meta.excludedCharacters)) {
+      errors.push('meta.excludedCharacters 必须是数组');
+    } else {
+      gold.meta.excludedCharacters.forEach((e, i) => {
+        const n = normalizeName(e?.name);
+        if (!n) {
+          errors.push(`meta.excludedCharacters[${i}] 缺少 name`);
+        } else if (seenCanonical.has(n)) {
+          warnings.push(`「${e.name}」同时出现在角色卡与 excludedCharacters 中（应二选一）`);
+        }
+      });
+    }
+  }
+
   if ((gold.scenes ?? []).length === 0) warnings.push('scenes 为空：Phase 2 指标将无意义');
   if (gold.meta?.reviewed === false) warnings.push('标注尚未抽检（reviewed=false），不计入正式分数');
 

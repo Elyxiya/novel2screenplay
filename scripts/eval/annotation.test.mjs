@@ -149,6 +149,22 @@ check('characterRefs：referredAs 类型错误 → error', () => {
   assert.equal(r.ok, false);
 });
 
+check('excludedCharacters：墓碑记录合法（不参与匹配）', () => {
+  const gold = baseGold();
+  gold.meta.excludedCharacters = [{ name: '酒吧服务员', reason: '背景人物', evidence: { chapters: 0, mentions: 0 } }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, true, r.errors.join('; '));
+  assert.equal(r.warnings.some((w) => w.includes('excludedCharacters')), false);
+});
+
+check('excludedCharacters：与角色卡重名 → warning', () => {
+  const gold = baseGold();
+  gold.meta.excludedCharacters = [{ name: '方晓语', reason: '背景人物' }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, true);
+  assert.ok(r.warnings.some((w) => w.includes('excludedCharacters')), r.warnings.join('; '));
+});
+
 // ── 确定性切分 ──────────────────────────────────────────────────────────
 check('hashString 稳定且非负', () => {
   assert.equal(hashString('abc'), hashString('abc'));

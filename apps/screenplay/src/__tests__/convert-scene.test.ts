@@ -91,4 +91,17 @@ describe('P0-3: convert-scene Prompt 精简验证', () => {
   it('FIX-10（ADR-0002，B 案）：不承诺契约无法承载的 VO 通道', () => {
     expect(SYSTEM_PROMPT).not.toContain('VO');
   });
+
+  it('规则 7 保留「背景/关系不得写成动作」的硬约束（防提示词回退）', () => {
+    // 这条约束曾被写成独立的第 9 条，导致 token 超预算；合并进规则 7 后必须锁住关键词，
+    // 否则后续调提示词时很容易整段删掉而测试仍然全绿。
+    const rule7 = SYSTEM_PROMPT
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.startsWith('7.'));
+    expect(rule7, '规则 7 缺失').toBeTruthy();
+    for (const kw of ['身世', '不得写成', '对白', '旁白']) {
+      expect(rule7, `规则 7 缺少关键约束: ${kw}`).toContain(kw);
+    }
+  });
 });

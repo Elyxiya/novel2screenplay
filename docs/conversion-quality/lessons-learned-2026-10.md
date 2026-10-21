@@ -366,7 +366,7 @@
 |---|---|---|
 | Phase1 按长度自动分流 | **能力已就绪**（`PHASE1_MODE=auto`），默认仍 truncate | `decideAutoMode()`：超过 30000 token 才走 mapreduce；2026-10-21 在 doupo 上验证「38515 tokens → mapreduce」。默认未翻，遵守 flip 纪律（R1/R2/R3 仍未满足） |
 | 实体归一（紫色倩影/服务员等） | **实测后降级**：10 次运行里未登记标签共 23 种，其中描述词只有 4 处（妇女/中年男子/县委书记/晓语父亲变体），其余全是「卡里没有这个角色」 | 说明它不是独立问题，而是截断/别名覆盖的子问题；优先解决卡不全（auto 分流）与别名覆盖，而不是再做一层归一 |
-| 别名覆盖（萧熏儿/熏儿、摩根、裂须海盗头子等） | 未做 | 同一角色多种写法在场景标签里出现但卡里没登记别名；可在 Phase1 归一或 Phase2 接地时按「本章唯一近名」合并（风险同描述合并，需谨慎） |
+| 别名覆盖 | **部分已做**（2026-10-21）：`alias-normalize.ts` 覆盖「简称↔全称前缀」与「同长同首字仅一字差」，且**只在候选唯一时合并** | 称号型（裂须海盗头子→艾瑞克）仍需别名表或人工，不做自动推断 |
 | 单段落场景 | **5 处**（xiuzhen 4：ch6:8-8 / 9-9 / 26-26、ch13:8-8；doupo 1：ch4:0-0） | 属切分阈值问题，不是标注问题 |
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
@@ -399,6 +399,7 @@
 | `apps/screenplay/src/__tests__/convert-scene.test.ts` | Phase3 prompt 预算 + 规则 7 硬约束 |
 | `apps/screenplay/src/__tests__/segment-prompt.test.ts` | Phase2 prompt 口径（候选池/段落） |
 | `apps/screenplay/src/lib/pipeline/phase2-fallback.ts` | 兜底切分（非空行口径 + token 分组） |
+| `apps/screenplay/src/lib/pipeline/alias-normalize.ts` | 别名归一（简称/异体字，唯一候选才合并） |
 
 ### 可调参数（活参数表）
 

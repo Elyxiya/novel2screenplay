@@ -14,6 +14,7 @@ import {
   type SanitizePlan,
 } from './character-sanitizer';
 import { groundSceneCharacters } from './scene-character-grounding';
+import { normalizeSceneAliases } from './alias-normalize';
 import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
@@ -753,6 +754,16 @@ export class PipelineEngine {
       if (cleaned.changed > 0) {
         phase2Output = { ...phase2Output, scenes: cleaned.scenes };
         console.log(`[${jobId}] Phase 2 角色引用清理: 改写 ${cleaned.changed} 个场景（同段同指 ${sanitizeReplaced} 处）`);
+      }
+    }
+
+    // 别名归一：把「摩根」这类简称/异体字并回卡内规范名（只在候选唯一时合并）。
+    {
+      const aliasNormalized = normalizeSceneAliases(phase2Output.scenes, phase1Output.characters);
+      if (aliasNormalized.changed > 0) {
+        phase2Output = { ...phase2Output, scenes: aliasNormalized.scenes };
+        const detail = aliasNormalized.merged.map((m) => `${m.from}→${m.to}×${m.count}`).join('、');
+        console.log(`[${jobId}] Phase 2 别名归一: 改写 ${aliasNormalized.changed} 个场景（${detail}）`);
       }
     }
 

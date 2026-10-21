@@ -1,9 +1,0 @@
-{
-  "note": "当前代码（segment prompt v2 + character-sanitizer）下的 truncate 参考运行，每样本 1 次，只看方向、不当基线。更新后重跑 scripts/eval/snapshot.mjs。",
-  "generatedAt": "2026-10-21",
-  "samples": {
-    "doupo-short": "job_1792576832041_efml8p",
-    "zhanlan-short": "job_1792576922752_7sqg60",
-    "xiuzhen-short": "job_1792577003250_keb06h"
-  }
-}

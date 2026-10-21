@@ -21,10 +21,15 @@ const DB = 'apps/screenplay/data-test/1b-data.db';
 const OUT_DIR = 'pr-evidence/baseline';
 const db = new Database(DB, { readonly: true });
 
+/**
+ * 三样本 × 3 次运行。**2026-10-21 刷新**：全部换成当前代码
+ * （segment prompt v2 + character-sanitizer + phase2-fallback + 温度默认 0.3）的运行，
+ * 旧的一组早于 prompt v2，只能作历史对照。
+ */
 const RUNS = {
-  'doupo-short': ['job_1792418104222_qf2qr0', 'job_1792474421049_lf95um', 'job_1792474526728_a3r3sy'],
-  'zhanlan-short': ['job_1792421566811_8we0fn', 'job_1792474612173_uf9kha', 'job_1792474702600_ix47nx'],
-  'xiuzhen-short': ['job_1792421684668_hzmwlo', 'job_1792474788071_dsfm2j', 'job_1792474994320_x30vag'],
+  'doupo-short': ['job_1792585051955_3jpfbs', 'job_1792585127655_b0u5rq', 'job_1792585208200_bw850q'],
+  'zhanlan-short': ['job_1792585288804_pcgo5s', 'job_1792585364362_n8q0m0', 'job_1792585439883_mdmui0'],
+  'xiuzhen-short': ['job_1792585530497_hfeu3p', 'job_1792585716395_ts1lii', 'job_1792585912288_5qifa3'],
 };
 
 function load(jobId) {

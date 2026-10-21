@@ -12,13 +12,6 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Database from 'better-sqlite3';
-import {
-  extractPrediction,
-  scorePhase1,
-  scorePhase2,
-  scoreTraceability,
-} from './annotation.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const SAMPLES = ['doupo-short', 'zhanlan-short', 'xiuzhen-short'];
@@ -62,38 +55,6 @@ for (let i = tableStart; i >= 0 && i < baselineLines.length; i++) {
   baselineRows.push(baselineLines[i]);
 }
 
-// ②′ 当前代码参考：读 current-ref.json 里登记的 jobId，现场打分
-let currentRefRows = [];
-const refFile = path.join(ROOT, 'scripts/eval/current-ref.json');
-if (fs.existsSync(refFile)) {
-  const ref = JSON.parse(fs.readFileSync(refFile, 'utf8'));
-  const db = new Database(path.join(ROOT, 'apps/screenplay/data-test/1b-data.db'), { readonly: true });
-  for (const [id, jobId] of Object.entries(ref.samples ?? {})) {
-    const goldPath = path.join(ROOT, 'scripts/eval/samples', id, 'gold.json');
-    const row = db.prepare('SELECT chapter_texts, pipeline_state FROM jobs WHERE id=?').get(jobId);
-    if (!row || !fs.existsSync(goldPath)) {
-      // 缺 job 或缺 gold 时不能默默写个「—」：这说明 current-ref.json 已经指向不存在的运行，
-      // 快照看起来完整、其实那行是空的。
-      const why = !row ? 'job 不存在' : 'gold.json 不存在';
-      console.warn(`[snapshot] 当前代码参考 ${id}: ${why}（${jobId}），该行已标记为缺失`);
-      currentRefRows.push(`| ${id} | — | — | — | — | \`${jobId}\`（${why}） |`);
-      continue;
-    }
-    const gold = JSON.parse(fs.readFileSync(goldPath, 'utf8'));
-    const chapters = JSON.parse(row.chapter_texts);
-    const st = JSON.parse(row.pipeline_state);
-    const pred = extractPrediction(st);
-    const p1 = scorePhase1(gold.characters, pred.characters);
-    const p2 = scorePhase2(gold.scenes, pred.scenes);
-    const tr = scoreTraceability(pred.phase3Scenes, chapters);
-    currentRefRows.push(
-      `| ${id} | ${st.phase4Output?.scenes?.length ?? '—'} | ${st.phase1Output.characters.length} | ` +
-        `${(tr.hitRate * 100).toFixed(1)}% | ${p1.f1} / ${p2.f1} | \`${jobId}\` |`,
-    );
-  }
-  db.close();
-}
-
 // ③ Phase1 A/B
 const abOut = runNode('phase1-ab.mjs');
 const abRows = abOut.split('\n').filter((l) => l.startsWith('|') || l.startsWith('- xiuzhen'));
@@ -112,22 +73,13 @@ const md = `# 状态快照（${date}）
 |---|---|---|---|---|---|
 ${health.join('\n')}
 
-## ② 基线（默认 truncate，每样本 3 次；运行早于 segment prompt v2）
+## ② 基线（默认 truncate，每样本 3 次；**当前代码**）
 
 ${baselineRows.join('\n')}
 
 > 口径：跨运行 = 剔除自证运行后的一致性（稳不稳）；准确率 = 对 reviewed 金标注（对不对）。
-> 这批运行早于 prompt v2，只用于稳定性；当前代码的准确率参考见下一节。
-
-## ②′ 当前代码参考（n=1，只看方向，不当基线）
-
-| 样本 | 场景 | 角色 | 溯源 | 准确率 P1 / P2 | jobId |
-|---|---|---|---|---|---|
-${currentRefRows.join('\n')}
-
-> 配置：\`scripts/eval/current-ref.json\`（换运行后改这里再重跑 snapshot）。
-> 单次运行不足以判「v2 是否提升 P2」，差异落在跨运行噪声内。
-> 溯源基准：job 落库的 \`chapter_texts\`（管线实际输入）；\`score.mjs\` 已统一为同一来源。
+> 这批运行使用当前代码（segment prompt v2 + character-sanitizer + phase2-fallback + 温度 0.3）。
+> 溯源基准：job 落库的 \`chapter_texts\`（管线实际输入）。
 
 ## ③ Phase1 A/B（对 reviewed 金标注；读 Phase1 原始输出）
 

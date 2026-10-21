@@ -111,6 +111,7 @@
 | 31 | 成本守卫低估 token 2.2 倍 | 经验系数无出处 | `estimateInputTokens()` 实测 | 28.9k 字 → 实估 38.5k，旧式 17.4k |
 | 32 | 兜底切分仍按空行分块 | 同一口径两条路径 | 抽出 `phase2-fallback` 并统一为「非空行」 | 主路径非空行、fallback 空行 → 段号会错位 |
 | 33 | 切分温度 0.3 无依据、跨运行 F1 只有 0.6 | 参数无实测 | 温度改为 env 可配 + 消融 | temp=0 组内 F1 0.759 vs 0.3 的 0.596 |
+| 34 | 温度消融在第二个样本上未复现 | 单样本噪声 | 复现验证后再下结论 | xiuzhen +0.16，doupo 仅 +0.01 |
 
 ---
 
@@ -368,8 +369,8 @@
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
 | 版权样本 | `doupo-short` 仅本地 | `.git/info/exclude` 命中 `scripts/eval/samples/doupo-*/`，不入库 |
-| Phase2 温度消融 | **初步已做**（2026-10-21）：temp=0 组内互相 F1 0.759、0.3 为 0.596；准确性持平（0.664 vs 0.639，n=2） | 下一步扩到三样本 × 3 次；场景数波动反而 8 > 5，需用组内 F1 而非场景数判断稳定性 |
-| 基线刷新（3×3，当前代码） | 待做 | 现有 3 次基线运行早于 prompt v2；已补 n=1 参考（§七②′），但不足以判 v2 是否提升 P2 |
+| Phase2 温度消融 | **已做两次，结论未复现**：xiuzhen temp=0 组内 F1 0.759 vs 0.3 的 0.596（+0.16）；doupo 只有 0.641 vs 0.628（+0.01）；准确性均持平（2026-10-21 实测） | 不足以改默认温度；若再扩大，需三样本 × 3 次并按样本分层看 |
+| 基线刷新（3×3，当前代码） | **已完成**（2026-10-21） | 三样本 × 3 次全部换成当前代码；快照②相应更新，旧的「v2 前」表已下线 |
 
 ---
 
@@ -385,8 +386,7 @@
 | `scripts/eval/review-sheet.mjs` | 抽检单（自动体检） |
 | `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证） |
 | `scripts/eval/phase1-ab.mjs` | Phase1 模式 A/B |
-| `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/当前参考/A/B/文档一致性） |
-| `scripts/eval/current-ref.json` | 登记「当前代码参考」的 jobId（snapshot 据此现场打分） |
+| `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/A/B/文档一致性） |
 | `docs/conversion-quality/snapshots/` | 快照归档（脚本生成，勿手改） |
 | `scripts/eval/doc-check.mjs` | 文档一致性校对（路径/阈值/开关/互链） |
 | `docs/conversion-quality/gold-annotation-workflow.md` | 标注口径（在场/提及/指代/别名） |
@@ -404,7 +404,7 @@
 
 | 参数 | 值 | 位置 | 影响 | 证据状态 |
 |---|---|---|---|---|
-| Phase2 `temperature` | **0.3**（可用 `PHASE2_TEMPERATURE` 覆盖） | `Phase2Segmenter.ts` | 切分稳定性——直接对应跨运行 P2 F1 只有 0.56–0.70 | 🟡 **初步消融**：temp=0 组内互相 F1 **0.759** vs 0.3 的 **0.596**，准确性持平；n=2、单样本，待扩样本（见第五节） |
+| Phase2 `temperature` | **0.3**（可用 `PHASE2_TEMPERATURE` 覆盖） | `Phase2Segmenter.ts` | 切分稳定性——直接对应跨运行 P2 F1 | 🟡 **两次消融，结论未复现**：xiuzhen temp=0 组内 F1 0.759 vs 0.596；doupo 0.641 vs 0.628；准确性均持平 → 不足以改默认 |
 | `MIN_MERGE_CHARS` | 800 | `Phase2Segmenter.ts:219` | 相邻短场景是否合并 | 未实测 |
 | `MAX_SCENE_TOKENS` | 1500 | `ContextManager.ts:1` | 兜底切分粒度 | 口径有测试，值未调优 |
 | `MAX_SEGMENT_TOKENS` | 8000 | `ContextManager.ts:3` | 单章送模型上限 | 未实测 |
@@ -436,7 +436,7 @@
 ### 状态快照（2026-10-21）
 
 **完整快照由脚本生成，不再手抄**：[snapshots/snapshot-2026-10-21.md](snapshots/snapshot-2026-10-21.md)
-（含体检、基线、当前代码参考、A/B 全额表格与生成时的提交号）。
+（含体检、当前代码基线、A/B 全额表格与生成时的提交号）。
 
 ```bash
 node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snapshot-<date>.md
@@ -445,10 +445,11 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 **要点（2026-10-21 实测）**：
 
 - 体检：三样本孤儿 0、未登记 0；单段落场景 doupo 1 / xiuzhen 4（2026-10-21 实测）
-- 基线（v2 前 3 次）：溯源 96.9% / 91.1% / 94.0%，跨运行 P2 F1 0.636 / 0.703 / 0.557（2026-10-21 实测）
-- 当前代码参考（n=1）：P1 1.000 / 0.737 / 0.615，P2 0.708 / 0.712 / 0.573（2026-10-21 实测）
+- 基线（当前代码 3 次）：场景 26 / 33 / 106，溯源 95.9% / 89.7% / 94.2%，
+  跨运行 P2 F1 0.719 / 0.713 / 0.590，准确率 P1 0.901 / 0.737 / 0.538（2026-10-21 实测）
 - Phase1 A/B：truncate 0.987 / 0.737 / 0.531 vs mapreduce 0.897 / 0.923 / 0.839（2026-10-21 实测）
-- 文档一致性：11/11 通过（2026-10-21 实测）
+- 温度消融：temp=0 组内 F1 0.759（xiuzhen）/ 0.641（doupo），对照 0.596 / 0.628（2026-10-21 实测，未复现）
+- 文档一致性：12/12 通过（2026-10-21 实测）
 
 > 快照的用途：回答「现在到底什么水平」。数据来自本地 `data-test/1b-data.db`（jobId 见快照文件），
 > `doupo-short` 原文因版权不入库；换机器复跑需要对应的 job 记录。

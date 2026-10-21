@@ -103,7 +103,7 @@
 | 25 | 标识符用子串匹配 | 误判存在 | 改边界匹配 `hasToken` | `tinyScenesRenamed` 仍被判存在 |
 | 26 | 变异测试回滚冲掉未提交改动 | 操作顺序 | 先提交再变异，或只改副本 | 日期的修改被 `git checkout` 一并还原，重做一次 |
 | 27 | 检查器 9/10 仍提交 | 流程 | 提交前必须看 PASS 计数 | 黑名单误伤维护日志里的改名记录 |
-| 28 | A/B 表混入旧 prompt 的运行 | 基线未随代码刷新 | 刷新 jobId + 补跑 zhanlan | doupo mapreduce 0.765→0.897 |
+| 28 | A/B 表混入旧 prompt 的运行 | 基线未随代码刷新 | 刷新 jobId + 补跑 zhanlan | doupo mapreduce 0.765→0.897；同一轮又发现 baseline 的 truncate 运行也早于 v2 |
 
 ---
 
@@ -350,6 +350,7 @@
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
 | 版权样本 | `doupo-short` 仅本地 | `.git/info/exclude` 命中 `scripts/eval/samples/doupo-*/`，不入库 |
+| 基线刷新（3×3，当前代码） | 待做 | 现有 3 次基线运行早于 prompt v2；已补 n=1 参考（§七②′），但不足以判 v2 是否提升 P2 |
 
 ---
 
@@ -398,7 +399,7 @@
 node scripts/eval/review-sheet.mjs --sample <id> --draft scripts/eval/samples/<id>/gold.json
 node scripts/eval/baseline.mjs      # 准确率 + 跨运行稳定性（mean±σ，剔除自证）
 node scripts/eval/phase1-ab.mjs     # truncate vs mapreduce
-node scripts/eval/doc-check.mjs     # 文档一致性 8 类
+node scripts/eval/doc-check.mjs     # 文档一致性 11 类
 ```
 
 **① 抽检单体检**（0 表示干净）：
@@ -409,13 +410,24 @@ node scripts/eval/doc-check.mjs     # 文档一致性 8 类
 | zhanlan-short | 0 | 0 | 0 | 2 | 0 |
 | xiuzhen-short | 0 | 4 | 0 | 9 | 0 |
 
-**② 基线**（默认 truncate，每样本 3 次）：
+**② 基线**（默认 truncate，每样本 3 次；**运行早于 segment prompt v2**，用于稳定性，不代表当前代码）：
 
 | 样本 | 场景数 | 角色数 | 溯源 | judge | 跨运行 P2 F1 | 准确率 P1 / P2 |
 |---|---|---|---|---|---|---|
 | doupo-short | 27.3 ± 4.0 | 12.7 ± 0.6 | 96.9% ± 1.3% | 80.3 ± 4.0 | 0.636 ± 0.006 | 0.980 / 0.636 |
 | zhanlan-short | 36.7 ± 1.2 | 7 ± 0 | 91.1% ± 4.1% | 76 ± 9.2 | 0.703 ± 0.077 | 0.737 / 0.703 |
 | xiuzhen-short | 109.3 ± 8.6 | 10.7 ± 0.6 | 94.0% ± 1.8% | 68 ± 13 | 0.557 ± 0.031 | 0.526 / 0.557 |
+
+**②′ 当前代码参考**（2026-10-21 补跑，n=1；只看方向，不当基线）：
+
+| 样本 | 场景数 | 角色数 | 溯源 | 准确率 P1 / P2 | jobId |
+|---|---|---|---|---|---|
+| doupo-short | 23 | 13 | 99.4% | 1.000 / 0.708 | `job_1792576832041_efml8p` |
+| zhanlan-short | 35 | 7 | 90.5% | 0.737 / 0.712 | `job_1792576922752_7sqg60` |
+| xiuzhen-short | 109 | 12 | 95.1% | 0.615 / 0.573 | `job_1792577003250_keb06h` |
+
+> 与旧基线的差异（P2 F1 约 +0.01~0.07、溯源持平）落在单次运行噪声内，**不能据此说 v2 提升了 P2**；
+> 要下结论需要 3×3 重跑（见第五节待办）。
 
 **③ Phase1 A/B**：
 

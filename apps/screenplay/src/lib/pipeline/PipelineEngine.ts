@@ -8,6 +8,11 @@ import { Phase1Analyzer } from './Phase1Analyzer';
 import { Phase2Segmenter } from './Phase2Segmenter';
 import { Phase3SceneConverter } from './Phase3SceneConverter';
 import { Phase4Merger } from './Phase4Merger';
+import {
+  applySanitizePlanToScenes,
+  buildSanitizePlan,
+  type SanitizePlan,
+} from './character-sanitizer';
 import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
@@ -599,6 +604,10 @@ export class PipelineEngine {
     const t1 = Date.now();
     const existingPhase1 = jobStore.get(jobId)?.pipelineState.phase1Output;
     let phase1Output: Phase1Output;
+    // 角色卡净化计划（Phase1 产出、Phase2 使用）；复用导入卡时为 null（不动用户资产）
+    let sanitizePlan: SanitizePlan | null = null;
+    let sanitizeDropped = 0;
+    let sanitizeReplaced = 0;
 
     if (existingPhase1) {
       console.log(`[${jobId}] Phase 1: 复用已导入的设定卡（跳过 LLM 分析）`);
@@ -650,7 +659,21 @@ export class PipelineEngine {
         { signal, runLog: runCtx },
       );
 
-      console.log(`[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点`);
+      // 角色卡净化：把「月白衣袍老者」这类描述性指代从角色卡里分出去。
+      // 证据只取自章节原文（不取 Phase2/Phase3 输出，避免下游漏标连带误杀气真角色）。
+      sanitizePlan = buildSanitizePlan(phase1Output.characters, chapters.map((c) => c.text));
+      if (sanitizePlan.dropped.length > 0) {
+        phase1Output = { ...phase1Output, characters: sanitizePlan.kept };
+        const names = sanitizePlan.dropped.map((d) => d.name).join('、');
+        console.log(`[${jobId}] Phase 1 净化: 移除 ${sanitizePlan.dropped.length} 个描述性实体（${names}）`);
+        sanitizeDropped = sanitizePlan.dropped.length;
+        sanitizeReplaced = Object.keys(sanitizePlan.replaced).length;
+      }
+
+      console.log(
+        `[${jobId}] Phase 1 完成: ${phase1Output.characters.length} 角色, ${phase1Output.locations.length} 地点` +
+          (sanitizeDropped ? `（净化移除 ${sanitizeDropped} 个描述性实体）` : ''),
+      );
       recordTiming('analyze', t1);
       jobStore.update(jobId, (job) => {
         const updated = {
@@ -715,12 +738,22 @@ export class PipelineEngine {
     });
 
     const phase2 = new Phase2Segmenter(provider, this.ctxManager);
-    const phase2Output = await phase2.segment(
+    let phase2Output = await phase2.segment(
       chapters.map((c) => ({ index: c.index, title: c.title, text: c.text })),
       phase1Output,
       signal,
       runCtx,
     );
+
+    // 级联清理：把已被移除/被同段同指的描述性名字从场景角色引用里改掉，
+    // 否则会反弹成「未登记出场名」。只动计划点名的名字，不掩盖其它漏抽。
+    if (sanitizePlan) {
+      const cleaned = applySanitizePlanToScenes(phase2Output.scenes, sanitizePlan);
+      if (cleaned.changed > 0) {
+        phase2Output = { ...phase2Output, scenes: cleaned.scenes };
+        console.log(`[${jobId}] Phase 2 角色引用清理: 改写 ${cleaned.changed} 个场景（同段同指 ${sanitizeReplaced} 处）`);
+      }
+    }
 
     console.log(`[${jobId}] Phase 2 完成: ${phase2Output.scenes.length} 个场景`);
     recordTiming('segment', t2);

@@ -200,6 +200,32 @@ function hasToken(src, token) {
     : ok('文档的体检项在 review-sheet 中实现', `${RULES.length} 项`);
 }
 
+// ── 8. 「未解决事项」的状态声明必须与代码一致 ────────────────────────────
+//
+// 待办清单最容易腐烂：状态写着「未落地」，代码其实已经改了；或反过来，
+// 文档写「已落地」而代码还留着旧的默认值。这里至少守住最重要的一条——Phase1 默认模式。
+// 双向校验：文档说未落地 → 代码必须仍返回 truncate；文档说已落地 → 代码必须不再返回。
+{
+  const doc = read('docs/conversion-quality/lessons-learned-2026-10.md');
+  const code = read('apps/screenplay/src/lib/pipeline/phase1-budget.ts');
+  const row = doc.split('\n').find((line) => line.includes('按长度自动分流'));
+
+  if (!row) {
+    // 条目被删掉也算一种「状态变更」，但不阻断；提示即可
+    ok('「未解决事项」状态与代码一致', '未找到「按长度自动分流」条目，跳过');
+  } else {
+    const docSaysPending = row.includes('未落地');
+    const codeReturnsTruncate = /return\s+'truncate'/.test(code);
+    if (docSaysPending && !codeReturnsTruncate) {
+      fail('「未解决事项」状态与代码一致', '文档说「未落地」，但 resolveDefaultPhase1Mode 已不再返回 truncate，请更新文档');
+    } else if (!docSaysPending && codeReturnsTruncate) {
+      fail('「未解决事项」状态与代码一致', '文档说「已落地」，但代码仍返回 truncate，请核对');
+    } else {
+      ok('「未解决事项」状态与代码一致', docSaysPending ? 'Phase1 默认仍为 truncate' : 'Phase1 已分流');
+    }
+  }
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

@@ -56,7 +56,8 @@
    路径存在、阈值与代码常量一致、开关真实被读取、三份文档互链、文档承诺的规则在实现中存在、
    文档示例的 gold 字段都被校验器覆盖、文档的体检项在 `review-sheet` 中实现、
    「未解决事项」的状态与代码一致、关键数字都带时效标记、三份文档术语一致、维护日志可追溯；
-6. **重大改动后**（改了 Phase1 模式、评分口径、参考卡）刷新第七节的「状态快照」。
+6. **重大改动后**（改了 Phase1 模式、评分口径、参考卡）跑 `node scripts/eval/snapshot.mjs`
+   重新生成快照，并在第七节把链接指向新文件——**不要手抄数字**（手抄必然过期）。
 
 > 一致性红线：文档里写的阈值、默认值、开关名必须与代码一致
 > （如 `CHARACTER_SANITIZE`、`SCENE_CHARACTER_GROUNDING`、跨章≥2 / 提及≥3）。
@@ -366,6 +367,8 @@
 | `scripts/eval/review-sheet.mjs` | 抽检单（自动体检） |
 | `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证） |
 | `scripts/eval/phase1-ab.mjs` | Phase1 模式 A/B |
+| `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/A/B/文档一致性） |
+| `docs/conversion-quality/snapshots/` | 快照归档（脚本生成，勿手改） |
 | `scripts/eval/doc-check.mjs` | 文档一致性校对（路径/阈值/开关/互链） |
 | `docs/conversion-quality/gold-annotation-workflow.md` | 标注口径（在场/提及/指代/别名） |
 | `docs/conversion-quality/flip-decision-record.md` | 翻默认决策与实测记录 |
@@ -393,54 +396,25 @@
 - jobStore 更新（历史）：45.4ms → 8.95ms（2MB 小说）
 - 测试：应用 **721**（82 文件）/ 标注 **34** / 净化 13 / 接地 10，全绿（2026-10-21 实测）
 
-### 状态快照（2026-10-21，可复现）
+### 状态快照（2026-10-21）
+
+**完整快照由脚本生成，不再手抄**：[snapshots/snapshot-2026-10-21.md](snapshots/snapshot-2026-10-21.md)
+（含体检、基线、A/B 全额表格与生成时的提交号）。
 
 ```bash
-node scripts/eval/review-sheet.mjs --sample <id> --draft scripts/eval/samples/<id>/gold.json
-node scripts/eval/baseline.mjs      # 准确率 + 跨运行稳定性（mean±σ，剔除自证）
-node scripts/eval/phase1-ab.mjs     # truncate vs mapreduce
-node scripts/eval/doc-check.mjs     # 文档一致性 11 类
+node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snapshot-<date>.md
 ```
 
-**① 抽检单体检**（0 表示干净）：
+**要点（2026-10-21 实测）**：
 
-| 样本 | 未切出章节 | 单段落场景 | 孤儿角色 | 无别名 | 未登记出场名 |
-|---|---|---|---|---|---|
-| doupo-short | 0 | 1 | 0 | 3 | 0 |
-| zhanlan-short | 0 | 0 | 0 | 2 | 0 |
-| xiuzhen-short | 0 | 4 | 0 | 9 | 0 |
+- 体检：三样本孤儿 0、未登记 0；单段落场景 doupo 1 / xiuzhen 4（2026-10-21 实测）
+- 基线（v2 前 3 次）：溯源 96.9% / 91.1% / 94.0%，跨运行 P2 F1 0.636 / 0.703 / 0.557（2026-10-21 实测）
+- 当前代码参考（n=1）：P1 1.000 / 0.737 / 0.615，P2 0.708 / 0.712 / 0.573（2026-10-21 实测）
+- Phase1 A/B：truncate 0.987 / 0.737 / 0.531 vs mapreduce 0.897 / 0.923 / 0.839（2026-10-21 实测）
+- 文档一致性：11/11 通过（2026-10-21 实测）
 
-**② 基线**（默认 truncate，每样本 3 次；**运行早于 segment prompt v2**，用于稳定性，不代表当前代码）：
-
-| 样本 | 场景数 | 角色数 | 溯源 | judge | 跨运行 P2 F1 | 准确率 P1 / P2 |
-|---|---|---|---|---|---|---|
-| doupo-short | 27.3 ± 4.0 | 12.7 ± 0.6 | 96.9% ± 1.3% | 80.3 ± 4.0 | 0.636 ± 0.006 | 0.980 / 0.636 |
-| zhanlan-short | 36.7 ± 1.2 | 7 ± 0 | 91.1% ± 4.1% | 76 ± 9.2 | 0.703 ± 0.077 | 0.737 / 0.703 |
-| xiuzhen-short | 109.3 ± 8.6 | 10.7 ± 0.6 | 94.0% ± 1.8% | 68 ± 13 | 0.557 ± 0.031 | 0.526 / 0.557 |
-
-**②′ 当前代码参考**（2026-10-21 补跑，n=1；只看方向，不当基线）：
-
-| 样本 | 场景数 | 角色数 | 溯源 | 准确率 P1 / P2 | jobId |
-|---|---|---|---|---|---|
-| doupo-short | 23 | 13 | 99.4% | 1.000 / 0.708 | `job_1792576832041_efml8p` |
-| zhanlan-short | 35 | 7 | 90.5% | 0.737 / 0.712 | `job_1792576922752_7sqg60` |
-| xiuzhen-short | 109 | 12 | 95.1% | 0.615 / 0.573 | `job_1792577003250_keb06h` |
-
-> 与旧基线的差异（P2 F1 约 +0.01~0.07、溯源持平）落在单次运行噪声内，**不能据此说 v2 提升了 P2**；
-> 要下结论需要 3×3 重跑（见第五节待办）。
-
-**③ Phase1 A/B**：
-
-| 样本 | truncate F1 | mapreduce F1 | 说明 |
-|---|---|---|---|
-| doupo-short | **0.987** | 0.897 | 短篇、角色少 → 仍略低，差距已收窄到 0.09 |
-| zhanlan-short | 0.737 | **0.923** | 78% 被分析 |
-| xiuzhen-short | 0.531 | **0.839** | 41% 被分析，截断损伤最重 |
-
-**④ 文档一致性**：`11/11 通过`。
-
-> 快照的用途：回答「现在到底什么水平」。数据来自本地 `data-test/1b-data.db`（jobId 记录在
-> `pr-evidence/`），`doupo-short` 原文因版权不入库；换机器复跑需要对应的 job 记录。
+> 快照的用途：回答「现在到底什么水平」。数据来自本地 `data-test/1b-data.db`（jobId 见快照文件），
+> `doupo-short` 原文因版权不入库；换机器复跑需要对应的 job 记录。
 
 ---
 

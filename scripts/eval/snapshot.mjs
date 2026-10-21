@@ -72,7 +72,11 @@ if (fs.existsSync(refFile)) {
     const goldPath = path.join(ROOT, 'scripts/eval/samples', id, 'gold.json');
     const row = db.prepare('SELECT chapter_texts, pipeline_state FROM jobs WHERE id=?').get(jobId);
     if (!row || !fs.existsSync(goldPath)) {
-      currentRefRows.push(`| ${id} | — | — | — | — | \`${jobId}\` |`);
+      // 缺 job 或缺 gold 时不能默默写个「—」：这说明 current-ref.json 已经指向不存在的运行，
+      // 快照看起来完整、其实那行是空的。
+      const why = !row ? 'job 不存在' : 'gold.json 不存在';
+      console.warn(`[snapshot] 当前代码参考 ${id}: ${why}（${jobId}），该行已标记为缺失`);
+      currentRefRows.push(`| ${id} | — | — | — | — | \`${jobId}\`（${why}） |`);
       continue;
     }
     const gold = JSON.parse(fs.readFileSync(goldPath, 'utf8'));

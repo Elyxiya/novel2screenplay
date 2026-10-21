@@ -298,7 +298,7 @@
 9. **人工抽检不可省**。模型自评、judge 分数、离线复算都不能替代「人看一眼原文」。
 10. **不要静默回退**。读不到数据就告警或报错；`?? fallback` 会让同一指标出现两个数
     （溯源 95.1% vs 95.4% 就是这么来的），而且没人会发现。已给 `score.mjs` / `baseline.mjs` /
-    `review-sheet.mjs` 的回退路径加 `console.warn`。
+    `review-sheet.mjs` / `phase1-ab.mjs` / `snapshot.mjs` 的回退与缺失路径加 `console.warn`。
 
 ### 原则 ↔ 保护措施（2026-10-21 审计）
 

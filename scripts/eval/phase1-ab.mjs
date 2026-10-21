@@ -75,7 +75,13 @@ const avg = (xs) => Number((xs.reduce((s, n) => s + n, 0) / xs.length).toFixed(4
 const rows = [];
 for (const [sampleId, cfg] of Object.entries(SAMPLES)) {
   const dir = path.join(SAMPLES_DIR, sampleId);
-  const refFile = fs.existsSync(path.join(dir, 'gold.json')) ? 'gold.json' : 'annotation.draft.json';
+  const hasGold = fs.existsSync(path.join(dir, 'gold.json'));
+  const refFile = hasGold ? 'gold.json' : 'annotation.draft.json';
+  if (!hasGold) {
+    // A/B 表若混入未抽检的草案，结论会和 baseline（reviewed gold）不一致，
+    // 必须让读者知道这一行不是 official 口径。
+    console.warn(`[phase1-ab] ${sampleId}: 缺少 gold.json，回退 annotation.draft.json（该行仅供参考）`);
+  }
   const ref = JSON.parse(fs.readFileSync(path.join(dir, refFile), 'utf8'));
 
   const base = cfg.base.map((id) => evaluate(id, ref));

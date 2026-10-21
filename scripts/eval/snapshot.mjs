@@ -45,7 +45,7 @@ const health = SAMPLES.map((id) => {
   return `| ${id} | ${cells} |`;
 });
 
-// ② 基线（默认 auto：长文 mapreduce / 短文 truncate，3 次均值）：只取第一张表
+// ② 基线（truncate 路径，3 次均值；2026-10-21 翻默认前跑的）：只取第一张表
 const baselineOut = runNode('baseline.mjs');
 const baselineLines = baselineOut.split('\n');
 const tableStart = baselineLines.findIndex((l) => l.startsWith('| 样本'));
@@ -73,12 +73,12 @@ const md = `# 状态快照（${date}）
 |---|---|---|---|---|---|
 ${health.join('\n')}
 
-## ② 基线（默认 auto，每样本 3 次；**当前代码**）
+## ② 基线（truncate 路径，每样本 3 次；2026-10-21 翻默认前跑的）
 
 ${baselineRows.join('\n')}
 
 > 口径：跨运行 = 剔除自证运行后的一致性（稳不稳）；准确率 = 对 reviewed 金标注（对不对）。
-> 这批运行使用当前代码（segment prompt v2 + character-sanitizer + phase2-fallback + 温度 0.3）。
+> 这批运行使用当前代码，但 **Phase1 仍是 truncate**（翻默认前跑的）；auto 默认下的基线尚未重跑。
 > 溯源基准：job 落库的 \`chapter_texts\`（管线实际输入）。
 
 ## ③ Phase1 A/B（对 reviewed 金标注；读 Phase1 原始输出）

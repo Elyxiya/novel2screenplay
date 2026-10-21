@@ -11,6 +11,21 @@ import { recordArtifact, startSpan, type RunLogContext } from '../observability/
 export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 
 /**
+ * Phase2 切分温度。默认 0.3（与历史行为一致）；`PHASE2_TEMPERATURE=0` 可用于消融实验。
+ * 非法值回退默认并告警——静默回退会让实验条件与记录不符。
+ */
+export function resolvePhase2Temperature(env: Record<string, string | undefined> = process.env): number {
+  const raw = env.PHASE2_TEMPERATURE;
+  if (raw === undefined || raw === '') return 0.3;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 2) {
+    console.warn(`[Phase2] PHASE2_TEMPERATURE=${raw} 非法（需 0–2），回退 0.3`);
+    return 0.3;
+  }
+  return n;
+}
+
+/**
  * Phase 2: Segment chapters into scenes based on time/location/character changes.
  */
 export class Phase2Segmenter {
@@ -73,7 +88,9 @@ export class Phase2Segmenter {
         const t0 = Date.now();
         const response = await this.provider.chat(messages, {
           responseFormat: 'json_object',
-          temperature: 0.3,
+          // 温度是切分稳定性的直接来源（跨运行 P2 F1 只有 0.56–0.70）。
+          // 用 env 暴露出来是为了做消融实验；默认值保持 0.3，零行为变化。
+          temperature: resolvePhase2Temperature(),
           maxTokens: 4096,
           signal,
         });

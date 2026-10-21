@@ -38,7 +38,7 @@ npm run build      # production build (webpack)
 - `apps/screenplay/` — the Next.js app: `src/app` (pages + `api/*`), `src/lib` (business logic), `src/components`, `src/__tests__` (co-located tests).
 - `packages/contracts/` — `@novel/contracts`: zod-4 shared schemas (`novel`, `screenplay`, `drama`, `pipeline`) and serializers. Edit schemas here, then rebuild.
 - `packages/db/` — `@novel/db`: shared job-state storage abstraction (contract-driven `pipelineState` codec). Built and wired into `apps/screenplay` pre-hooks; currently exported but not yet consumed by app repositories.
-- `docs/` — design docs and records. `docs/项目框架.md` is the live architecture map; root `README.md` structure section is stale — trust this guide and `docs/项目框架.md`.
+- `docs/` — design docs and records. `docs/项目框架.md` is the live architecture map; root `README.md` structure section is stale — trust this guide and `docs/项目框架.md`. `docs/conversion-quality/lessons-learned-2026-10.md` is the **problem ledger** (现象→根因→解法→证据) — see Guardrails for when to update it.
 - `.trae/specs/` + `.trae/documents/` — plan/spec/plan documents.
 - `scripts/e2e/` + `scripts/shot/` — integration and screenshot workers; **not committed.**
 
@@ -71,7 +71,7 @@ const s = body; // no zod guard, no shape guarantee
 
 ## Guardrails
 
-- **Always:** re-run `lint`, `typecheck`, `test` until green after each change; add a test for new/modified code; put contract changes in `packages/contracts` and rebuild it.
+- **Always:** re-run `lint`, `typecheck`, `test` until green after each change; add a test for new/modified code; put contract changes in `packages/contracts` and rebuild it; when you fix a non-trivial bug, change an established convention (field semantics/defaults), or catch yourself making a mistake, append it to `docs/conversion-quality/lessons-learned-2026-10.md` in the 现象→根因→解法→证据 format and re-check its 原则/未解决/关键数字 sections.
 - **Ask first:** SQLite schema migration (`store/sqlite/schema.sql`, bump `schema_version`); adding a dependency; editing CI/CD; pushing to `main` or any force-push; altering an established module boundary.
 - **Never:** commit secrets, `*.env*`, or real credentials; edit generated/build output; stage `pr-evidence/`, `scripts/e2e/`, `scripts/shot/` (workflow artifacts stay out of the repo); import `@novel/db` into app repositories without routing job persistence through its shared codec; reintroduce the old in-memory job queue (`src/lib/jobs/job-queue.ts`/`worker.ts` were removed — keep the single `PipelineEngine + jobStore` execution path).
 

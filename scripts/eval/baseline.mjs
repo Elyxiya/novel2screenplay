@@ -22,14 +22,14 @@ const OUT_DIR = 'pr-evidence/baseline';
 const db = new Database(DB, { readonly: true });
 
 /**
- * 三样本 × 3 次运行。**2026-10-21 刷新**：全部换成当前代码
+ * 三样本 × 3 次运行。**2026-10-22 刷新**：翻默认后（auto）重跑，全部走 mapreduce
  * （segment prompt v2 + character-sanitizer + phase2-fallback + 温度默认 0.3）的运行，
  * 旧的一组早于 prompt v2，只能作历史对照。
  */
 const RUNS = {
-  'doupo-short': ['job_1792585051955_3jpfbs', 'job_1792585127655_b0u5rq', 'job_1792585208200_bw850q'],
-  'zhanlan-short': ['job_1792585288804_pcgo5s', 'job_1792585364362_n8q0m0', 'job_1792585439883_mdmui0'],
-  'xiuzhen-short': ['job_1792585530497_hfeu3p', 'job_1792585716395_ts1lii', 'job_1792585912288_5qifa3'],
+  'doupo-short': ['job_1792598025156_fscyp9', 'job_1792598116474_tr0xzv', 'job_1792598207476_0zram9'],
+  'zhanlan-short': ['job_1792598293428_tglqn3', 'job_1792598394521_hg7owe', 'job_1792598495594_vlzhnk'],
+  'xiuzhen-short': ['job_1792598596619_tzm757', 'job_1792598793164_52g3x0', 'job_1792598994735_jmg9f1'],
 };
 
 function load(jobId) {
@@ -119,7 +119,7 @@ fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.json`), JSON.stringify(re
 // ── Markdown ──
 const fmt = (m) => (m === null || m === undefined ? '—' : m);
 const lines = [];
-lines.push(`# 基线（${stamp}）· truncate 路径（2026-10-21 翻默认前跑的）· 每样本 3 次`);
+lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· 每样本 3 次`);
 lines.push('');
 lines.push('> 「跨运行」= 剔除自证运行后，其余运行与金标注的一致性（衡量稳定性）。');
 lines.push('> 「准确率」= 对**人工抽检后**的金标注（仅 reviewed=true 且非自证的运行计入）。');

@@ -2,6 +2,9 @@
 
 > 目标：把「剧本好不好」变成可复现的数字，并且**承认标注是模型预标 + 人工抽检**这个事实，
 > 用 provenance 与独立性检查把偏差摆在明面上，而不是假装金标注是天上掉下来的。
+>
+> 相关：`lessons-learned-2026-10.md`（问题账本，含这些口径是怎么被抽检逼出来的）、
+> `flip-decision-record.md`（Phase1 翻默认的决策与实测）。
 
 ## 0. 为什么不是「直接打分」
 
@@ -57,7 +60,10 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
     "reviewed": true,
     "reviewedBy": "人工抽检:第 1/5/9 章",
     "split": "train",                    // 由 sampleId 哈希确定性分配
-    "provenance": { "source": "llm-draft", "modelId": "deepseek-chat", "jobId": "job_x", "promptHash": "..." }
+    "provenance": { "source": "llm-draft", "modelId": "deepseek-chat", "jobId": "job_x", "promptHash": "..." },
+    "excludedCharacters": [              // 墓碑：判为背景人物而移出卡的名字（不参与匹配）
+      { "name": "酒吧服务员", "reason": "背景人物", "evidence": { "chapters": 0, "mentions": 0 } }
+    ]
   },
   "characters": [{ "name": "白冷叶", "aliases": ["韩晓龙"], "isMajor": true }],
   "scenes": [{
@@ -124,9 +130,25 @@ node scripts/eval/score.mjs --all          # 读 samples/<id>/run.json
 > 注意与上一条的区别：「在场但未点名」是**场景事实**（计入 `keyCharacterNames`），
 > 而「用某个描述指代他」是**称呼问题**（不进 `aliases`）。纳兰嫣然那次只补了场景，没有加别名，是对的。
 
+### 背景人物与墓碑（`meta.excludedCharacters`）
+
+抽检时判定「这个人只是背景」后，**不要直接删掉了事**——删了即遗忘，下次抽检容易反复横跳。
+做法是移出 `characters`，同时在 `meta.excludedCharacters` 留一条墓碑：
+
+```jsonc
+{ "name": "酒吧服务员", "reason": "背景人物", "evidence": { "chapters": 0, "mentions": 0 } }
+```
+
+- **不参与匹配**，只做审计：回答「当初为什么判它是背景」；
+- **样本级作用域**：角色若在后续章节变重要，属于另一份切片（如 `xiuzhen-medium`）的判定，
+  管线每次从全文重建卡，会重新把它抽进来；
+- 判定标准参考管线里的净化口径：**跨章 ≥2 或 提及 ≥3** 视为有角色重量，否则按背景处理；
+- 校验器：同一个名字同时出现在 `characters` 与 `excludedCharacters` → warning。
+
 校验规则（`validateGold`）：schema 与 sampleId 必填、角色 canonical 不重名、别名冲突给 warning、
 描述性别名给 warning、章号不越界、段落区间不倒置、空 scenes 给 warning、
-`mentionedCharacterNames` 里出现角色卡之外的名字给 warning（可能是漏抽或别名未归一）。
+`mentionedCharacterNames` 里出现角色卡之外的名字给 warning（可能是漏抽或别名未归一）、
+墓碑与角色卡重名给 warning。
 
 ## 4. 指标口径
 

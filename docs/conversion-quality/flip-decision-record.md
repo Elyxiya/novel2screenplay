@@ -2,6 +2,7 @@
 
 > 目的：如实记录"是否把 Phase1 默认从旧截断路径翻到 map-reduce"的**当前实际依据**。本文是快照，**数据门槛未到之前保持"不翻"**；1b 出数后新增"实测结论"一节（见末尾待办）。
 > 日期：2026-08-29 ｜ 关联 spec：`conversion-quality-engineering` Task 5 ｜ 决策代码：`apps/screenplay/src/lib/eval/flip-decision.ts` ｜ 规则固化：`docs/conversion-quality/task5-flip-decision.md`
+> 相关：`lessons-learned-2026-10.md`（问题账本）、`gold-annotation-workflow.md`（金标注口径）。
 
 ## 1. 决策口径（既定，不改）
 

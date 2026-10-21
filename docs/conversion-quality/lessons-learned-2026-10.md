@@ -107,6 +107,7 @@
 | 28 | A/B 表混入旧 prompt 的运行 | 基线未随代码刷新 | 刷新 jobId + 补跑 zhanlan | doupo mapreduce 0.765→0.897；同一轮又发现 baseline 的 truncate 运行也早于 v2 |
 | 29 | 同一指标出现两个数（溯源 95.1% / 95.4%） | 取数来源不一致 | 统一用 job 的 `chapter_texts` | `score.mjs` 静默回退到 chapters.txt，snapshot 用 DB 列 |
 | 30 | 编辑失败后仍提交 | 流程 | 编辑报错即停下重读 | 提交信息写了「补第 29 条」，内容里没有 |
+| 31 | 成本守卫低估 token 2.2 倍 | 经验系数无出处 | `estimateInputTokens()` 实测 | 28.9k 字 → 实估 38.5k，旧式 17.4k |
 
 ---
 
@@ -299,6 +300,9 @@
 10. **不要静默回退**。读不到数据就告警或报错；`?? fallback` 会让同一指标出现两个数
     （溯源 95.1% vs 95.4% 就是这么来的），而且没人会发现。已给 `score.mjs` / `baseline.mjs` /
     `review-sheet.mjs` / `phase1-ab.mjs` / `snapshot.mjs` 的回退与缺失路径加 `console.warn`。
+11. **系数要有实测出处**。`length * 0.6` 估 token 低估约 2.2 倍（实测中文 1.3–1.4 token/字），
+    成本守卫因此长期虚低。任何「经验系数」都要注明测量来源，否则它会安静地错很久。
+    已改为 `estimateInputTokens()`（tiktoken 实测，失败回退 1.3 并告警）。
 
 ### 原则 ↔ 保护措施（2026-10-21 审计）
 
@@ -315,7 +319,8 @@
 | 7 | 先基线、mean±σ | `baseline.mjs`（剔除自证运行、区分跨运行/准确率） | 工具 |
 | 8 | 「不许做」写进 prompt | 规则 7 断言 + `segment-prompt.test.ts`；**变异测试验证过**（删关键词即红） | 测试 |
 | 9 | 人工抽检不可省 | —— | 流程（无自动保护） |
-| 10 | 不要静默回退 | `score.mjs` / `baseline.mjs` / `review-sheet.mjs` 的回退路径均有 `console.warn` | 代码 |
+| 10 | 不要静默回退 | 五个 eval 脚本的回退/缺失路径均有 `console.warn` | 代码 |
+| 11 | 系数要有实测出处 | `estimateInputTokens()` 用 tiktoken，失败回退 1.3 并告警 | 代码 |
 
 **审计发现（第 21 条问题）**：第 8 条此前**没有内容断言**——两条 prompt 改坏了测试也全绿，
 只有 token 预算断言在起作用。已补：

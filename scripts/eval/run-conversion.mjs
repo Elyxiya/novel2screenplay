@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { estimateInputTokens } from './convert-driver.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const SAMPLES_DIR = path.join(ROOT, 'scripts', 'eval', 'samples');
@@ -226,8 +227,8 @@ async function main() {
   const scenesFile = path.join(sampleDir, `${tag}.scenes.json`);
   writeFileSync(scenesFile, JSON.stringify(scenesJson, null, 2));
 
-  // cost estimate（二道保险）——以输入 token 粗估，超限中止前已挡
-  const estimatedInputTokens = Math.round(novelText.length * 0.6);
+  // cost estimate（二道保险）——按真实 token 估算，旧系数 0.6 会低估约 2.2 倍
+  const estimatedInputTokens = estimateInputTokens(novelText);
   const estimateCny = (estimatedInputTokens / 1_000_000) * costPerMTokenCny;
   const runFile = path.join(sampleDir, `${tag}.run.json`);
   const run = {

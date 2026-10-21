@@ -32,6 +32,28 @@ export function splitChapters(raw) {
   return out;
 }
 
+let _encoder = null;
+
+/**
+ * 估算输入 token 数（成本守卫用）。
+ *
+ * 为什么不是 `length * 0.6`：实测中文约 **1.3–1.4 token/字**
+ * （doupo 28898 字 → 38451 token），旧系数低估约 2.2 倍，
+ * 导致 `costCapCny` 在高估成本时不会如期拦截。优先用 tiktoken，不可用时回退 1.3 并告警。
+ */
+export function estimateInputTokens(text) {
+  try {
+    if (!_encoder) {
+      const { get_encoding } = require('tiktoken');
+      _encoder = get_encoding('cl100k_base');
+    }
+    return _encoder.encode(text).length;
+  } catch (err) {
+    console.warn(`[eval] tiktoken 不可用，回退 1.3 token/字估算：${err.message}`);
+    return Math.round(text.length * 1.3);
+  }
+}
+
 export function readPipelineState(jobId, dbDir, dbFile) {
   const dbPath = path.join(dbDir, dbFile);
   const db = new Database(dbPath, { readonly: true });
@@ -120,7 +142,7 @@ export async function driveConversion(opts) {
   if (!setCookie) throw new Error(`${side}: 登录失败（register=${regRes.status}${regRes.data?.error ? ` ${regRes.data.error}` : ''}；用户名 ${usr}）`);
   const cookie = setCookie.split(';')[0];
 
-  const estimatedInputTokens = Math.round(novelText.length * 0.6);
+  const estimatedInputTokens = estimateInputTokens(novelText);
   const estimateCny = Math.round(((estimatedInputTokens / 1_000_000) * 2) * 100) / 100;
   if (estimateCny > costCapCny) throw new Error(`${side}: 预估成本 ¥${estimateCny} 超红线 ¥${costCapCny}，中止`);
 

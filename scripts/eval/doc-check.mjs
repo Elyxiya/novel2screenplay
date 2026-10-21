@@ -267,6 +267,26 @@ function hasToken(src, token) {
     : ok('三份文档术语一致', `废弃词 ${DEPRECATED.length} 个均未出现`);
 }
 
+// ── 11. 维护日志每一行都必须可追溯（提交号或明确「进行中」）────────────────
+//
+// 日志里留「本轮」这类占位，过几天就没人知道对应哪个提交，等于没记。
+{
+  const doc = read('docs/conversion-quality/lessons-learned-2026-10.md');
+  const logStart = doc.search(/^## .*维护日志/m);
+  const section = logStart === -1 ? '' : doc.slice(logStart);
+  const rows = section
+    .split('\n')
+    .filter((line) => line.startsWith('| 202') );
+  const untracked = rows.filter(
+    (line) => !/`[0-9a-f]{7,}`/.test(line) && !/进行中/.test(line),
+  );
+  rows.length === 0
+    ? fail('维护日志可追溯', '未解析到任何日志行')
+    : untracked.length
+      ? fail('维护日志可追溯', `缺提交号：${untracked.map((l) => l.slice(0, 30)).join(' ｜ ')}`)
+      : ok('维护日志可追溯', `${rows.length} 行均有提交号`);
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

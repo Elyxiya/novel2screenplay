@@ -492,3 +492,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 温度可配置 + 初步消融（temp=0 组内 F1 0.759 vs 0.596）；账本第 33 条 | `d7d28ff` |
 | 2026-10-21 | 基线刷新到当前代码（3×3）；温度消融未复现、降级；下线 ②′ 与 current-ref.json | `9a87bab` |
 | 2026-10-21 | Phase1 按长度分流做成可选能力（PHASE1_MODE=auto，默认不变）；doc-check 第 8 类改三态 | `38e3d29` |
+| 2026-10-21 | 实测后降级「实体归一」（描述词仅 4 处，多为卡不全）；新增「别名覆盖」待办 | `6269b92` |

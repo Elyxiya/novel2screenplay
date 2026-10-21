@@ -30,6 +30,17 @@ function read(rel) {
   return fs.readFileSync(path.join(ROOT, rel), 'utf8');
 }
 
+/**
+ * 标识符级包含判断。
+ *
+ * 为什么不用 includes：`tinyScenesRenamed` 包含 `tinyScenes`，改名后的实现会被判成
+ * 「仍然存在」——变异测试实测踩过，检查静默通过。这里要求前后不是标识符字符。
+ */
+function hasToken(src, token) {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^A-Za-z0-9_])${escaped}([^A-Za-z0-9_]|$)`).test(src);
+}
+
 // ── 1. 文档里出现的代码路径必须存在 ──────────────────────────────────────
 {
   const missing = [];
@@ -133,7 +144,7 @@ function read(rel) {
   for (const rule of RULES) {
     const docText = read(`docs/conversion-quality/${rule.doc}`);
     if (!docText.includes(rule.phrase)) continue;
-    if (!read(rule.file).includes(rule.token)) {
+    if (!hasToken(read(rule.file), rule.token)) {
       bad.push(`${rule.doc} 承诺「${rule.phrase}」，但 ${path.basename(rule.file)} 缺少 ${rule.token}`);
     }
   }
@@ -149,15 +160,44 @@ function read(rel) {
   const doc = read('docs/conversion-quality/gold-annotation-workflow.md');
   const code = read('scripts/eval/annotation.mjs');
   // 纯展示用元数据：不参与校验，允许实现里不出现
-  const ALLOW = new Set(['reviewedBy']);
+  // split 由 freeze 阶段用 splitFor 计算并写入，validateGold 不校验它。
+  const ALLOW = new Set(['reviewedBy', 'split']);
 
-  const blocks = [...doc.matchAll(/```jsonc?\n([\s\S]*?)```/g)].map((m) => m[1]).join('\n');
+  const blocks = [...doc.matchAll(/```jsonc?\r?\n([\s\S]*?)```/g)].map((m) => m[1]).join('\n');
   const keys = new Set([...blocks.matchAll(/"([A-Za-z][A-Za-z0-9_]*)"\s*:/g)].map((m) => m[1]));
-  const unknown = [...keys].filter((k) => !code.includes(k) && !ALLOW.has(k));
 
-  unknown.length
-    ? fail('文档示例的 gold 字段都被校验器覆盖', `未在 annotation.mjs 中校验：${unknown.join('、')}`)
-    : ok('文档示例的 gold 字段都被校验器覆盖', `${keys.size} 个字段`);
+  // 防「空输入即通过」：解析不到任何字段时不能算 PASS。
+  // 实测踩过：CRLF 让围栏正则失配，字段数变 0，检查照样报 PASS——比报错更危险。
+  if (keys.size === 0) {
+    fail('文档示例的 gold 字段都被校验器覆盖', '未能从文档解析出任何字段（检查失效，检查围栏与换行符）');
+  } else {
+    const unknown = [...keys].filter((k) => !hasToken(code, k) && !ALLOW.has(k));
+    unknown.length
+      ? fail('文档示例的 gold 字段都被校验器覆盖', `未在 annotation.mjs 中校验：${unknown.join('、')}`)
+      : ok('文档示例的 gold 字段都被校验器覆盖', `${keys.size} 个字段`);
+  }
+}
+
+// ── 7. 文档里的「自动体检项」必须真的在 review-sheet 里实现 ──────────────
+//
+// 抽检单是人工判断的入口，文档列了 5 项就拿它当承诺。实现里删掉某一项、
+// 或换了变量名，文档不会自己变，抽检的人却会以为那一项还在查。
+{
+  const RULES = [
+    ['未切出场景的章节', 'missingChapters'],
+    ['单段落场景', 'tinyScenes'],
+    ['未在任何场景出现的角色', 'orphanCharacters'],
+    ['没有别名的角色', 'noAlias'],
+    ['场景中出现但角色卡未登记', 'unknownNames'],
+  ];
+  const doc = read('docs/conversion-quality/gold-annotation-workflow.md');
+  const code = read('scripts/eval/review-sheet.mjs');
+  const bad = RULES.filter(([phrase, token]) => doc.includes(phrase) && !hasToken(code, token)).map(
+    ([phrase, token]) => `${phrase} → 缺 ${token}`,
+  );
+  bad.length
+    ? fail('文档的体检项在 review-sheet 中实现', bad.join('；'))
+    : ok('文档的体检项在 review-sheet 中实现', `${RULES.length} 项`);
 }
 
 // ── 输出 ────────────────────────────────────────────────────────────────

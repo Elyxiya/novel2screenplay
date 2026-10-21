@@ -254,7 +254,10 @@ function hasToken(src, token) {
   const DEPRECATED = ['描述名', '描述性称呼', '交叉运行'];
   const bad = [];
   for (const doc of DOCS) {
-    const text = read(doc);
+    // 维护日志会如实记录「把 X 改名为 Y」这类历史，必须排除，否则检查与记录互相打架。
+    const full = read(doc);
+    const logStart = full.search(/^## .*维护日志/m);
+    const text = logStart === -1 ? full : full.slice(0, logStart);
     for (const term of DEPRECATED) {
       if (text.includes(term)) bad.push(`${path.basename(doc)} 使用了废弃术语「${term}」`);
     }

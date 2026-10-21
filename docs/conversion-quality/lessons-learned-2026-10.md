@@ -445,3 +445,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 标注基线时效、补当前代码参考（n=1），第五节加「基线刷新」待办 | `716f813` |
 | 2026-10-21 | 快照脚本化：新增 snapshot.mjs 与 snapshots/ 归档，文档改为链接 + 要点 | `9732851` |
 | 2026-10-21 | 当前代码参考纳入快照（current-ref.json 登记 jobId，脚本现场打分） | `12605bb` |
+| 2026-10-21 | 统一溯源取数来源（job 的 chapter_texts），账本第 29 条 | `231134e` |

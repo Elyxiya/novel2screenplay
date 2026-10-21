@@ -27,18 +27,25 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const DB = path.join(ROOT, 'apps/screenplay/data-test/1b-data.db');
 const SAMPLES_DIR = path.join(ROOT, 'scripts/eval/samples');
 
-/** 每样本：mapreduce 运行 + 3 次 truncate 运行（取均值） */
+/**
+ * 每样本：mapreduce 运行 + 3 次 truncate 运行（取均值）。
+ *
+ * 注意 mapreduce 的 jobId 要指向**当前代码**（含 segment prompt v2）下的运行，
+ * 否则 A/B 表会混入旧 prompt 的结果。（2026-10-21 刷新为 v2 运行。）
+ * 口径：本表读的是 Phase1 **原始**输出（未过 character-sanitizer），
+ * 所以与 §七 准确率（实际管线产物）会有小幅差异。
+ */
 const SAMPLES = {
   'doupo-short': {
-    mr: 'job_1792552605089_oqj1fz',
+    mr: 'job_1792558119587_204gjr',
     base: ['job_1792418104222_qf2qr0', 'job_1792474421049_lf95um', 'job_1792474526728_a3r3sy'],
   },
   'zhanlan-short': {
-    mr: 'job_1792552680584_a2xni1',
+    mr: 'job_1792576365385_p5asci',
     base: ['job_1792421566811_8we0fn', 'job_1792474612173_uf9kha', 'job_1792474702600_ix47nx'],
   },
   'xiuzhen-short': {
-    mr: 'job_1792552765975_t7gb4a',
+    mr: 'job_1792557928865_qkaylc',
     base: ['job_1792421684668_hzmwlo', 'job_1792474788071_dsfm2j', 'job_1792474994320_x30vag'],
   },
 };

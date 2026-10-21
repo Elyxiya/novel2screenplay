@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { BudgetController } from '@/lib/llm/adapter/budget-controller';
 import {
   createPhase1Budget,
+  decideAutoMode,
   resolveDefaultPhase1Mode,
+  resolvePhase1Mode,
   estimateMapPromptTokens,
   estimateReducePromptTokens,
 } from '@/lib/pipeline/phase1-budget';
@@ -53,6 +55,23 @@ describe('createPhase1Budget', () => {
 describe('resolveDefaultPhase1Mode', () => {
   it('数据门槛未过（Task 2.4/2.5 未出数）→ 默认保持 truncate，翻默认开关不触发', () => {
     expect(resolveDefaultPhase1Mode()).toBe('truncate');
+  });
+});
+
+describe('auto 分流', () => {
+  it('未超上限 → truncate；超上限 → mapreduce（边界取 >）', () => {
+    expect(decideAutoMode(29999, 30000)).toBe('truncate');
+    expect(decideAutoMode(30000, 30000)).toBe('truncate');
+    expect(decideAutoMode(30001, 30000)).toBe('mapreduce');
+  });
+
+  it('env PHASE1_MODE=auto 可解析（但默认仍为 truncate）', () => {
+    expect(resolvePhase1Mode(undefined, { PHASE1_MODE: 'auto' })).toBe('auto');
+    expect(resolvePhase1Mode(undefined, {})).toBe('truncate');
+  });
+
+  it('显式 mode 优先于 env', () => {
+    expect(resolvePhase1Mode('truncate', { PHASE1_MODE: 'auto' })).toBe('truncate');
   });
 });
 

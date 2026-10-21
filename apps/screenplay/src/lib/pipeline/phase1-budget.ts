@@ -18,7 +18,7 @@
 
 import { BudgetController, getBudgetController } from '../llm/adapter/budget-controller';
 
-export type Phase1Mode = 'truncate' | 'mapreduce' | 'longctx';
+export type Phase1Mode = 'truncate' | 'mapreduce' | 'longctx' | 'auto';
 
 export type Phase1CallSite = 'map' | 'reduce' | 'truncate' | 'longctx';
 
@@ -95,8 +95,19 @@ export function resolveDefaultPhase1Mode(): Phase1Mode {
 }
 
 /**
- * 解析有效 Phase1 模式（B-01 三模式）：
- *  显式 options.mode > 环境变量 PHASE1_MODE（truncate/mapreduce/longctx）> 单点默认（truncate）。
+ * auto 模式的判定：超过截断上限才走 mapreduce，否则走 truncate。
+ *
+ * 为什么不直接翻默认：flip 纪律（R1/R2/R3）要求预注册判据，而现有证据只支持
+ * 「截断越狠 mapreduce 收益越大」。auto 把这条结论变成**可选能力**（`PHASE1_MODE=auto`），
+ * 默认仍是 truncate——能力就绪，但不越权改行为。
+ */
+export function decideAutoMode(tokens: number, limit: number = 30000): Phase1Mode {
+  return tokens > limit ? 'mapreduce' : 'truncate';
+}
+
+/**
+ * 解析有效 Phase1 模式（B-01 三模式 + auto）：
+ *  显式 options.mode > 环境变量 PHASE1_MODE（truncate/mapreduce/longctx/auto）> 单点默认（truncate）。
  * longctx = 长上下文单次分析（不截断，依赖大窗口模型）；仅作实验/评估路径，
  * 不改变默认（翻默认仍由 resolveDefaultPhase1Mode 单一决策点把守）。
  */
@@ -106,6 +117,13 @@ export function resolvePhase1Mode(
 ): Phase1Mode {
   if (explicit) return explicit;
   const envMode = env.PHASE1_MODE;
-  if (envMode === 'truncate' || envMode === 'mapreduce' || envMode === 'longctx') return envMode;
+  if (
+    envMode === 'truncate' ||
+    envMode === 'mapreduce' ||
+    envMode === 'longctx' ||
+    envMode === 'auto'
+  ) {
+    return envMode;
+  }
   return resolveDefaultPhase1Mode();
 }

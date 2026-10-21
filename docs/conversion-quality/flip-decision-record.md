@@ -345,3 +345,14 @@ mapreduce 的角色卡明显变干净，A/B 结论跟着变——**doupo 不再�
 
 **判定**：依然不触发 R1/R2/R3，**flip 维持 `false`**；但「短篇会退化」的理由明显减弱，
 未来做「按长度分流」时，阈值应比原先设想的更宽。
+
+### 6.5 按长度分流已做成可选能力（2026-10-21）
+
+`PHASE1_MODE=auto` 已落地：`decideAutoMode()` 在 token 超过 `MAX_ANALYSIS_TOKENS`（30000）时选
+mapreduce，否则沿用 truncate。**默认仍是 truncate**，`resolveDefaultPhase1Mode()` 未动——
+能力就绪但未翻默认，符合「未满足 R3 不翻」的纪律。
+
+验证（doupo-short，2026-10-21）：`[Phase1] auto: 38515 tokens（上限 30000）→ mapreduce`，
+随后走 map-reduce 路径（10 章 53 个抽取 → reduce 22 个 → 净化 5 个描述性实体 → 17 角色）。
+单测 `phase1-budget.test.ts` 覆盖边界（30000 取 truncate、30001 取 mapreduce）与
+「显式 mode 优先于 env」。

@@ -6,6 +6,7 @@ import { mapChapters, MAP_MAX_CHAPTERS, type ChapterInput } from './phase1-map';
 import { reduceSetting } from './phase1-reduce';
 import {
   createPhase1Budget,
+  decideAutoMode,
   estimateMapPromptTokens,
   resolvePhase1Mode,
   type Phase1BudgetController,
@@ -67,9 +68,18 @@ export class Phase1Analyzer {
     chapters: ChapterInput[],
     options?: Phase1AnalyzeOptions,
   ): Promise<Phase1Output> {
-    const effectiveMode: Phase1Mode = resolvePhase1Mode(options?.mode);
+    let effectiveMode: Phase1Mode = resolvePhase1Mode(options?.mode);
     const signal = options?.signal;
     const runLog = options?.runLog;
+
+    if (effectiveMode === 'auto') {
+      // 按真实 token 数在两条路径间选择：超上限才 mapreduce，否则沿用 truncate。
+      const fullText = chapters.map((c) => `[${c.title}]\n${c.text}`).join('\n\n');
+      const tokens = await this.ctxManager.countTokens(fullText);
+      const decided = decideAutoMode(tokens, MAX_ANALYSIS_TOKENS);
+      console.log(`[Phase1] auto: ${tokens} tokens（上限 ${MAX_ANALYSIS_TOKENS}）→ ${decided}`);
+      effectiveMode = decided;
+    }
 
     if (effectiveMode === 'mapreduce') {
       // map-reduce 路径异常时回退到旧截断路径，保证不静默崩管线

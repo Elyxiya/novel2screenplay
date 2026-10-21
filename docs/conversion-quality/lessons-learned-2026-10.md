@@ -363,7 +363,7 @@
 
 | 事项 | 状态（2026-10-21 核对） | 备注 |
 |---|---|---|
-| Phase1 按长度自动分流 | 未落地 | `resolveDefaultPhase1Mode()` 仍返回 `truncate`；数据支持分流，但需走决策点 + flip 记录 |
+| Phase1 按长度自动分流 | **能力已就绪**（`PHASE1_MODE=auto`），默认仍 truncate | `decideAutoMode()`：超过 30000 token 才走 mapreduce；2026-10-21 在 doupo 上验证「38515 tokens → mapreduce」。默认未翻，遵守 flip 纪律（R1/R2/R3 仍未满足） |
 | 实体归一（紫色倩影/服务员等） | 未做 | 可复用 `characterRefs` 口径；当前由接地校验 warn 兜住 |
 | 单段落场景 | **5 处**（xiuzhen 4：ch6:8-8 / 9-9 / 26-26、ch13:8-8；doupo 1：ch4:0-0） | 属切分阈值问题，不是标注问题 |
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
@@ -408,7 +408,7 @@
 | `MIN_MERGE_CHARS` | 800 | `Phase2Segmenter.ts:219` | 相邻短场景是否合并 | 未实测 |
 | `MAX_SCENE_TOKENS` | 1500 | `ContextManager.ts:1` | 兜底切分粒度 | 口径有测试，值未调优 |
 | `MAX_SEGMENT_TOKENS` | 8000 | `ContextManager.ts:3` | 单章送模型上限 | 未实测 |
-| `MAX_ANALYSIS_TOKENS` | 30000 | `ContextManager.ts:2` | Phase1 截断阈值 | ✅ 有对照：三样本均超限（78% / 78% / 41%），见 mapreduce A/B |
+| `MAX_ANALYSIS_TOKENS` | 30000 | `ContextManager.ts:2` | Phase1 截断阈值；同时是 `PHASE1_MODE=auto` 的分流线 | ✅ 有对照：三样本均超限（78% / 78% / 41%），见 mapreduce A/B；auto 已在 doupo 验证选中 mapreduce |
 | Phase3 并发 / 限速 | 3 / 50 每 60s | `Phase3SceneConverter.ts:240-241` | 吞吐与限流 | 未实测 |
 | 失败重试 | 3 次 | `Phase3SceneConverter.ts:375` | 稳定性 | 未实测 |
 | 净化证据门槛 | 跨章 ≥2 / 提及 ≥3 | `character-sanitizer.ts:22-23` | 描述性实体去留 | ✅ 单测覆盖；阈值本身未调优 |

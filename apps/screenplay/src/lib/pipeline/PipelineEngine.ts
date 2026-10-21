@@ -13,6 +13,7 @@ import {
   buildSanitizePlan,
   type SanitizePlan,
 } from './character-sanitizer';
+import { groundSceneCharacters } from './scene-character-grounding';
 import { MetricsAccumulator } from './metrics';
 import { toJobErrorPayload } from '../errors';
 import { SYSTEM_PROMPT as CONVERT_SYSTEM_PROMPT } from '../llm/prompts/convert-scene';
@@ -752,6 +753,28 @@ export class PipelineEngine {
       if (cleaned.changed > 0) {
         phase2Output = { ...phase2Output, scenes: cleaned.scenes };
         console.log(`[${jobId}] Phase 2 角色引用清理: 改写 ${cleaned.changed} 个场景（同段同指 ${sanitizeReplaced} 处）`);
+      }
+    }
+
+    // 接地校验：场景角色必须在本章原文有据（别名/关系称谓也算），
+    // 挡「角色卡里有、本章根本没出现」的跨章串味（实测：豆豆被标进没提到他的第 10 章）。
+    // 默认只告警：名字对不上时无法区分「幻觉」与「在场但未点名」，删除会误杀真实出场。
+    {
+      const grounded = groundSceneCharacters(
+        phase2Output.scenes,
+        phase1Output.characters,
+        chapters.map((c) => c.text),
+      );
+      const hits = grounded.mode === 'enforce' ? grounded.dropped : grounded.warned;
+      if (hits.length > 0) {
+        const uniq = [...new Set(hits.map((d) => `${d.name}(ch${d.chapterIndex + 1})`))];
+        const label = grounded.mode === 'enforce' ? '移除' : '疑似无据（未删除）';
+        console.log(
+          `[${jobId}] Phase 2 接地校验: ${label} ${hits.length} 处（${uniq.slice(0, 8).join('、')}${uniq.length > 8 ? '…' : ''}）`,
+        );
+        if (grounded.mode === 'enforce') {
+          phase2Output = { ...phase2Output, scenes: grounded.scenes };
+        }
       }
     }
 

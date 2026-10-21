@@ -226,6 +226,26 @@ function hasToken(src, token) {
   }
 }
 
+// ── 9. 关键数字必须可追溯时效 ────────────────────────────────────────────
+//
+// §七 的每条结论都是「某个时刻的水平」。不标日期，几个月后就会被当成现状。
+// 规则：含数字的条目，必须带 `YYYY-MM-DD` 或「历史」标记。
+{
+  const doc = read('docs/conversion-quality/lessons-learned-2026-10.md');
+  const start = doc.indexOf('## 七、');
+  const end = doc.indexOf('### 状态快照', start);
+  const section = start === -1 ? '' : doc.slice(start, end === -1 ? undefined : end);
+  const undated = section
+    .split('\n')
+    .filter((line) => line.startsWith('- ') && /\d/.test(line))
+    .filter((line) => !/历史/.test(line) && !/\d{4}-\d{2}-\d{2}/.test(line))
+    .map((line) => line.slice(0, 40));
+
+  undated.length
+    ? fail('关键数字都带时效标记', `缺日期/「历史」：${undated.join(' ｜ ')}`)
+    : ok('关键数字都带时效标记');
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

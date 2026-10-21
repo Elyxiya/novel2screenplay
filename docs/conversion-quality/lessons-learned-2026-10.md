@@ -105,6 +105,7 @@
 | 26 | 变异测试回滚冲掉未提交改动 | 操作顺序 | 先提交再变异，或只改副本 | 日期的修改被 `git checkout` 一并还原，重做一次 |
 | 27 | 检查器 9/10 仍提交 | 流程 | 提交前必须看 PASS 计数 | 黑名单误伤维护日志里的改名记录 |
 | 28 | A/B 表混入旧 prompt 的运行 | 基线未随代码刷新 | 刷新 jobId + 补跑 zhanlan | doupo mapreduce 0.765→0.897；同一轮又发现 baseline 的 truncate 运行也早于 v2 |
+| 29 | 同一指标出现两个数（溯源 95.1% / 95.4%） | 取数来源不一致 | 统一用 job 的 `chapter_texts` | `score.mjs` 静默回退到 chapters.txt，snapshot 用 DB 列 |
 
 ---
 

@@ -441,3 +441,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | doc-check 第 11 类（维护日志须带提交号）；补填上轮遗留的「本轮」 | `20836c4` |
 | 2026-10-21 | A/B 刷新到 prompt v2（补跑 zhanlan），修正过期的精度结论；账本第 28 条 | `90e3896` |
 | 2026-10-21 | 标注基线时效、补当前代码参考（n=1），第五节加「基线刷新」待办 | `716f813` |
+| 2026-10-21 | 快照脚本化：新增 snapshot.mjs 与 snapshots/ 归档，文档改为链接 + 要点 | `9732851` |

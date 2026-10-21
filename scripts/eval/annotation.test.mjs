@@ -165,6 +165,20 @@ check('excludedCharacters：与角色卡重名 → warning', () => {
   assert.ok(r.warnings.some((w) => w.includes('excludedCharacters')), r.warnings.join('; '));
 });
 
+check('excludedCharacters：evidence 结构错误 → error', () => {
+  const gold = baseGold();
+  gold.meta.excludedCharacters = [{ name: '酒吧服务员', evidence: { chapters: '零' } }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, false, 'evidence.chapters 非整数应报错');
+});
+
+check('excludedCharacters：reason 类型错误 → error', () => {
+  const gold = baseGold();
+  gold.meta.excludedCharacters = [{ name: '酒吧服务员', reason: 42 }];
+  const r = validateGold(gold);
+  assert.equal(r.ok, false, 'reason 非字符串应报错');
+});
+
 // ── 确定性切分 ──────────────────────────────────────────────────────────
 check('hashString 稳定且非负', () => {
   assert.equal(hashString('abc'), hashString('abc'));

@@ -140,6 +140,26 @@ function read(rel) {
   bad.length ? fail('文档承诺的规则在实现中存在', bad.join('；')) : ok('文档承诺的规则在实现中存在', `${RULES.length} 条`);
 }
 
+// ── 6. 反向检查：文档里写的 gold 字段，校验器是否认识 ────────────────────
+//
+// 第 5 类是「文档短语 → 实现 token」的手工映射；这一类反过来扫文档：
+// 示例 JSON 里出现的每个字段，validateGold 里都应有对应分支（纯元数据除外）。
+// 曾经的反例：文档写了 excludedCharacters.evidence/reason，校验器完全没查。
+{
+  const doc = read('docs/conversion-quality/gold-annotation-workflow.md');
+  const code = read('scripts/eval/annotation.mjs');
+  // 纯展示用元数据：不参与校验，允许实现里不出现
+  const ALLOW = new Set(['reviewedBy']);
+
+  const blocks = [...doc.matchAll(/```jsonc?\n([\s\S]*?)```/g)].map((m) => m[1]).join('\n');
+  const keys = new Set([...blocks.matchAll(/"([A-Za-z][A-Za-z0-9_]*)"\s*:/g)].map((m) => m[1]));
+  const unknown = [...keys].filter((k) => !code.includes(k) && !ALLOW.has(k));
+
+  unknown.length
+    ? fail('文档示例的 gold 字段都被校验器覆盖', `未在 annotation.mjs 中校验：${unknown.join('、')}`)
+    : ok('文档示例的 gold 字段都被校验器覆盖', `${keys.size} 个字段`);
+}
+
 // ── 输出 ────────────────────────────────────────────────────────────────
 for (const r of results) {
   console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `  —— ${r.detail}` : ''}`);

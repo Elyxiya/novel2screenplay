@@ -167,6 +167,23 @@ export function validateGold(gold) {
         } else if (seenCanonical.has(n)) {
           warnings.push(`「${e.name}」同时出现在角色卡与 excludedCharacters 中（应二选一）`);
         }
+        // 墓碑的 reason / evidence 是文档承诺的结构，必须真的校验，
+        // 否则文档写了、代码没查，脏数据能一路过闸。
+        if (e?.reason !== undefined && typeof e.reason !== 'string') {
+          errors.push(`meta.excludedCharacters[${i}].reason 必须是字符串`);
+        }
+        if (e?.evidence !== undefined) {
+          if (typeof e.evidence !== 'object' || e.evidence === null || Array.isArray(e.evidence)) {
+            errors.push(`meta.excludedCharacters[${i}].evidence 必须是对象`);
+          } else {
+            for (const key of ['chapters', 'mentions']) {
+              const v = e.evidence[key];
+              if (v !== undefined && !Number.isInteger(v)) {
+                errors.push(`meta.excludedCharacters[${i}].evidence.${key} 必须是整数`);
+              }
+            }
+          }
+        }
       });
     }
   }

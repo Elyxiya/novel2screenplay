@@ -73,7 +73,7 @@ const md = `# 状态快照（${date}）
 |---|---|---|---|---|---|
 ${health.join('\n')}
 
-## ② 基线（默认 auto，每样本 3 次）
+## ② 基线（默认 auto，每样本 3–4 次）
 
 ${baselineRows.join('\n')}
 

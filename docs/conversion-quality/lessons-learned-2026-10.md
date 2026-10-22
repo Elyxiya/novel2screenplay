@@ -507,3 +507,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | 成本口径修正（全链路 ×2.5）+ 第 36 条；auto 3×3 基线落地、P2 反降 + 第 37 条 | `73927ab` `af6e820` |
 | 2026-10-22 | Phase2 逐章角色上下文改按原文出现（修 P2 退化）；账本第 38 条、flip §7.1 回填根因 | `2de0b8d` |
 | 2026-10-22 | Phase2 修复 zhanlan n=3 复核（P2 0.605→0.658±0.018）；doupo/xiuzhen 未过逐样本门槛，基线保持旧版 | `08e47b2` |
+| 2026-10-22 | doupo P2 判为噪声（Welch p=0.354，bootstrap 95% CI 跨 0）；容差改为 max(2pt,0.5σ_old)，基线换血到修复后（doupo n=4） | `3b576c7` |

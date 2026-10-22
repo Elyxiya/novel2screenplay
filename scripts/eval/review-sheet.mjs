@@ -14,7 +14,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aliasSetOf, normalizeName } from './annotation.mjs';
+import { aliasSetOf, chapterLabel, normalizeName } from './annotation.mjs';
 import { splitChapters } from './convert-driver.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -79,13 +79,13 @@ const noAlias = (draft.characters ?? []).filter((c) => (c.aliases ?? []).length 
 // 为什么必须有：正向只查「角色卡里的人是否出现在场景」，抓不到模型在场景里临时造的名字。
 const registered = new Set();
 for (const c of draft.characters ?? []) for (const a of aliasSetOf(c)) registered.add(a);
-const unknownNames = new Map(); // 原始名 -> Set<章号(1-based)>
+const unknownNames = new Map(); // 原始名 -> Set<chapterIndex(0-based)>，打印时统一走 chapterLabel
 for (const s of draft.scenes ?? []) {
   for (const raw of namesOfScene(s)) {
     const norm = normalizeName(raw);
     if (!norm || registered.has(norm)) continue;
     const set = unknownNames.get(raw) ?? new Set();
-    set.add(s.chapterIndex + 1);
+    set.add(s.chapterIndex);
     unknownNames.set(raw, set);
   }
 }
@@ -105,8 +105,8 @@ lines.push('4. 运行 `node scripts/eval/freeze.mjs --sample ' + sampleId + '` �
 lines.push('');
 lines.push('## 自动体检');
 lines.push('');
-lines.push(`- [ ] **未切出场景的章节**：${missingChapters.length === 0 ? '无' : missingChapters.map((i) => `#${i + 1} ${chapters[i].title}`).join('、')}`);
-lines.push(`- [ ] **疑似过切（单段落场景）**：${tinyScenes.length === 0 ? '无' : tinyScenes.map((s) => `ch${s.chapterIndex + 1}:${s.startParagraph}-${s.endParagraph}`).join('、')}`);
+lines.push(`- [ ] **未切出场景的章节**：${missingChapters.length === 0 ? '无' : missingChapters.map((i) => `${chapterLabel(i)} ${chapters[i].title}`).join('、')}`);
+lines.push(`- [ ] **疑似过切（单段落场景）**：${tinyScenes.length === 0 ? '无' : tinyScenes.map((s) => `${chapterLabel(s.chapterIndex)}:${s.startParagraph}-${s.endParagraph}`).join('、')}`);
 lines.push(`- [ ] **未在任何场景出现的角色**：${orphanCharacters.length === 0 ? '无' : orphanCharacters.map((c) => c.name).join('、')}`);
 lines.push(`- [ ] **没有别名的角色**（可能是漏合并）：${noAlias.length === 0 ? '无' : noAlias.map((c) => c.name).join('、')}`);
 lines.push(
@@ -115,7 +115,7 @@ lines.push(
       ? '无'
       : [...unknownNames.entries()]
           .slice(0, 12)
-          .map(([name, chapters]) => `${name}（ch${[...chapters].join('/')}）`)
+          .map(([name, chapters]) => `${name}（${[...chapters].map(chapterLabel).join('/')}）`)
           .join('、') + (unknownNames.size > 12 ? ` 等 ${unknownNames.size} 个` : '')
   }`,
 );

@@ -15,6 +15,7 @@ import {
   scoreTraceability,
   extractPrediction,
   macroAverage,
+  chapterLabel,
 } from './annotation.mjs';
 
 const DB = 'apps/screenplay/data-test/1b-data.db';
@@ -87,7 +88,7 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
     const p2 = scorePhase2(draft.scenes, pred.scenes);
     const tr = scoreTraceability(pred.phase3Scenes, chapters);
     const predChapters = new Set(pred.scenes.map((s) => s.chapterIndex));
-    const emptyChapters = goldChapters.filter((ch) => !predChapters.has(ch)).map((ch) => ch + 1);
+    const emptyChapters = goldChapters.filter((ch) => !predChapters.has(ch));
     return {
       run: i + 1,
       jobId,
@@ -178,7 +179,7 @@ for (const s of report.samples) {
     lines.push(
       `| ${r.run} | \`${r.jobId}\` | ${r.scenes} | ${r.characters} | ${r.charactersInScenes} | ${(r.traceability * 100).toFixed(1)}% | ` +
       `${r.judge ?? '—'} | ${r.agreeP1F1} | ${r.agreeP2F1} | ${r.p2Recall} | ${r.coveredChapters}/${s.agg.goldChapterCount} | ` +
-      `${r.emptyChapters.length ? `⚠️ ch${r.emptyChapters.join('/')}` : '—'} | ${r.selfAnnotated ? '是（剔除）' : ''} |`,
+      `${r.emptyChapters.length ? `⚠️ ${r.emptyChapters.map(chapterLabel).join('/')}` : '—'} | ${r.selfAnnotated ? '是（剔除）' : ''} |`,
     );
   }
   lines.push('');
@@ -187,14 +188,15 @@ lines.push('## 运行覆盖门禁');
 lines.push('');
 lines.push('> 「空章」= 金标注该章有场景，运行在 Phase2 一个场景都没切出来（整章丢失）。');
 lines.push('> P2 F1 的分母随 pred 数量变化，整章丢失会让 precision 升高，因此覆盖/召回必须单列。');
+lines.push('> 「覆盖判定 PASS」只表示该章至少切出了场景，不代表边界/内容正确；章节标签 chN(idxM) = 正文第 N 章 / chapterIndex M。');
 lines.push('');
-lines.push('| 样本 | run | jobId | 覆盖章 | 空章 | 判定 |');
-lines.push('|------|-----|-------|--------|------|------|');
+lines.push('| 样本 | run | jobId | 覆盖章 | 空章 | 覆盖判定 |');
+lines.push('|------|-----|-------|--------|------|----------|');
 for (const s of report.samples) {
   for (const r of s.runs) {
     lines.push(
       `| ${s.sampleId} | ${r.run} | \`${r.jobId}\` | ${r.coveredChapters}/${s.agg.goldChapterCount} | ` +
-      `${r.emptyChapters.length ? `ch${r.emptyChapters.join('/')}` : '—'} | ${r.emptyChapters.length ? '⚠️ FAIL' : 'PASS'} |`,
+      `${r.emptyChapters.length ? r.emptyChapters.map(chapterLabel).join('/') : '—'} | ${r.emptyChapters.length ? '⚠️ FAIL' : 'PASS'} |`,
     );
   }
 }

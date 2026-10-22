@@ -37,6 +37,16 @@ export function normalizeName(name) {
     .toLowerCase();
 }
 
+/**
+ * 章节标签：`chN(idxM)` —— N 为正文 1 基章号，M 为 0 基 chapterIndex。
+ *
+ * 为什么统一：库内曾同时存在 `ch${chapterIndex}`（0 基）与 `ch${chapterIndex + 1}`
+ * （1 基）两种打印，并排对照会差一章。所有打印章节的位置都用这个函数，禁止手写 `ch`。
+ */
+export function chapterLabel(chapterIndex) {
+  return `ch${chapterIndex + 1}(idx${chapterIndex})`;
+}
+
 /** 角色的全部称呼（canonical + aliases），已归一 */
 export function aliasSetOf(character) {
   const set = new Set();
@@ -322,8 +332,8 @@ export function scorePhase2(goldScenes, predictedScenes, threshold = SCENE_IOU_T
     precision: predCount === 0 ? 0 : round(matched / predCount),
     recall: goldCount === 0 ? 0 : round(matched / goldCount),
     f1: f1(matched, predCount, goldCount),
-    missing: missing.map((s) => `ch${s.chapterIndex}:${s.startParagraph}-${s.endParagraph}`),
-    extra: extra.map((s) => `ch${s.chapterIndex}:${s.startParagraph}-${s.endParagraph}`),
+    missing: missing.map((s) => `${chapterLabel(s.chapterIndex)}:${s.startParagraph}-${s.endParagraph}`),
+    extra: extra.map((s) => `${chapterLabel(s.chapterIndex)}:${s.startParagraph}-${s.endParagraph}`),
   };
 }
 

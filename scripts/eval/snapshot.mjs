@@ -91,6 +91,7 @@ ${health.join('\n')}
 
 > 结论：${gateFails === 0 ? `全部 ${gateTotal} 次运行通过` : `⚠️ ${gateFails}/${gateTotal} 次运行存在整章丢失`}
 > 「空章」不能靠草稿体检发现——草稿是标注，不是运行；这一列直接判定 baseline 的每个 jobId。
+> 覆盖判定 PASS 只表示该章至少切出了场景，不代表边界/内容正确（召回见 ②）；章节标签 chN(idxM) = 正文第 N 章 / chapterIndex M。
 
 ${gateRows.join('\n')}
 

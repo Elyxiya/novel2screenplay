@@ -508,3 +508,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | Phase2 逐章角色上下文改按原文出现（修 P2 退化）；账本第 38 条、flip §7.1 回填根因 | `2de0b8d` |
 | 2026-10-22 | Phase2 修复 zhanlan n=3 复核（P2 0.605→0.658±0.018）；doupo/xiuzhen 未过逐样本门槛，基线保持旧版 | `08e47b2` |
 | 2026-10-22 | doupo P2 判为噪声（Welch 双侧 p=0.606，精确 bootstrap 95% CI 跨 0，P(差值<−0.02)=0.599）；容差改为 max(2pt,0.5σ_old)，基线换血到修复后（doupo n=4，通过依赖第 4 次追加） | `3b576c7` |
+| 2026-10-22 | 勘误：doupo Welch 双侧 p 0.354→0.606（t 分布实现错误）；CI 改为精确枚举 [−0.118,+0.071]；补 optional stopping/双峰/容差方向说明 | `f5d788a` |

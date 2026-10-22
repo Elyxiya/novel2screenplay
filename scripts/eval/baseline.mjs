@@ -1,5 +1,5 @@
 /**
- * 基线聚合：每个样本 3 次运行 → 均值 / 标准差 / 自一致性
+ * 基线聚合：每个样本 3–4 次运行 → 均值 / 标准差 / 自一致性
  *
  * 注意口径：
  * - 「自一致性」= 本次运行 vs run1 的预标草案（同一模型产出）。
@@ -22,14 +22,26 @@ const OUT_DIR = 'pr-evidence/baseline';
 const db = new Database(DB, { readonly: true });
 
 /**
- * 三样本 × 3 次运行。**2026-10-22 刷新**：翻默认后（auto）重跑，全部走 mapreduce
- * （segment prompt v2 + character-sanitizer + phase2-fallback + 温度默认 0.3）的运行，
- * 旧的一组早于 prompt v2，只能作历史对照。
+ * 三样本 × 3–4 次运行。**2026-10-22 换血**：Phase2 逐章角色上下文修复（2de0b8d）后，
+ * doupo 4 次、zhanlan/xiuzhen 各 3 次；旧 3×3 是修复前基线，保留在 git 历史与账本中作对照。
  */
 const RUNS = {
-  'doupo-short': ['job_1792598025156_fscyp9', 'job_1792598116474_tr0xzv', 'job_1792598207476_0zram9'],
-  'zhanlan-short': ['job_1792598293428_tglqn3', 'job_1792598394521_hg7owe', 'job_1792598495594_vlzhnk'],
-  'xiuzhen-short': ['job_1792598596619_tzm757', 'job_1792598793164_52g3x0', 'job_1792598994735_jmg9f1'],
+  'doupo-short': [
+    'job_1792640675117_wpflqx',
+    'job_1792640765755_4j11si',
+    'job_1792640851305_milgkx',
+    'job_1792642895616_gqzukg',
+  ],
+  'zhanlan-short': [
+    'job_1792638287888_iratsw',
+    'job_1792640141470_tuttso',
+    'job_1792640239639_2b9x8i',
+  ],
+  'xiuzhen-short': [
+    'job_1792640445832_681fmc',
+    'job_1792640954103_o4rspd',
+    'job_1792641155110_ylp2u7',
+  ],
 };
 
 function load(jobId) {
@@ -119,7 +131,7 @@ fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.json`), JSON.stringify(re
 // ── Markdown ──
 const fmt = (m) => (m === null || m === undefined ? '—' : m);
 const lines = [];
-lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· 每样本 3 次`);
+lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· 每样本 3–4 次`);
 lines.push('');
 lines.push('> 「跨运行」= 剔除自证运行后，其余运行与金标注的一致性（衡量稳定性）。');
 lines.push('> 「准确率」= 对**人工抽检后**的金标注（仅 reviewed=true 且非自证的运行计入）。');

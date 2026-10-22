@@ -34,6 +34,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -69,6 +70,14 @@ data-test/
 .chrome-cdp-tmp/
 # 早期验证截图（本地资产，不入库）
 .verify-shots/
+
+# 工作流产物：E2E / shot 脚本与截图证据不入库（本地保留运行能力）
+scripts/e2e/
+scripts/shot/
+pr-evidence/
+
+# PPT 构建脚本（本地生成 docs/答辩演示.pptx 用）
+.deck/
 
 
 /docs/项目立项文档.md

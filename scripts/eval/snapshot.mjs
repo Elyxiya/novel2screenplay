@@ -37,7 +37,8 @@ const commit = git(['rev-parse', '--short', 'HEAD']);
 // ① 抽检单体检：只取汇总行，压成纯数字列
 // 注意：它校验的是**金标注草稿**，不是 baseline 里的运行；运行级覆盖门禁见 ①′。
 const health = SAMPLES.map((id) => {
-  const out = runNode('review-sheet.mjs', ['--sample', id, '--draft', `scripts/eval/samples/${id}/gold.json`]);
+  // --stdout：只读不写。否则生成快照会顺手改写被跟踪的 samples/<id>/review.md。
+  const out = runNode('review-sheet.mjs', ['--sample', id, '--draft', `scripts/eval/samples/${id}/gold.json`, '--stdout']);
   const line = out.split('\n').find((l) => l.includes('未切出场景章节')) ?? '';
   const cells = line
     .split('｜')

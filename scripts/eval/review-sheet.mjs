@@ -2,7 +2,10 @@
 /**
  * 抽检审阅单（P2）
  *
- *   node scripts/eval/review-sheet.mjs --sample xiuzhen-short [--draft <file>]
+ *   node scripts/eval/review-sheet.mjs --sample xiuzhen-short [--draft <file>] [--stdout]
+ *
+ * --stdout：只把内容写到标准输出、不落盘。snapshot.mjs 走这条路径——
+ * 否则「生成快照」会顺手改写被跟踪的 samples/<id>/review.md，工作区无故变脏。
  *
  * 输入：annotation.draft.json（LLM 预标）
  * 输出：samples/<id>/review.md —— 人类只需按清单快速核对，不必通读整篇
@@ -39,7 +42,7 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 const sampleId = args.sample;
 if (!sampleId) {
-  console.error('用法: node scripts/eval/review-sheet.mjs --sample <id> [--draft <file>]');
+  console.error('用法: node scripts/eval/review-sheet.mjs --sample <id> [--draft <file>] [--stdout]');
   process.exit(1);
 }
 
@@ -156,8 +159,10 @@ for (let i = 0; i < chapters.length; i++) {
 }
 
 const outPath = path.join(SAMPLES_DIR, sampleId, 'review.md');
-writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
+const content = `${lines.join('\n')}\n`;
+if (!args.stdout) writeFileSync(outPath, content, 'utf8');
 
 console.log(`[review-sheet] ${sampleId}`);
 console.log(`  未切出场景章节 ${missingChapters.length} ｜ 单段落场景 ${tinyScenes.length} ｜ 孤儿角色 ${orphanCharacters.length} ｜ 无别名角色 ${noAlias.length} ｜ 未登记出场名 ${unknownNames.size}`);
-console.log(`  已写入 ${path.relative(ROOT, outPath)}`);
+if (args.stdout) process.stdout.write(content);
+else console.log(`  已写入 ${path.relative(ROOT, outPath)}`);

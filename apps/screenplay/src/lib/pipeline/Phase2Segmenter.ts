@@ -2,6 +2,7 @@ import type { LLMProvider, LLMMessage } from '../llm/types';
 import { SYSTEM_PROMPT as SEGMENT_PROMPT } from '../llm/prompts/segment';
 import { ContextManager, MAX_SCENE_TOKENS, MAX_SEGMENT_TOKENS } from './ContextManager';
 import { groupParagraphsIntoScenes, splitParagraphsWithOffsets } from './phase2-fallback';
+import { selectChapterCharacters } from './phase2-chapter-chars';
 import { safeJsonParse } from '../utils/safe-json';
 import type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 import { isAbortError, throwIfAborted } from './cancel-registry';
@@ -57,12 +58,15 @@ export class Phase2Segmenter {
       console.log(`[Phase2]  章节 #${chapter.index}: "${chapter.title}" (${chapter.text.length} 字)`);
       const truncatedText = await this.ctxManager.truncateToTokens(chapter.text, MAX_SEGMENT_TOKENS);
 
-      // Chapter-scoped character context: only characters introduced in this
-      // chapter, falling back to the full list when filtering yields nothing.
-      const chapterChars = analysis.characters.filter(c => c.sourceChapterIndex === chapter.index);
-      const charsForCtx = chapterChars.length > 0 ? chapterChars : analysis.characters;
-      if (charsForCtx.length < analysis.characters.length) {
-        console.log(`[Phase2]  章节 #${chapter.index} 角色裁剪: ${charsForCtx.length}/${analysis.characters.length}`);
+      // Chapter-scoped character context: 只送「本章原文出现」的角色。
+      // 旧实现按 sourceChapterIndex 过滤，但 truncate 存原书章号（如 65）、mapreduce 存
+      // 「首次出现」章号——前者永远不命中，后者会把主角从后续章节剔掉。见第 38 条。
+      const picked = selectChapterCharacters(analysis.characters, chapter.text);
+      const charsForCtx = picked.selected;
+      if (picked.cropped) {
+        console.log(
+          `[Phase2]  章节 #${chapter.index} 角色裁剪: ${charsForCtx.length}/${analysis.characters.length}（按原文出现）`,
+        );
       }
       const charsContext = charsForCtx
         .map((c) => `${c.name}（别名: ${c.aliases.join('、') || '无'}）`)

@@ -518,3 +518,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | 新增 `scripts/eval/stats.mjs`：jobId→P2 的 t/df/p/CI/P(Δ<x) 唯一出口（复用 scorePhase2、精确枚举 bootstrap、自检 t 分布）；文档统计量只从该工具复制 | `d509b06` |
 | 2026-10-22 | P2 尺子下钻：baseline 逐运行覆盖门禁（覆盖章/空章/FAIL）+ 覆盖率/召回单列 + 快照 ①′；账本第 39/40 条（阈值 0.4–0.6 敏感性、整章丢失却提分） | `aa2a963` `cc2642d` |
 | 2026-10-22 | 章节标签统一为 `chN(idxM)`（`chapterLabel()`，annotation/review-sheet/baseline 共用）；门禁列名改「覆盖判定」并注明 PASS ≠ 内容正确 | `3db960a` `e0e9d8f` |
+| 2026-10-22 | 生成快照不再顺手改写被跟踪的体检单：`review-sheet` 增 `--stdout`（只读不写），`snapshot.mjs` 改走该路径；顺带把 xiuzhen `review.md` 同步到 `chN(idxM)` | `4705822` |

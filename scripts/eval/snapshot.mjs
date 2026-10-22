@@ -35,6 +35,7 @@ const date = new Date().toISOString().slice(0, 10);
 const commit = git(['rev-parse', '--short', 'HEAD']);
 
 // ① 抽检单体检：只取汇总行，压成纯数字列
+// 注意：它校验的是**金标注草稿**，不是 baseline 里的运行；运行级覆盖门禁见 ①′。
 const health = SAMPLES.map((id) => {
   const out = runNode('review-sheet.mjs', ['--sample', id, '--draft', `scripts/eval/samples/${id}/gold.json`]);
   const line = out.split('\n').find((l) => l.includes('未切出场景章节')) ?? '';
@@ -45,7 +46,7 @@ const health = SAMPLES.map((id) => {
   return `| ${id} | ${cells} |`;
 });
 
-// ② 基线（默认 auto，3 次均值）：只取第一张表
+// ② 基线（默认 auto，3–4 次均值）：只取第一张表
 const baselineOut = runNode('baseline.mjs');
 const baselineLines = baselineOut.split('\n');
 const tableStart = baselineLines.findIndex((l) => l.startsWith('| 样本'));
@@ -54,6 +55,16 @@ for (let i = tableStart; i >= 0 && i < baselineLines.length; i++) {
   if (!baselineLines[i].startsWith('|')) break;
   baselineRows.push(baselineLines[i]);
 }
+
+// ②′ 运行覆盖门禁：从 baseline 的「运行覆盖门禁」表原样取行（逐 jobId 判定）
+const gateStart = baselineLines.findIndex((l) => l.startsWith('## 运行覆盖门禁'));
+const gateRows = [];
+for (let i = gateStart + 1; i > 0 && i < baselineLines.length; i++) {
+  if (baselineLines[i].startsWith('|')) gateRows.push(baselineLines[i]);
+}
+const gateBody = gateRows.filter((l) => !l.startsWith('| 样本') && !/^\|\s*-+/.test(l));
+const gateFails = gateBody.filter((l) => l.includes('FAIL')).length;
+const gateTotal = gateBody.length;
 
 // ③ Phase1 A/B
 const abOut = runNode('phase1-ab.mjs');
@@ -67,11 +78,21 @@ const md = `# 状态快照（${date}）
 > 自动生成，请勿手改：\`node scripts/eval/snapshot.mjs\`
 > 提交：\`${commit}\` ｜ 生成时间：${new Date().toISOString()}
 
-## ① 抽检单体检（0 = 干净）
+## ① 抽检单体检（草稿；0 = 干净）
+
+> 口径说明：这一节检查的是**金标注草稿**（\`review-sheet --draft gold.json\`），
+> 不是 baseline 里那几次真实运行。运行级的「整章丢失」请看 ①′。
 
 | 样本 | 未切出章节 | 单段落 | 孤儿 | 无别名 | 未登记 |
 |---|---|---|---|---|---|
 ${health.join('\n')}
+
+## ①′ 运行覆盖门禁（N 次运行；⚠️ = gold 有场景的章切出 0 场景）
+
+> 结论：${gateFails === 0 ? `全部 ${gateTotal} 次运行通过` : `⚠️ ${gateFails}/${gateTotal} 次运行存在整章丢失`}
+> 「空章」不能靠草稿体检发现——草稿是标注，不是运行；这一列直接判定 baseline 的每个 jobId。
+
+${gateRows.join('\n')}
 
 ## ② 基线（默认 auto，每样本 3–4 次）
 

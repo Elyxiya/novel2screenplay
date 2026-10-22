@@ -76,12 +76,18 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
   }
   const draft = JSON.parse(fs.readFileSync(goldFile, 'utf8'));
   const goldJobId = draft.meta?.provenance?.jobId ?? null;
+  // 覆盖门禁：金标注有场景的章，运行是否切出了场景。
+  // 为什么单列：P2 F1 只按 pred 数量算分母，整章丢失会让 pred 变少、precision 反而升高，
+  // 分数看不出「内容缺了一块」，必须把覆盖率与召回拆出来看。
+  const goldChapters = [...new Set((draft.scenes ?? []).map((s) => s.chapterIndex))].sort((a, b) => a - b);
   const runs = jobIds.map((jobId, i) => {
     const { chapters, st } = load(jobId);
     const pred = extractPrediction(st);
     const p1 = scorePhase1(draft.characters, pred.characters);
     const p2 = scorePhase2(draft.scenes, pred.scenes);
     const tr = scoreTraceability(pred.phase3Scenes, chapters);
+    const predChapters = new Set(pred.scenes.map((s) => s.chapterIndex));
+    const emptyChapters = goldChapters.filter((ch) => !predChapters.has(ch)).map((ch) => ch + 1);
     return {
       run: i + 1,
       jobId,
@@ -95,6 +101,11 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
       judge: st.qualityAssessment?.score ?? null,
       agreeP1F1: p1.f1,
       agreeP2F1: p2.f1,
+      p2Recall: p2.recall,
+      p2Matched: p2.matched,
+      p2Pred: p2.predCount,
+      coveredChapters: goldChapters.filter((ch) => predChapters.has(ch)).length,
+      emptyChapters,
     };
   });
 
@@ -116,6 +127,11 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
     // 「准确率」= 对人工抽检后的金标注；未抽检时为空
     accuracyP1F1: { mean: accuracyBase.length ? mean(accuracyBase.map((r) => r.agreeP1F1)) : null, sd: accuracyBase.length ? sd(accuracyBase.map((r) => r.agreeP1F1)) : null },
     accuracyP2F1: { mean: accuracyBase.length ? mean(accuracyBase.map((r) => r.agreeP2F1)) : null, sd: accuracyBase.length ? sd(accuracyBase.map((r) => r.agreeP2F1)) : null },
+    p2Recall: { mean: mean(runs.map((r) => r.p2Recall)), sd: sd(runs.map((r) => r.p2Recall)) },
+    coverage: { mean: mean(runs.map((r) => r.coveredChapters)), sd: sd(runs.map((r) => r.coveredChapters)) },
+    goldChapterCount: goldChapters.length,
+    runsWithEmptyChapters: runs.filter((r) => r.emptyChapters.length > 0).length,
+    runCount: runs.length,
     scoredRuns: scored.length,
     scenesPerChapter: Number((mean(runs.map((r) => r.scenes / r.chapters)) ?? 0).toFixed(2)),
   };
@@ -136,15 +152,16 @@ lines.push('');
 lines.push('> 「跨运行」= 剔除自证运行后，其余运行与金标注的一致性（衡量稳定性）。');
 lines.push('> 「准确率」= 对**人工抽检后**的金标注（仅 reviewed=true 且非自证的运行计入）。');
 lines.push('');
-lines.push('| 样本 | 金标注 | 场景数 | 场景/章 | 角色数 | 溯源 | judge | 跨运行 P1 F1 | 跨运行 P2 F1 | 准确率 P1 F1 | 准确率 P2 F1 |');
-lines.push('|------|--------|--------|---------|--------|------|-------|--------------|--------------|--------------|--------------|');
+lines.push('| 样本 | 金标注 | 场景数 | 场景/章 | 角色数 | 溯源 | judge | 跨运行 P1 F1 | 跨运行 P2 F1 | 准确率 P1 F1 | 准确率 P2 F1 | 覆盖章 | 空章运行 | P2 召回 |');
+lines.push('|------|--------|--------|---------|--------|------|-------|--------------|--------------|--------------|--------------|--------|----------|---------|');
 for (const s of report.samples) {
   const a = s.agg;
   lines.push(
     `| ${s.sampleId} | ${a.goldFile}${a.reviewed ? ' ✓' : ''} | ${a.scenes.mean} ± ${a.scenes.sd} | ${a.scenesPerChapter} | ` +
     `${a.characters.mean} ± ${a.characters.sd} | ${(a.traceability.mean * 100).toFixed(1)}% ± ${(a.traceability.sd * 100).toFixed(1)}% | ` +
     `${a.judge.mean} ± ${a.judge.sd} | ${a.crossRunP1F1.mean} ± ${a.crossRunP1F1.sd} | ${a.crossRunP2F1.mean} ± ${a.crossRunP2F1.sd} | ` +
-    `${fmt(a.accuracyP1F1.mean)} | ${fmt(a.accuracyP2F1.mean)} |`,
+    `${fmt(a.accuracyP1F1.mean)} | ${fmt(a.accuracyP2F1.mean)} | ${a.coverage.mean}/${a.goldChapterCount} | ` +
+    `${a.runsWithEmptyChapters ? `⚠️ ${a.runsWithEmptyChapters}/${a.runCount}` : `0/${a.runCount}`} | ${a.p2Recall.mean} |`,
   );
 }
 lines.push('');
@@ -155,16 +172,33 @@ lines.push('');
 for (const s of report.samples) {
   lines.push(`### ${s.sampleId}`);
   lines.push('');
-  lines.push('| run | jobId | 场景 | 角色 | 场景内角色 | 溯源 | judge | P1 F1 | P2 F1 | 自证 |');
-  lines.push('|-----|-------|------|------|-----------|------|-------|-------|-------|------|');
+  lines.push('| run | jobId | 场景 | 角色 | 场景内角色 | 溯源 | judge | P1 F1 | P2 F1 | P2 召回 | 覆盖章 | 空章 | 自证 |');
+  lines.push('|-----|-------|------|------|-----------|------|-------|-------|-------|---------|--------|------|------|');
   for (const r of s.runs) {
     lines.push(
       `| ${r.run} | \`${r.jobId}\` | ${r.scenes} | ${r.characters} | ${r.charactersInScenes} | ${(r.traceability * 100).toFixed(1)}% | ` +
-      `${r.judge ?? '—'} | ${r.agreeP1F1} | ${r.agreeP2F1} | ${r.selfAnnotated ? '是（剔除）' : ''} |`,
+      `${r.judge ?? '—'} | ${r.agreeP1F1} | ${r.agreeP2F1} | ${r.p2Recall} | ${r.coveredChapters}/${s.agg.goldChapterCount} | ` +
+      `${r.emptyChapters.length ? `⚠️ ch${r.emptyChapters.join('/')}` : '—'} | ${r.selfAnnotated ? '是（剔除）' : ''} |`,
     );
   }
   lines.push('');
 }
+lines.push('## 运行覆盖门禁');
+lines.push('');
+lines.push('> 「空章」= 金标注该章有场景，运行在 Phase2 一个场景都没切出来（整章丢失）。');
+lines.push('> P2 F1 的分母随 pred 数量变化，整章丢失会让 precision 升高，因此覆盖/召回必须单列。');
+lines.push('');
+lines.push('| 样本 | run | jobId | 覆盖章 | 空章 | 判定 |');
+lines.push('|------|-----|-------|--------|------|------|');
+for (const s of report.samples) {
+  for (const r of s.runs) {
+    lines.push(
+      `| ${s.sampleId} | ${r.run} | \`${r.jobId}\` | ${r.coveredChapters}/${s.agg.goldChapterCount} | ` +
+      `${r.emptyChapters.length ? `ch${r.emptyChapters.join('/')}` : '—'} | ${r.emptyChapters.length ? '⚠️ FAIL' : 'PASS'} |`,
+    );
+  }
+}
+lines.push('');
 fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.md`), lines.join('\n') + '\n', 'utf8');
 
 console.log(lines.join('\n'));

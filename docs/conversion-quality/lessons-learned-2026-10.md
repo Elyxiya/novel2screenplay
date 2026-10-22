@@ -504,3 +504,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-21 | 默认翻到 auto（长文 mapreduce / 短文 truncate）；flip 记录 §7 登记为显式偏离；基线/快照标注同步 | `d026876` `b5775e3` |
 | 2026-10-21 | 修正基线标注：那 9 次是翻默认前的 truncate；新增「auto 默认基线」待办 | `d22071e` |
 | 2026-10-22 | 成本口径修正（全链路 ×2.5）+ 第 36 条；auto 3×3 基线落地、P2 反降 + 第 37 条 | `73927ab` `af6e820` |
+| 2026-10-22 | Phase2 逐章角色上下文改按原文出现（修 P2 退化）；账本第 38 条、flip §7.1 回填根因 | `2de0b8d` |

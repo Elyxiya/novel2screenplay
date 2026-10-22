@@ -510,3 +510,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | Phase2 修复 zhanlan n=3 复核（P2 0.605→0.658±0.018）；doupo/xiuzhen 未过逐样本门槛，基线保持旧版 | `08e47b2` |
 | 2026-10-22 | doupo P2 判为噪声（Welch 双侧 p=0.6061，精确 bootstrap 95% CI 跨 0，P(差值<−0.02)=0.5991）；容差改为 max(2pt,0.5σ_old)，基线换血到修复后（doupo n=4，通过依赖第 4 次追加） | `3b576c7` |
 | 2026-10-22 | 勘误：doupo Welch 双侧 p 0.354→0.6061（t 分布实现错误）；CI 改为精确枚举 [−0.1178,+0.0711]；补 optional stopping/双峰/容差方向说明 | `f5d788a` `06194c2` |
+| 2026-10-22 | 新增 `scripts/eval/stats.mjs`：jobId→P2 的 t/df/p/CI/P(Δ<x) 唯一出口（复用 scorePhase2、精确枚举 bootstrap、自检 t 分布）；文档统计量只从该工具复制 | `d509b06` |

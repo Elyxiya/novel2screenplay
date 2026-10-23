@@ -25,8 +25,14 @@ const db = new Database(DB, { readonly: true });
 /**
  * 三样本 × 3–4 次运行。**2026-10-22 换血**：Phase2 逐章角色上下文修复（2de0b8d）后，
  * doupo 4 次、zhanlan/xiuzhen 各 3 次；旧 3×3 是修复前基线，保留在 git 历史与账本中作对照。
+ *
+ * 外部运行集（不改默认）：
+ *   node scripts/eval/baseline.mjs --runs-file runs.json
+ *   node scripts/eval/baseline.mjs --runs '{"doupo-short":["job_...","job_..."]}'
+ * 格式为 `{ 样本ID: [jobId, ...] }`，允许只给部分样本；输出落 `baseline-<date>-custom.*`，
+ * 避免覆盖官方基线，并在表头标注「外部运行集」。
  */
-const RUNS = {
+const DEFAULT_RUNS = {
   'doupo-short': [
     'job_1792640675117_wpflqx',
     'job_1792640765755_4j11si',
@@ -44,6 +50,60 @@ const RUNS = {
     'job_1792641155110_ylp2u7',
   ],
 };
+
+function parseArgs(argv) {
+  const out = { runsFile: null, runsJson: null };
+  for (let i = 0; i < argv.length; i += 1) {
+    const flag = argv[i];
+    if (flag === '--runs-file') out.runsFile = argv[++i];
+    else if (flag === '--runs') out.runsJson = argv[++i];
+    else throw new Error(`未知参数: ${flag}（支持 --runs-file <file> | --runs '<json>'）`);
+  }
+  if (out.runsFile && out.runsJson) throw new Error('--runs 与 --runs-file 只能二选一');
+  for (const v of [out.runsFile, out.runsJson]) {
+    if (v === undefined) throw new Error('--runs / --runs-file 缺少取值');
+  }
+  return out;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const customRuns = Boolean(args.runsFile || args.runsJson);
+let RUNS = DEFAULT_RUNS;
+
+if (customRuns) {
+  let raw;
+  try {
+    raw = args.runsJson ?? fs.readFileSync(args.runsFile, 'utf8');
+  } catch (err) {
+    throw new Error(`读取运行集失败: ${args.runsFile}（${err.code ?? err.message}）`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`运行集不是合法 JSON: ${err.message}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('运行集必须是 { 样本ID: [jobId, ...] } 对象');
+  }
+  for (const [sampleId, jobIds] of Object.entries(parsed)) {
+    if (!Array.isArray(jobIds) || jobIds.length === 0 || jobIds.some((id) => typeof id !== 'string')) {
+      throw new Error(`${sampleId}: jobId 列表必须是非空字符串数组`);
+    }
+    if (new Set(jobIds).size !== jobIds.length) throw new Error(`${sampleId}: jobId 重复`);
+  }
+  const missing = Object.keys(DEFAULT_RUNS).filter((id) => !(id in parsed));
+  if (missing.length) console.warn(`[baseline] 外部运行集未包含样本: ${missing.join(', ')}（本次只统计给定样本）`);
+  RUNS = parsed;
+  for (const [sampleId, jobIds] of Object.entries(RUNS)) {
+    if (!fs.existsSync(path.join('scripts', 'eval', 'samples', sampleId, 'gold.json'))) {
+      throw new Error(`${sampleId}: 缺少 gold.json`);
+    }
+    for (const jobId of jobIds) {
+      if (!db.prepare('SELECT 1 FROM jobs WHERE id=?').get(jobId)) throw new Error(`${sampleId}: job 不存在 ${jobId}`);
+    }
+  }
+}
 
 function load(jobId) {
   const row = db.prepare('SELECT chapter_texts, pipeline_state FROM jobs WHERE id=?').get(jobId);
@@ -64,6 +124,7 @@ function sd(xs) {
 }
 
 const report = { generatedAt: new Date().toISOString(), samples: [] };
+if (customRuns) report.runsSource = 'custom';
 
 for (const [sampleId, jobIds] of Object.entries(RUNS)) {
   const dir = path.join('scripts', 'eval', 'samples', sampleId);
@@ -143,12 +204,16 @@ for (const [sampleId, jobIds] of Object.entries(RUNS)) {
 db.close();
 fs.mkdirSync(OUT_DIR, { recursive: true });
 const stamp = new Date().toISOString().slice(0, 10);
-fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.json`), JSON.stringify(report, null, 2) + '\n', 'utf8');
+const fileStamp = customRuns ? `${stamp}-custom` : stamp;
+fs.writeFileSync(path.join(OUT_DIR, `baseline-${fileStamp}.json`), JSON.stringify(report, null, 2) + '\n', 'utf8');
 
 // ── Markdown ──
 const fmt = (m) => (m === null || m === undefined ? '—' : m);
+const runCounts = Object.values(RUNS).map((ids) => ids.length);
+const runSpan = `${Math.min(...runCounts)}–${Math.max(...runCounts)}`;
+const runSummary = customRuns ? `外部运行集（每样本 ${runSpan} 次）` : `每样本 ${runSpan} 次`;
 const lines = [];
-lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· 每样本 3–4 次`);
+lines.push(`# 基线（${stamp}）· 默认 auto（长文 mapreduce / 短文 truncate）· ${runSummary}`);
 lines.push('');
 lines.push('> 「跨运行」= 剔除自证运行后，其余运行与金标注的一致性（衡量稳定性）。');
 lines.push('> 「准确率」= 对**人工抽检后**的金标注（仅 reviewed=true 且非自证的运行计入）。');
@@ -201,7 +266,7 @@ for (const s of report.samples) {
   }
 }
 lines.push('');
-fs.writeFileSync(path.join(OUT_DIR, `baseline-${stamp}.md`), lines.join('\n') + '\n', 'utf8');
+fs.writeFileSync(path.join(OUT_DIR, `baseline-${fileStamp}.md`), lines.join('\n') + '\n', 'utf8');
 
 console.log(lines.join('\n'));
-console.log(`\n已写入 ${OUT_DIR}/baseline-${stamp}.{md,json}`);
+console.log(`\n已写入 ${OUT_DIR}/baseline-${fileStamp}.{md,json}`);

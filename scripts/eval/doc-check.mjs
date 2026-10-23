@@ -7,7 +7,8 @@
  *   3. 开关名（环境变量改名后文档仍在教旧名字）。
  * 这三类都可以机械校验，没必要每轮靠人 grep。
  *
- * 用法：node scripts/eval/doc-check.mjs
+ * 用法：node scripts/eval/doc-check.mjs [--strict]
+ *   --strict：维护日志里的「进行中」占位视为 FAIL（提交前 / CI 用）；默认放行。
  * 退出码：0 全过；1 有 FAIL（便于将来挂 CI，但当前不改 CI）。
  */
 import fs from 'node:fs';
@@ -15,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const STRICT = process.argv.includes('--strict');
 
 const DOCS = [
   'docs/conversion-quality/lessons-learned-2026-10.md',
@@ -273,9 +275,10 @@ function hasToken(src, token) {
     : ok('三份文档术语一致', `废弃词 ${DEPRECATED.length} 个均未出现`);
 }
 
-// ── 11. 维护日志每一行都必须可追溯（提交号或明确「进行中」）────────────────
+// ── 11. 维护日志每一行都必须可追溯（提交号；「进行中」仅默认模式放行）──────
 //
 // 日志里留「本轮」这类占位，过几天就没人知道对应哪个提交，等于没记。
+// --strict 下「进行中」也不再放行：否则规则可被无限期绕过。
 {
   const doc = read('docs/conversion-quality/lessons-learned-2026-10.md');
   const logStart = doc.search(/^## .*维护日志/m);
@@ -284,13 +287,16 @@ function hasToken(src, token) {
     .split('\n')
     .filter((line) => line.startsWith('| 202') );
   const untracked = rows.filter(
-    (line) => !/`[0-9a-f]{7,}`/.test(line) && !/进行中/.test(line),
+    (line) => (!/`[0-9a-f]{7,}`/.test(line) && !/进行中/.test(line)) || (STRICT && /进行中/.test(line)),
   );
   rows.length === 0
     ? fail('维护日志可追溯', '未解析到任何日志行')
     : untracked.length
-      ? fail('维护日志可追溯', `缺提交号：${untracked.map((l) => l.slice(0, 30)).join(' ｜ ')}`)
-      : ok('维护日志可追溯', `${rows.length} 行均有提交号`);
+      ? fail(
+          '维护日志可追溯',
+          `${STRICT ? 'strict：' : ''}缺提交号${STRICT ? '或仍为「进行中」' : ''}：${untracked.map((l) => l.slice(0, 30)).join(' ｜ ')}`,
+        )
+      : ok('维护日志可追溯', `${rows.length} 行均有提交号${STRICT ? '（strict）' : ''}`);
 }
 
 // ── 12. 「可调参数」表的值必须与代码一致 ──────────────────────────────────

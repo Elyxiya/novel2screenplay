@@ -7,7 +7,7 @@
  * - 任务终态（completed / failed）标记保留，供审计与查询
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 import type { OrchestratorTask } from '../../multi-agent/orchestrator';
 
 export type AgentTaskStatus = 'active' | 'completed' | 'failed';

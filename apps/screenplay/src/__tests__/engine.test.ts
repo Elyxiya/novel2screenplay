@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getDatabase, closeDatabase } from '@/lib/store/sqlite/db';
-import { getEngine, getStorageKind, resetEngine, useEngine } from '@/lib/store/sqlite';
+import { getEngine, getStorageKind, resetEngine, useEngine, getUserRepository } from '@/lib/store/sqlite';
 import { getEngine as rawGetEngine } from '@novel/db';
 
 describe('DbEngine 引擎层', () => {
@@ -76,5 +76,12 @@ describe('DbEngine 引擎层', () => {
     useEngine(engine);
     expect(getEngine()).toBe(engine);
     expect(getStorageKind()).toBe('sqlite');
+  });
+
+  it('冷启动（无连接、无注册引擎）时仓库访问自动初始化，不抛错', () => {
+    // 回归：注册路由冷启动的第一个 DB 访问曾直接取 @novel/db 的 getEngine 而 500；
+    // 仓库必须走 app 层 facade（未注册时内部触发 getDatabase）
+    closeDatabase();
+    expect(() => getUserRepository().getByUsername('cold_start_probe')).not.toThrow();
   });
 });

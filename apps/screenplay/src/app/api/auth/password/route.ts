@@ -34,7 +34,9 @@ export async function PATCH(request: NextRequest) {
     repo.updatePassword(user.id, newHash);
 
     return NextResponse.json({ success: true, message: '密码修改成功' });
-  } catch {
+  } catch (err) {
+    // 对外只回通用文案；真实原因留在服务端日志
+    console.error('[auth/password] 修改密码失败:', err);
     return NextResponse.json({ error: '修改失败，请稍后重试' }, { status: 500 });
   }
 }

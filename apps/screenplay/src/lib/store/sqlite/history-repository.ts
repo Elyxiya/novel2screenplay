@@ -5,7 +5,7 @@
  * 支持版本管理和快速检索。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface HistoryRow {
   id: string;

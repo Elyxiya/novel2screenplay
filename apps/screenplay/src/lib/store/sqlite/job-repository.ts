@@ -5,7 +5,7 @@
  * 所有操作直接操作 SQLite 数据库。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 import type { PipelineJob, SceneStatus } from '../../../types/api';
 import type { StoredJob } from '../job-store';
 

@@ -5,7 +5,7 @@
  * drama.source_job_id → job（剧本），job.novel_id → novel（小说）。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface DramaRecord {
   id: string;

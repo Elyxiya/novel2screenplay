@@ -5,7 +5,7 @@
  * 支撑审计交付与版本对比（GET /api/novels/[id]/versions）。
  * 无外键约束（与既有仓储风格一致）；旧库由 db.ts 幂等迁移补建表。
  */
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface NovelVersionRecord {
   id: string;

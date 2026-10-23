@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
       message: '注册成功',
       user: repo.toPublic(user),
     }, { status: 201 });
-  } catch {
+  } catch (err) {
+    // 对外只回通用文案；真实原因（如数据库未初始化）必须留在服务端日志里，否则无法排查
+    console.error('[auth/register] 注册失败:', err);
     return NextResponse.json({ error: '注册失败，请稍后重试' }, { status: 500 });
   }
 }

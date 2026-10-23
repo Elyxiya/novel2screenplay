@@ -5,7 +5,7 @@
  * Project 是用户的转换项目容器，可以包含多个转换历史。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface ProjectRow {
   id: string;

@@ -6,7 +6,7 @@
  * JSON 列存储，保持上传资产结构不变。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 import type { DraftNovel, NovelVolume, NovelChapter, NovelCharacterCard, NovelWorldItem, CreateDraftParams } from '@novel/contracts/novel';
 
 export interface DraftSummary {

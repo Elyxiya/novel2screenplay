@@ -2,7 +2,7 @@
  * User Repository - 用户账户 CRUD 操作
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface User {
   id: string;

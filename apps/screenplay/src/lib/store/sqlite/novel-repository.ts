@@ -5,7 +5,7 @@
  * 支持"追加章节继续转换"的工作流。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface NovelChapterMeta {
   index: number;

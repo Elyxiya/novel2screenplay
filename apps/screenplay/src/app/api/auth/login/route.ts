@@ -36,7 +36,9 @@ export async function POST(request: NextRequest) {
       message: '登录成功',
       user: repo.toPublic(user),
     });
-  } catch {
+  } catch (err) {
+    // 对外只回通用文案；真实原因留在服务端日志
+    console.error('[auth/login] 登录失败:', err);
     return NextResponse.json({ error: '登录失败，请稍后重试' }, { status: 500 });
   }
 }

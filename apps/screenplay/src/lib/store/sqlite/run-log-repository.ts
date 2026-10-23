@@ -7,7 +7,7 @@
  * 两者不互相替代：把埋点塞进 logs 会让 update 变成 O(n²)。
  */
 
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 
 export interface RunEventRow {
   id: string;

@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { getEngine } from '@novel/db';
+import { getEngine } from './db';
 import { decryptApiKey, encryptApiKey } from '../../llm/api-key-cipher';
 
 export type UserLLMProtocol = 'openai' | 'anthropic';

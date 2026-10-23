@@ -373,9 +373,9 @@
 | 事项 | 状态（2026-10-22 核对） | 备注 |
 |---|---|---|
 | Phase1 按长度自动分流 | **已翻默认**（2026-10-21）：`resolveDefaultPhase1Mode()` → `auto`；回滚只需 `PHASE1_MODE=truncate` | 依据是 Phase1 F1（均值 0.752→0.886）；**这是所有者决策覆盖 R1/R2/R3 的显式偏离**，理由与风险见 flip 记录 §7。三样本都超 30k，所以当前等于「全部走 mapreduce」 |
-| 实体归一（紫色倩影/服务员等） | **实测后降级**：10 次运行里未登记标签共 23 种，其中描述词只有 4 处（妇女/中年男子/县委书记/晓语父亲变体），其余全是「卡里没有这个角色」 | 说明它不是独立问题，而是截断/别名覆盖的子问题；优先解决卡不全（auto 分流）与别名覆盖，而不是再做一层归一 |
-| 别名覆盖 | **部分已做**（2026-10-21）：`alias-normalize.ts` 覆盖「简称↔全称前缀」与「同长同首字仅一字差」，且**只在候选唯一时合并** | 称号型（裂须海盗头子→艾瑞克）仍需别名表或人工。真实运行取证有限：zhanlan 该次未产生未登记标签，合并路径未被触发，目前只有 8 条单测覆盖 |
-| 单段落场景 | **5 处**（xiuzhen 4：ch6:8-8 / 9-9 / 26-26、ch13:8-8；doupo 1：ch4:0-0） | 属切分阈值问题，不是标注问题 |
+| 实体归一（紫色倩影/服务员等） | **实测后降级**：旧测「10 次运行里未登记标签 23 种」不可逐条复现（未记录 jobId）；可复现口径见 `alias-replay-2026-10.md`：全库 72 个 job 共 46 种 / 546 次，其中描述词只占少数，绝大多数是「卡里没有这个角色」 | 说明它不是独立问题，而是截断/别名覆盖的子问题；优先解决卡不全（auto 分流）与别名覆盖，而不是再做一层归一 |
+| 别名覆盖 | **已离线取证**（2026-10-23）：`alias-normalize.ts` 覆盖「简称↔全称前缀」与「同长同首字仅一字差」，且**只在候选唯一时合并**；baseline 10 次运行未登记 **0 种 / 0 次**，全库 46 种中可合并 **3 种 / 19 次**，误合并风险 0 | 反事实「剥后缀再匹配」多合并 **0 种 / 0 次**、新增 1 处误合并（海盗下属→海盗大副），结论是**不扩规则**，杠杆在 Phase1 卡片覆盖；库内另有 4 组「同一别名挂多角色」待列入质检。详见 `alias-replay-2026-10.md` |
+| 单段落场景 | **5 处**（xiuzhen 4：ch6:8-8 / 9-9 / 26-26、ch13:8-8；doupo 1：ch4:0-0），2026-10-23 逐条回溯 | 不是切分阈值（三章 2176/3822/3622 字均未走 fallback），而是 LLM 过切 + 边界光晕放大约 2 倍 + 合并按地点键控；附带发现 `resolveOverlappingPerChapter` 注释称截断、实现未改 start。详见 `single-paragraph-scenes.md` |
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
 | 版权样本 | `doupo-short` 仅本地 | `.git/info/exclude` 命中 `scripts/eval/samples/doupo-*/`，不入库 |
@@ -398,7 +398,8 @@
 | `apps/screenplay/src/lib/llm/prompts/convert-scene.ts` | Phase3 背景不得写成动作 |
 | `scripts/eval/annotation.mjs` | 金标注 schema / 评分 / 校验 |
 | `scripts/eval/review-sheet.mjs` | 抽检单（自动体检） |
-| `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证、逐运行覆盖门禁/召回） |
+| `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证、逐运行覆盖门禁/召回；`--runs/--runs-file` 可传外部运行集） |
+| `scripts/eval/alias-replay.mjs` | 别名覆盖离线回放（直接导入 `alias-normalize.ts` 规则，零 LLM） |
 | `scripts/eval/stats.mjs` | 统计量唯一出口（jobId→P2 的 t/df/p/CI/P(Δ<x)） |
 | `scripts/eval/phase1-ab.mjs` | Phase1 模式 A/B |
 | `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/A/B/文档一致性） |
@@ -447,7 +448,7 @@
 - judge：55–85 分，σ 达 13（2026-10-21 实测）
 - 取消（历史）：从「状态照常 completed、多跑 3 次调用」到「cancelled + ≤1 在途」
 - jobStore 更新（历史）：45.4ms → 8.95ms（2MB 小说）
-- 测试：应用 **747**（85 文件）/ 标注 **34** / 净化 13 / 接地 10，全绿（2026-10-22 实测）
+- 测试：应用 **788**（91 文件）/ 标注 **34** / 净化 13 / 接地 10，全绿（2026-10-23 实测）
 
 ### 状态快照（2026-10-21）
 
@@ -519,3 +520,6 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | P2 尺子下钻：baseline 逐运行覆盖门禁（覆盖章/空章/FAIL）+ 覆盖率/召回单列 + 快照 ①′；账本第 39/40 条（阈值 0.4–0.6 敏感性、整章丢失却提分） | `aa2a963` `cc2642d` |
 | 2026-10-22 | 章节标签统一为 `chN(idxM)`（`chapterLabel()`，annotation/review-sheet/baseline 共用）；门禁列名改「覆盖判定」并注明 PASS ≠ 内容正确 | `3db960a` `e0e9d8f` |
 | 2026-10-22 | 生成快照不再顺手改写被跟踪的体检单：`review-sheet` 增 `--stdout`（只读不写），`snapshot.mjs` 改走该路径；顺带把 xiuzhen `review.md` 同步到 `chN(idxM)` | `4705822` |
+| 2026-10-23 | T4：`baseline.mjs` 支持 `--runs` / `--runs-file` 外部运行集，默认输出逐字节不变；非法参数/缺 job 均 exit≠0 | `a33fd1b` |
+| 2026-10-23 | T2：`alias-replay.mjs` 别名覆盖离线回放 + `alias-replay-2026-10.md`（baseline 10 未登记 0；全库 46 种 / 3 可合并；扩规则 0 收益、1 处新风险） | `051d4ec` |
+| 2026-10-23 | T3：5 处单段落场景逐条回溯，纠正「切分阈值」归因（过切 + 光晕 + 合并键控），详见 `single-paragraph-scenes.md` | `进行中` |

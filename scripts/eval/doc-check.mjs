@@ -287,7 +287,7 @@ function hasToken(src, token) {
     .split('\n')
     .filter((line) => line.startsWith('| 202') );
   const untracked = rows.filter(
-    (line) => (!/`[0-9a-f]{7,}`/.test(line) && !/进行中/.test(line)) || (STRICT && /进行中/.test(line)),
+    (line) => !/`[0-9a-f]{7,}`/.test(line) && (STRICT || !/进行中/.test(line)),
   );
   rows.length === 0
     ? fail('维护日志可追溯', '未解析到任何日志行')

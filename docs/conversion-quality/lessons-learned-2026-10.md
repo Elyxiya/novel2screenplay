@@ -522,4 +522,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-22 | 生成快照不再顺手改写被跟踪的体检单：`review-sheet` 增 `--stdout`（只读不写），`snapshot.mjs` 改走该路径；顺带把 xiuzhen `review.md` 同步到 `chN(idxM)` | `4705822` |
 | 2026-10-23 | T4：`baseline.mjs` 支持 `--runs` / `--runs-file` 外部运行集，默认输出逐字节不变；非法参数/缺 job 均 exit≠0 | `a33fd1b` |
 | 2026-10-23 | T2：`alias-replay.mjs` 别名覆盖离线回放 + `alias-replay-2026-10.md`（baseline 10 未登记 0；全库 46 种 / 3 可合并；扩规则 0 收益、1 处新风险） | `051d4ec` |
-| 2026-10-23 | T3：5 处单段落场景逐条回溯，纠正「切分阈值」归因（过切 + 光晕 + 合并键控），详见 `single-paragraph-scenes.md` | `进行中` |
+| 2026-10-23 | T3：5 处单段落场景逐条回溯，纠正「切分阈值」归因（过切 + 光晕 + 合并键控），详见 `single-paragraph-scenes.md` | `a6e805e` |

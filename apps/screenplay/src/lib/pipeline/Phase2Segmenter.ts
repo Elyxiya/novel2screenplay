@@ -308,7 +308,10 @@ export class Phase2Segmenter {
         const end = scene.originalEndOffset;
 
         if (start < currentEnd) {
-          // Overlap detected — truncate this scene to start from where the previous one ended
+          // 重叠处理（现状，见 2026-10-23 离线重放）：只丢弃「完全被前一场覆盖」的场景；
+          // 部分重叠原样保留，不改 start。曾尝试截断 start 到 currentEnd，实测会让
+          // 单段落场景 12→32、三样本 P2 全降（doupo −0.026 / zhanlan −0.019 / xiuzhen −0.043），
+          // 故保留现状，注释按事实描述。证据：docs/conversion-quality/postprocess-replay-2026-10.md
           this.postProcessStats.overlapFixes += 1;
           if (end > currentEnd) {
             resolved.push({ ...scene, sceneIndex: ++globalIndex });

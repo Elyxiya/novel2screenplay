@@ -375,7 +375,7 @@
 | Phase1 按长度自动分流 | **已翻默认**（2026-10-21）：`resolveDefaultPhase1Mode()` → `auto`；回滚只需 `PHASE1_MODE=truncate` | 依据是 Phase1 F1（均值 0.752→0.886）；**这是所有者决策覆盖 R1/R2/R3 的显式偏离**，理由与风险见 flip 记录 §7。三样本都超 30k，所以当前等于「全部走 mapreduce」 |
 | 实体归一（紫色倩影/服务员等） | **实测后降级**：旧测「10 次运行里未登记标签 23 种」不可逐条复现（未记录 jobId）；可复现口径见 `alias-replay-2026-10.md`：全库 72 个 job 共 46 种 / 546 次，其中描述词只占少数，绝大多数是「卡里没有这个角色」 | 说明它不是独立问题，而是截断/别名覆盖的子问题；优先解决卡不全（auto 分流）与别名覆盖，而不是再做一层归一 |
 | 别名覆盖 | **已离线取证**（2026-10-23）：`alias-normalize.ts` 覆盖「简称↔全称前缀」与「同长同首字仅一字差」，且**只在候选唯一时合并**；baseline 10 次运行未登记 **0 种 / 0 次**，全库 46 种中可合并 **3 种 / 19 次**，误合并风险 0 | 反事实「剥后缀再匹配」多合并 **0 种 / 0 次**、新增 1 处误合并（海盗下属→海盗大副），结论是**不扩规则**，杠杆在 Phase1 卡片覆盖；库内另有 4 组「同一别名挂多角色」待列入质检。详见 `alias-replay-2026-10.md` |
-| 单段落场景 | **5 处**（xiuzhen 4：ch6:8-8 / 9-9 / 26-26、ch13:8-8；doupo 1：ch4:0-0），2026-10-23 逐条回溯 | 不是切分阈值（三章 2176/3822/3622 字均未走 fallback），而是 LLM 过切 + 边界光晕放大约 2 倍 + 合并按地点键控；附带发现 `resolveOverlappingPerChapter` 注释称截断、实现未改 start。详见 `single-paragraph-scenes.md` |
+| 单段落场景 | **双口径**（2026-10-23）：金标注来源 5 处（xiuzhen `hzmwlo` 4 + doupo `qf2qr0` 1）；**baseline 10 次运行合计 12 处**，分布在 7 个 job（`o4rspd` 4 / `ylp2u7` 3 / `gqzukg` 2 / `iratsw` 1 / `681fmc` 1 / `milgkx` 1），其余 3 个 job 为 0 | 单段落是**常态现象，不是个例**——12 处比 5 处更能说明优先级。根因不是切分阈值（三章均未走 fallback），而是 LLM 过切 + 边界光晕 + 合并按地点键控；详见 `single-paragraph-scenes.md` 与 `postprocess-replay-2026-10.md` |
 | judge 人工校准 | 未做 | 需盲评 + Spearman ρ ≥0.7；此前不进入门禁 |
 | 样本规模 | 3 个，**全部 train**（`splitFor` 实测：doupo/zhanlan/xiuzhen 均为 train，holdout=0） | 目标 30–40，留出 20% |
 | 版权样本 | `doupo-short` 仅本地 | `.git/info/exclude` 命中 `scripts/eval/samples/doupo-*/`，不入库 |
@@ -400,6 +400,7 @@
 | `scripts/eval/review-sheet.mjs` | 抽检单（自动体检） |
 | `scripts/eval/baseline.mjs` | 基线聚合（mean±σ、剔除自证、逐运行覆盖门禁/召回；`--runs/--runs-file` 可传外部运行集） |
 | `scripts/eval/alias-replay.mjs` | 别名覆盖离线回放（直接导入 `alias-normalize.ts` 规则，零 LLM） |
+| `scripts/eval/replay-postprocess.mjs` | Phase2 后处理离线重放（必须与落库差异 0，再量化候选规则） |
 | `scripts/eval/stats.mjs` | 统计量唯一出口（jobId→P2 的 t/df/p/CI/P(Δ<x)） |
 | `scripts/eval/phase1-ab.mjs` | Phase1 模式 A/B |
 | `scripts/eval/snapshot.mjs` | 生成带时间戳的状态快照（体检/基线/A/B/文档一致性） |
@@ -523,3 +524,7 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-23 | T4：`baseline.mjs` 支持 `--runs` / `--runs-file` 外部运行集，默认输出逐字节不变；非法参数/缺 job 均 exit≠0 | `a33fd1b` |
 | 2026-10-23 | T2：`alias-replay.mjs` 别名覆盖离线回放 + `alias-replay-2026-10.md`（baseline 10 未登记 0；全库 46 种 / 3 可合并；扩规则 0 收益、1 处新风险） | `051d4ec` |
 | 2026-10-23 | T3：5 处单段落场景逐条回溯，纠正「切分阈值」归因（过切 + 光晕 + 合并键控），详见 `single-paragraph-scenes.md` | `a6e805e` |
+| 2026-10-23 | P2/A2：`replay-postprocess.mjs` 离线重放（10/10 与落库差异 0）+ 预注册门槛量化：B 短场合并单段落 12→1 且 P2 不降，A 重叠截断 12→32 且 P2 全降，否决 | `4ac1051` |
+| 2026-10-23 | P2/A1：`Phase2Segmenter` 重叠处理注释改为事实描述（只丢完全覆盖、不截断 start）——截断方案实测有害，不采用 | `3349c19` |
+| 2026-10-23 | P2/A4：`doc-check --strict` 把「进行中」判 FAIL（变异验证：默认 12/12、strict 11/12 且 exit 1） | `1aee589` |
+| 2026-10-23 | P2/A3：账本第五节单段落场景改双口径（金标注 5 处 / baseline 10 次 12 处），指向 `postprocess-replay-2026-10.md` | `进行中` |

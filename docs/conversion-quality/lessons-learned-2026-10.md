@@ -527,4 +527,4 @@ node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snap
 | 2026-10-23 | P2/A2：`replay-postprocess.mjs` 离线重放（10/10 与落库差异 0）+ 预注册门槛量化：B 短场合并单段落 12→1 且 P2 不降，A 重叠截断 12→32 且 P2 全降，否决 | `4ac1051` |
 | 2026-10-23 | P2/A1：`Phase2Segmenter` 重叠处理注释改为事实描述（只丢完全覆盖、不截断 start）——截断方案实测有害，不采用 | `3349c19` |
 | 2026-10-23 | P2/A4：`doc-check --strict` 把「进行中」判 FAIL（变异验证：默认 12/12、strict 11/12 且 exit 1） | `1aee589` |
-| 2026-10-23 | P2/A3：账本第五节单段落场景改双口径（金标注 5 处 / baseline 10 次 12 处），指向 `postprocess-replay-2026-10.md` | `进行中` |
+| 2026-10-23 | P2/A3：账本第五节单段落场景改双口径（金标注 5 处 / baseline 10 次 12 处），指向 `postprocess-replay-2026-10.md` | `fd4ecf5` |

@@ -66,7 +66,7 @@ function PhaseCard({
             phase.gate.decision === 'pass'
               ? 'text-emerald-600'
               : phase.gate.decision === 'manual_review' || phase.gate.decision === 'review'
-                ? 'text-amber-600'
+                ? 'text-[var(--accent)]'
                 : 'text-red-500'
           }`}
         >
@@ -109,12 +109,12 @@ function PhaseCard({
                 if (e.key === 'Enter' && feedback.trim()) onRevise?.(feedback.trim());
               }}
               placeholder="输入修改建议，如：对白更口语化…"
-              className="flex-1 min-w-0 text-xs rounded-lg border border-amber-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              className="flex-1 min-w-0 text-xs rounded-lg border border-[rgba(var(--accent-rgb),0.4)] px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.3)]"
             />
             <button
               onClick={() => feedback.trim() && onRevise?.(feedback.trim())}
               disabled={!feedback.trim()}
-              className="text-xs px-2.5 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-from)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
               按建议重新生成
             </button>

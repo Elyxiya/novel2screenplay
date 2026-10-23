@@ -92,7 +92,7 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
 
   if (loading) {
     return (
-      <select className={`w-full border rounded-xl p-2.5 text-sm ${className}`} disabled>
+      <select className={`w-full border rounded-xl p-2.5 text-sm bg-[#1c1c22] border-white/10 text-ink-muted ${className}`} disabled>
         <option>加载中...</option>
       </select>
     );
@@ -123,7 +123,7 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
         </select>
 
         {/* 下拉箭头 */}
-        <svg className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <svg className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
 
@@ -136,24 +136,24 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
       {/* 展开详情 */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
+        className="text-xs text-ink-muted hover:text-ink-text flex items-center gap-1"
         type="button"
       >
         {expanded ? '▲ 收起详情' : '▼ 查看详情'}
       </button>
 
       {expanded && (
-        <div className="bg-white/70 backdrop-blur rounded-xl border border-slate-200/70 p-3 space-y-2 text-xs">
+        <div className="bg-[#18181d] rounded-xl border border-white/10 p-3 space-y-2 text-xs">
           {/* 当前模型信息 */}
           <div className="flex justify-between items-center">
-            <span className="text-slate-500">模型成本</span>
-            <span className="font-mono text-slate-700">
+            <span className="text-ink-muted">模型成本</span>
+            <span className="font-mono text-ink-text">
               ¥{cost.input.toFixed(2)} / ¥{cost.output.toFixed(2)} per 1M tokens
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-slate-500">状态</span>
+            <span className="text-ink-muted">状态</span>
             <span className={color}>
               {health === 'healthy' && '正常'}
               {health === 'degraded' && '性能下降'}
@@ -164,12 +164,12 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
 
           {/* 预算使用情况 */}
           {budget && (
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-white/10">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-slate-500">本月预算</span>
-                <span className="text-slate-700">{(100 - budget.monthly.percentage).toFixed(1)}% 剩余</span>
+                <span className="text-ink-muted">本月预算</span>
+                <span className="text-ink-text">{(100 - budget.monthly.percentage).toFixed(1)}% 剩余</span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-1.5">
+              <div className="w-full bg-white/10 rounded-full h-1.5">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
                     budget.monthly.percentage > 80
@@ -185,8 +185,8 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
           )}
 
           {/* 其他可用模型 */}
-          <div className="pt-2 border-t border-slate-100">
-            <p className="text-slate-500 mb-1">其他模型</p>
+          <div className="pt-2 border-t border-white/10">
+            <p className="text-ink-muted mb-1">其他模型</p>
             <div className="space-y-1">
               {adapters.flatMap((adapter) =>
                 adapter.models
@@ -198,10 +198,10 @@ export function ModelSelector({ value, onChange, className = '' }: ModelSelector
                       <button
                         key={model.modelId}
                         onClick={() => onChange(model.modelId)}
-                        className="w-full text-left px-2 py-1 rounded-lg hover:bg-indigo-50/60 flex items-center justify-between transition-colors"
+                        className="w-full text-left px-2 py-1 rounded-lg hover:bg-white/5 flex items-center justify-between transition-colors"
                         type="button"
                       >
-                        <span className="truncate text-slate-600">{model.modelId}</span>
+                        <span className="truncate text-ink-muted">{model.modelId}</span>
                         <span className={mColor}>{mIcon}</span>
                       </button>
                     );

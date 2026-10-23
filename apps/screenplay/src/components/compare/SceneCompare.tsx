@@ -31,9 +31,9 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
   return (
     <div className="flex flex-col h-full">
       {/* View mode toggle — sticky below the outer panel header */}
-      <div className="shrink-0 z-10 sticky top-0 bg-white border-b border-gray-100">
+      <div className="shrink-0 z-10 sticky top-0 bg-[#121216] border-b border-white/8">
         <div className="flex justify-end px-4 py-2">
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex gap-1 bg-white/8 rounded-lg p-1">
             {([
               { key: 'split', label: '对照' },
               { key: 'screenplay', label: '剧本' },
@@ -44,8 +44,8 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
                 onClick={() => setViewMode(m.key)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   viewMode === m.key
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-soft)] shadow-sm'
+                    : 'text-ink-faint hover:text-ink-text'
                 }`}
               >
                 {m.label}
@@ -61,25 +61,25 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
         {viewMode === 'split' && (
           <div className="flex" style={{ minHeight: '100%' }}>
             {/* Left: screenplay */}
-            <div className="flex-1 p-4 border-r border-gray-200 min-w-0">
-              <div className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">剧本内容</div>
+            <div className="flex-1 p-4 border-r border-white/8 min-w-0">
+              <div className="text-xs font-semibold text-ink-faint mb-3 uppercase tracking-wider">剧本内容</div>
               <div className="space-y-4">
                 {scene.content.map((block, bi) => (
                   <div
                     key={bi}
                     className={`p-3 rounded-lg text-sm leading-relaxed ${
                       block.type === 'action'
-                        ? 'bg-gray-50 border border-gray-200 text-gray-600 italic'
-                        : 'bg-blue-50 border border-blue-100'
+                        ? 'bg-white/5 border border-white/10 text-ink-muted italic'
+                        : 'bg-[rgba(var(--accent-rgb),0.05)] border border-[rgba(var(--accent-rgb),0.25)]'
                     }`}
                   >
                     {block.type === 'action' ? (
                       <p>{block.description}</p>
                     ) : (
                       <div>
-                        <p className="font-bold text-blue-800 mb-0.5">{characterName(block.characterId)}</p>
-                        {block.direction && <p className="text-xs text-gray-400 mb-1">({block.direction})</p>}
-                        <p>{block.line}</p>
+                        <p className="font-bold text-[var(--accent-soft)] mb-0.5">{characterName(block.characterId)}</p>
+                        {block.direction && <p className="text-xs text-ink-faint mb-1">({block.direction})</p>}
+                        <p className="text-ink-text">{block.line}</p>
                       </div>
                     )}
                   </div>
@@ -89,17 +89,17 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
 
             {/* Right: original excerpts */}
             <div className="flex-1 p-4 min-w-0">
-              <div className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">对应原文</div>
+              <div className="text-xs font-semibold text-ink-faint mb-3 uppercase tracking-wider">对应原文</div>
               <div className="space-y-4">
                 {blockExceprts.map(({ blockIndex, type, excerpts }) => {
                   if (excerpts.length === 0) {
                     const block = scene.content[blockIndex];
                     return (
                       <div key={blockIndex} className={`p-3 rounded-lg text-sm ${
-                        type === 'action' ? 'bg-gray-50 border border-gray-200' : 'bg-blue-50 border border-blue-100'
+                        type === 'action' ? 'bg-white/5 border border-white/10' : 'bg-[rgba(var(--accent-rgb),0.05)] border border-[rgba(var(--accent-rgb),0.25)]'
                       }`}>
-                        <p className="text-gray-400 italic text-xs mb-1">#block-{blockIndex + 1} — 无对应原文引用</p>
-                        <p className="text-gray-600 italic">
+                        <p className="text-ink-faint italic text-xs mb-1">#block-{blockIndex + 1} — 无对应原文引用</p>
+                        <p className="text-ink-muted italic">
                           {'description' in block ? block.description : block.line}
                         </p>
                       </div>
@@ -107,13 +107,13 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
                   }
                   return excerpts.map((exc, ei) => (
                     <div key={`${blockIndex}-${ei}`} className={`p-3 rounded-lg text-sm ${
-                      type === 'action' ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'
+                      type === 'action' ? 'bg-[rgba(var(--accent-rgb),0.05)] border border-[rgba(var(--accent-rgb),0.25)]' : 'bg-emerald-500/5 border border-emerald-500/25'
                     }`}>
-                      <p className="text-xs font-semibold mb-1.5 text-gray-500">
+                      <p className="text-xs font-semibold mb-1.5 text-ink-muted">
                         {type === 'action' ? '动作' : '对白'} #{blockIndex + 1}
                         {excerpts.length > 1 && <span className="font-normal"> (摘录 {ei + 1}/{excerpts.length})</span>}
                       </p>
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{exc}</p>
+                      <p className="text-ink-text leading-relaxed whitespace-pre-wrap">{exc}</p>
                     </div>
                   ));
                 })}
@@ -125,24 +125,24 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
         {/* Screenplay only */}
         {viewMode === 'screenplay' && (
           <div className="p-4">
-            <div className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">剧本内容</div>
+            <div className="text-xs font-semibold text-ink-faint mb-3 uppercase tracking-wider">剧本内容</div>
             <div className="space-y-4">
               {scene.content.map((block, bi) => (
                 <div
                   key={bi}
                   className={`p-4 rounded-lg text-sm leading-relaxed ${
                     block.type === 'action'
-                      ? 'bg-gray-50 border border-gray-200 text-gray-600 italic'
-                      : 'bg-blue-50 border border-blue-100'
+                      ? 'bg-white/5 border border-white/10 text-ink-muted italic'
+                      : 'bg-[rgba(var(--accent-rgb),0.05)] border border-[rgba(var(--accent-rgb),0.25)]'
                   }`}
                 >
                   {block.type === 'action' ? (
                     <p>{block.description}</p>
                   ) : (
                     <div>
-                      <p className="font-bold text-blue-800 mb-0.5">{characterName(block.characterId)}</p>
-                      {block.direction && <p className="text-xs text-gray-400 mb-1">({block.direction})</p>}
-                      <p>{block.line}</p>
+                      <p className="font-bold text-[var(--accent-soft)] mb-0.5">{characterName(block.characterId)}</p>
+                      {block.direction && <p className="text-xs text-ink-faint mb-1">({block.direction})</p>}
+                      <p className="text-ink-text">{block.line}</p>
                     </div>
                   )}
                 </div>
@@ -154,9 +154,9 @@ export function SceneCompare({ scene, originalText, characters }: SceneComparePr
         {/* Original only */}
         {viewMode === 'original' && (
           <div className="p-4">
-            <div className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">场景原文</div>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+            <div className="text-xs font-semibold text-ink-faint mb-3 uppercase tracking-wider">场景原文</div>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+              <p className="text-sm text-ink-text leading-relaxed whitespace-pre-wrap">
                 {originalText || '（无原文数据）'}
               </p>
             </div>

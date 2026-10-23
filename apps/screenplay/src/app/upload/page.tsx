@@ -174,20 +174,20 @@ export default function UploadPage() {
               场景化重构
             </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white display-font">
             上传小说，生成<span className="neon-text">专业剧本</span>
           </h2>
-          <p className="text-slate-500 mt-3 max-w-xl text-sm sm:text-base leading-relaxed">
+          <p className="text-ink-muted mt-3 max-w-xl text-sm sm:text-base leading-relaxed">
             三步完成：上传小说 → 选择章节与模型 → AI 转换。自动完成角色/地点识别、场景切割与剧本格式重构，全流程可视化。
           </p>
         </div>
       </div>
 
       {/* Tab 切换器 */}
-      <div className="flex gap-1 bg-white/70 backdrop-blur border border-slate-200/70 rounded-xl p-1 w-fit shadow-sm">
+      <div className="flex gap-1 bg-[#101014] border border-white/8 rounded-xl p-1 w-fit shadow-sm">
         <button
           onClick={() => { setTab('novel'); setError(''); setYamlError(''); setYamlPreview(null); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${tab === 'novel' ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/40' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${tab === 'novel' ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-md shadow-[rgba(var(--accent-rgb),0.3)]' : 'text-ink-faint hover:text-ink-text hover:bg-white/5'}`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -196,7 +196,7 @@ export default function UploadPage() {
         </button>
         <button
           onClick={() => { setTab('yaml'); setError(''); setYamlError(''); setYamlPreview(null); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${tab === 'yaml' ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/40' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5 ${tab === 'yaml' ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-md shadow-[rgba(var(--accent-rgb),0.3)]' : 'text-ink-faint hover:text-ink-text hover:bg-white/5'}`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h6" />
@@ -210,20 +210,20 @@ export default function UploadPage() {
 
       {tab === 'novel' ? (
         <>
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+          {error && <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm">{error}</div>}
           {chapters.length === 0 ? (<>
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFileDrop(f); }}
               className={`dropzone-tech p-12 text-center cursor-pointer ${dragOver ? 'dropzone-tech-active' : ''}`}>
               {/* 光晕装饰 */}
-              <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-24 rounded-full bg-cyan-400/20 blur-3xl" />
-              <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/10 to-cyan-400/10 border border-indigo-200/60 flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-24 rounded-full bg-[rgba(var(--accent-rgb),0.15)] blur-3xl" />
+              <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#c8892f]/15 to-[#e8b04a]/15 border border-white/12 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
-              <p className="text-slate-600 font-medium">拖拽 .txt / .md 文件到此处</p>
-              <p className="text-xs text-slate-400 mt-1">支持最大 2MB · 自动识别章节结构</p>
+              <p className="text-ink-text font-medium">拖拽 .txt / .md 文件到此处</p>
+              <p className="text-xs text-ink-faint mt-1">支持最大 2MB · 自动识别章节结构</p>
               <input type="file" accept=".txt,.md" className="hidden" id="fileInput" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileDrop(f); }} />
               <button onClick={() => document.getElementById('fileInput')?.click()} className="glow-btn mt-5" disabled={loading}>
                 {loading ? (
@@ -237,7 +237,7 @@ export default function UploadPage() {
                 ) : '选择文件'}
               </button>
             </div>
-            <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div><div className="relative flex justify-center"><span className="bg-transparent px-3 text-sm text-slate-400">或直接粘贴</span></div></div>
+            <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div><div className="relative flex justify-center"><span className="bg-ink px-3 text-sm text-ink-faint">或直接粘贴</span></div></div>
             <textarea value={text} onChange={e => setText(e.target.value)} placeholder="在此粘贴小说文本..." rows={10}
               className="tech-input resize-y" />
             <button onClick={handlePaste} disabled={loading || !text.trim()} className="glow-btn w-full py-3">
@@ -254,38 +254,38 @@ export default function UploadPage() {
           </>) : (
             <div className="glass-card p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-400 text-white shadow-lg shadow-emerald-200/60">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg shadow-emerald-500/30">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </span>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900">{projectTitle}</h3>
-                  <p className="text-sm text-slate-500">检测到 <span className="font-mono font-semibold text-cyan-600">{chapters.length}</span> 个章节</p>
+                  <h3 className="font-bold text-lg text-white">{projectTitle}</h3>
+                  <p className="text-sm text-ink-muted">检测到 <span className="font-mono font-semibold text-[var(--accent)]">{chapters.length}</span> 个章节</p>
                 </div>
               </div>
               {novelId && (
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200/70 text-indigo-700">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(var(--accent-rgb),0.1)] border border-[rgba(var(--accent-rgb),0.3)] text-[var(--accent-soft)]">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                     已并入工作台资产
                   </span>
                   {convertedChapters.length > 0 && (
-                    <span className="text-slate-500">已转换 <span className="font-mono font-semibold text-emerald-600">{convertedChapters.length}</span>/{chapters.length} 章，续转默认选未转换章节</span>
+                    <span className="text-ink-faint">已转换 <span className="font-mono font-semibold text-emerald-400">{convertedChapters.length}</span>/{chapters.length} 章，续转默认选未转换章节</span>
                   )}
                   {appendedCount > 0 && (
-                    <span className="text-cyan-700">本次新增 <span className="font-mono font-semibold">{appendedCount}</span> 章</span>
+                    <span className="text-cyan-400">本次新增 <span className="font-mono font-semibold">{appendedCount}</span> 章</span>
                   )}
                 </div>
               )}
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {chapters.map((ch, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2.5 bg-white/70 border border-slate-100 rounded-lg text-sm hover:border-cyan-300/50 transition-colors">
-                    <span className="font-mono text-slate-400 w-6 text-right">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="font-medium text-slate-700">{ch.title}</span>
-                    <span className="text-slate-400 text-xs ml-auto">{ch.paragraphCount} 段</span>
+                  <div key={i} className="flex items-center gap-3 p-2.5 bg-[#121216] border border-white/8 rounded-lg text-sm hover:border-[rgba(var(--accent-rgb),0.4)] transition-colors">
+                    <span className="font-mono text-ink-faint w-6 text-right">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="font-medium text-ink-text">{ch.title}</span>
+                    <span className="text-ink-faint text-xs ml-auto">{ch.paragraphCount} 段</span>
                   </div>
                 ))}
               </div>
@@ -304,14 +304,14 @@ export default function UploadPage() {
       ) : (
         <>
           {yamlError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm">
               <p className="font-medium">YAML 格式校验失败</p>
               <pre className="text-xs mt-2 whitespace-pre-wrap">{yamlError}</pre>
             </div>
           )}
 
           {yamlPreview && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-xl text-sm">
               <p className="font-medium">校验通过 ✓</p>
               <p className="text-sm mt-1">
                 《{yamlPreview.title}》— {yamlPreview.totalScenes} 场景 / {yamlPreview.totalCharacters} 角色 / {yamlPreview.totalLocations} 地点
@@ -325,26 +325,26 @@ export default function UploadPage() {
             onDrop={handleYamlDrop}
             className={`dropzone-tech p-12 text-center cursor-pointer ${dragOver ? 'dropzone-tech-active' : ''}`}
           >
-            <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-24 rounded-full bg-indigo-400/20 blur-3xl" />
-            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/10 to-cyan-400/10 border border-indigo-200/60 flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+            <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-72 h-24 rounded-full bg-[rgba(var(--accent-rgb),0.15)] blur-3xl" />
+            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#c8892f]/15 to-[#e8b04a]/15 border border-white/12 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
               </svg>
             </div>
-            <p className="text-slate-600 font-medium">拖拽 .yaml 文件到此处</p>
+            <p className="text-ink-text font-medium">拖拽 .yaml 文件到此处</p>
             <input type="file" accept=".yaml,.yml" className="hidden" id="yamlFileInput"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleYamlFile(f); }} />
             <button onClick={() => document.getElementById('yamlFileInput')?.click()}
               className="glow-btn-ghost mt-5">
               选择 YAML 文件
             </button>
-            <p className="text-xs text-slate-400 mt-3">支持 .yaml 和 .yml 格式，文件需符合剧本 schema 规范</p>
+            <p className="text-xs text-ink-faint mt-3">支持 .yaml 和 .yml 格式，文件需符合剧本 schema 规范</p>
           </div>
 
           {yamlContent && (
             <div className="flex flex-col gap-3">
-              <div className="text-sm text-slate-500">
-                已加载 <span className="font-mono font-semibold text-cyan-600">{yamlContent.split('\n').length}</span> 行
+              <div className="text-sm text-ink-muted">
+                已加载 <span className="font-mono font-semibold text-[var(--accent)]">{yamlContent.split('\n').length}</span> 行
               </div>
               <textarea
                 value={yamlContent}

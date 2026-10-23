@@ -27,11 +27,11 @@ function fmtDate(ts: number): string {
 
 function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone?: 'accent' | 'cyan' | 'emerald' | 'amber' | 'default' }) {
   const tones: Record<string, string> = {
-    accent: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    cyan: 'bg-cyan-50 text-cyan-600 border-cyan-100',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    default: 'bg-slate-50 text-slate-600 border-slate-200',
+    accent: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
+    cyan: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25',
+    emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
+    amber: 'bg-[rgba(var(--accent-rgb),0.15)] text-[var(--accent-soft)] border-[rgba(var(--accent-rgb),0.25)]',
+    default: 'bg-white/8 text-ink-muted border-white/10',
   };
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${tones[tone]}`}>
@@ -45,14 +45,14 @@ function ShotCard({ shot, sourceScreenplayId }: { shot: Shot; sourceScreenplayId
     ? `/result/${sourceScreenplayId}?scene=${shot.sceneNumber}`
     : null;
   return (
-    <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white text-sm font-bold shadow-md shadow-indigo-200/60">
           {shot.shotNumber}
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800 truncate">{shot.slugline}</p>
-          <p className="text-xs text-slate-400">场景 #{shot.sceneNumber}</p>
+          <p className="text-sm font-semibold text-ink-muted truncate">{shot.slugline}</p>
+          <p className="text-xs text-ink-faint">场景 #{shot.sceneNumber}</p>
         </div>
         <div className="ml-auto flex flex-wrap gap-1.5">
           <Badge tone="accent">{SHOT_TYPE_LABELS[shot.shotType] ?? shot.shotType}</Badge>
@@ -76,7 +76,7 @@ function ShotCard({ shot, sourceScreenplayId }: { shot: Shot; sourceScreenplayId
           <Link
             href={sceneUrl}
             prefetch={false}
-            className="inline-flex items-center gap-1 text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-lg px-2.5 py-1 hover:bg-teal-100/80 transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-teal-300 bg-teal-500/10 border border-teal-500/25 rounded-lg px-2.5 py-1 hover:bg-teal-500/20 transition-colors"
             title="查看该镜头对应的剧本场景（剧本页可切「原文对照」查看小说原文）"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -88,37 +88,37 @@ function ShotCard({ shot, sourceScreenplayId }: { shot: Shot; sourceScreenplayId
       )}
 
       {shot.dialogue && (
-        <div className="mb-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 px-3.5 py-2.5">
-          <p className="text-sm text-slate-800">
-            <span className="font-semibold text-indigo-600">{shot.speaker ?? '角色'}：</span>
+        <div className="mb-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 px-3.5 py-2.5">
+          <p className="text-sm text-ink-text">
+            <span className="font-semibold text-indigo-300">{shot.speaker ?? '角色'}：</span>
             {shot.dialogue}
           </p>
         </div>
       )}
 
       {shot.visual && (
-        <p className="text-sm text-slate-600 leading-relaxed">
-          <span className="font-semibold text-slate-400 mr-1.5">画面</span>
+        <p className="text-sm text-ink-muted leading-relaxed">
+          <span className="font-semibold text-ink-faint mr-1.5">画面</span>
           {shot.visual}
         </p>
       )}
 
       {shot.action && (
-        <p className="mt-1.5 text-xs text-slate-500">
-          <span className="font-semibold text-slate-400 mr-1.5">动作</span>
+        <p className="mt-1.5 text-xs text-ink-muted">
+          <span className="font-semibold text-ink-faint mr-1.5">动作</span>
           {shot.action}
         </p>
       )}
 
       {shot.notes && (
-        <p className="mt-1.5 text-xs text-amber-600">
+        <p className="mt-1.5 text-xs text-[var(--accent-soft)]">
           <span className="font-semibold mr-1.5">备注</span>
           {shot.notes}
         </p>
       )}
 
       {shot.subtitle && (
-        <p className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-400">
+        <p className="mt-2 pt-2 border-t border-white/10 text-xs text-ink-faint">
           <span className="font-semibold mr-1.5">字幕</span>
           {shot.subtitle}
         </p>
@@ -278,7 +278,7 @@ function ShortDramaPageInner() {
       {/* 头部 */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold text-ink-text flex items-center gap-2.5">
             <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-indigo-600 text-white shadow-lg shadow-teal-200/60">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <rect x="2" y="4" width="20" height="16" rx="3" />
@@ -287,7 +287,7 @@ function ShortDramaPageInner() {
             </span>
             短剧分镜
           </h1>
-          <p className="text-sm text-slate-500 mt-1">剧本 → 分镜：小说 · 剧本 · 短剧创作链路第三跳</p>
+          <p className="text-sm text-ink-muted mt-1">剧本 → 分镜：小说 · 剧本 · 短剧创作链路第三跳</p>
         </div>
         {!dramaId && (
           <Link
@@ -305,11 +305,11 @@ function ShortDramaPageInner() {
       {/* 详情视图：溯源链 + 分镜表 */}
       {dramaId && drama && (
         <>
-          <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-slate-900 truncate">{drama.metadata.title}</h2>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-slate-500">
+                <h2 className="text-lg font-bold text-ink-text truncate">{drama.metadata.title}</h2>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-ink-muted">
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 9v6m3-6v6m3-6v6m6-6v6m3-6v6M7 5h10" />
@@ -334,7 +334,7 @@ function ShortDramaPageInner() {
                 <button onClick={openEditor} className="glow-btn-ghost !px-4 !py-2 text-xs">编辑</button>
                 <button
                   onClick={handleDelete}
-                  className="!px-4 !py-2 text-xs rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                  className="!px-4 !py-2 text-xs rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
                 >
                   删除
                 </button>
@@ -343,27 +343,27 @@ function ShortDramaPageInner() {
 
             {/* 溯源链：小说 → 剧本 → 短剧 */}
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-slate-400">溯源链</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-100 text-teal-700">
+              <span className="text-ink-faint">溯源链</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25 text-teal-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                 小说
                 {source?.sourceNovelId ? (
-                  <Link href={`/configure?novel=${source.sourceNovelId}`} className="font-semibold underline decoration-teal-200 underline-offset-2 hover:text-teal-800">
+                  <Link href={`/configure?novel=${source.sourceNovelId}`} className="font-semibold underline decoration-teal-500/50 underline-offset-2 hover:text-teal-100">
                     查看资产
                   </Link>
                 ) : '（未关联）'}
               </span>
-              <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
               <Link
                 href={`/result/${source?.sourceJobId}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100/80 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                 剧本
               </Link>
-              <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-600 to-indigo-600 text-white shadow-sm">
@@ -379,50 +379,50 @@ function ShortDramaPageInner() {
             const maxType = stats.shotTypeDist[0]?.count ?? 1;
             const maxCam = stats.cameraDist[0]?.count ?? 1;
             return (
-              <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                  <div className="rounded-xl bg-indigo-50/70 border border-indigo-100 py-3">
-                    <p className="text-xl font-bold text-indigo-600">{formatDuration(stats.totalDurationSec)}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">预估成片时长</p>
+                  <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/25 py-3">
+                    <p className="text-xl font-bold text-indigo-300">{formatDuration(stats.totalDurationSec)}</p>
+                    <p className="text-xs text-ink-muted mt-0.5">预估成片时长</p>
                   </div>
-                  <div className="rounded-xl bg-teal-50/70 border border-teal-100 py-3">
-                    <p className="text-xl font-bold text-teal-600">{stats.dialogueShots} / {stats.mixedShots}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">纯对白 / 混合镜头</p>
+                  <div className="rounded-xl bg-teal-500/10 border border-teal-500/25 py-3">
+                    <p className="text-xl font-bold text-teal-300">{stats.dialogueShots} / {stats.mixedShots}</p>
+                    <p className="text-xs text-ink-muted mt-0.5">纯对白 / 混合镜头</p>
                   </div>
-                  <div className="rounded-xl bg-cyan-50/70 border border-cyan-100 py-3">
-                    <p className="text-xl font-bold text-cyan-600">{stats.dialogueChars}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">台词总字数</p>
+                  <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/25 py-3">
+                    <p className="text-xl font-bold text-cyan-300">{stats.dialogueChars}</p>
+                    <p className="text-xs text-ink-muted mt-0.5">台词总字数</p>
                   </div>
-                  <div className="rounded-xl bg-amber-50/70 border border-amber-100 py-3">
-                    <p className="text-xl font-bold text-amber-600">{stats.actionChars}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">动作总字数</p>
+                  <div className="rounded-xl bg-[rgba(var(--accent-rgb),0.1)] border border-[rgba(var(--accent-rgb),0.25)] py-3">
+                    <p className="text-xl font-bold text-[var(--accent-soft)]">{stats.actionChars}</p>
+                    <p className="text-xs text-ink-muted mt-0.5">动作总字数</p>
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-5 mt-4">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-2">景别分布（{stats.shotTypeDist.length} 种）</p>
+                    <p className="text-xs font-semibold text-ink-muted mb-2">景别分布（{stats.shotTypeDist.length} 种）</p>
                     <div className="space-y-1.5">
                       {stats.shotTypeDist.map(d => (
                         <div key={d.type} className="flex items-center gap-2 text-xs">
-                          <span className="w-12 shrink-0 text-slate-600">{d.label}</span>
-                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <span className="w-12 shrink-0 text-ink-muted">{d.label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
                             <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400" style={{ width: `${(d.count / maxType) * 100}%` }} />
                           </div>
-                          <span className="w-8 text-right text-slate-400">{d.count}</span>
+                          <span className="w-8 text-right text-ink-faint">{d.count}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-2">运镜分布（{stats.cameraDist.length} 种）</p>
+                    <p className="text-xs font-semibold text-ink-muted mb-2">运镜分布（{stats.cameraDist.length} 种）</p>
                     <div className="space-y-1.5">
                       {stats.cameraDist.map(d => (
                         <div key={d.move} className="flex items-center gap-2 text-xs">
-                          <span className="w-14 shrink-0 text-slate-600">{d.label}</span>
-                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <span className="w-14 shrink-0 text-ink-muted">{d.label}</span>
+                          <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
                             <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400" style={{ width: `${(d.count / maxCam) * 100}%` }} />
                           </div>
-                          <span className="w-8 text-right text-slate-400">{d.count}</span>
+                          <span className="w-8 text-right text-ink-faint">{d.count}</span>
                         </div>
                       ))}
                     </div>
@@ -447,18 +447,18 @@ function ShortDramaPageInner() {
       {/* 列表视图 */}
       {!dramaId && (
         <>
-          {loading && <p className="text-sm text-slate-400">加载中...</p>}
+          {loading && <p className="text-sm text-ink-faint">加载中...</p>}
           {error && <p className="text-sm text-red-500">{error}</p>}
           {!loading && !error && summaries && summaries.length === 0 && (
-            <div className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-12 text-center shadow-sm">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mb-4">
-                <svg className="w-7 h-7 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center shadow-sm">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-teal-500/10 border border-teal-500/25 flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
                   <rect x="2" y="4" width="20" height="16" rx="3" />
                   <path d="M10 9l5 3-5 3V9z" />
                 </svg>
               </div>
-              <h3 className="font-semibold text-slate-800">还没有短剧分镜</h3>
-              <p className="text-sm text-slate-500 mt-1.5 mb-5">
+              <h3 className="font-semibold text-ink-muted">还没有短剧分镜</h3>
+              <p className="text-sm text-ink-muted mt-1.5 mb-5">
                 完成小说 → 剧本转换后，在剧本结果页点击「生成短剧分镜」即可创建
               </p>
               <Link
@@ -476,14 +476,14 @@ function ShortDramaPageInner() {
                   key={s.id}
                   href={`/shortdrama?id=${s.id}`}
                   prefetch={false}
-                  className="bg-white/85 backdrop-blur border border-slate-200/70 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-teal-200/80 transition-all group"
+                  className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-teal-500/40 transition-all group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-slate-800 truncate group-hover:text-teal-700 transition-colors">{s.title}</h3>
-                      <p className="text-xs text-slate-400 mt-1">{fmtDate(s.createdAt)}</p>
+                      <h3 className="font-semibold text-ink-muted truncate group-hover:text-teal-300 transition-colors">{s.title}</h3>
+                      <p className="text-xs text-ink-faint mt-1">{fmtDate(s.createdAt)}</p>
                     </div>
-                    <svg className="w-4 h-4 text-slate-300 group-hover:text-teal-500 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-ink-faint group-hover:text-teal-500 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -500,24 +500,24 @@ function ShortDramaPageInner() {
 
       {/* 编辑弹窗 */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass-card w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-900">编辑分镜</h3>
-              <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <h3 className="font-semibold text-ink-text">编辑分镜</h3>
+              <button onClick={() => setEditing(false)} className="text-ink-faint hover:text-ink-text text-xl leading-none">×</button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">标题</label>
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">标题</label>
                 <input
                   value={editTitle}
                   onChange={e => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+                  className="w-full px-3 py-2 rounded-xl border border-white/12 bg-panel text-ink-text text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40"
                   maxLength={100}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">
                   分镜 YAML（保存时将校验结构合法性）
                 </label>
                 <textarea
@@ -525,13 +525,13 @@ function ShortDramaPageInner() {
                   onChange={e => setEditYaml(e.target.value)}
                   rows={18}
                   spellCheck={false}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-300 resize-y"
+                  className="w-full px-3 py-2.5 rounded-xl border border-white/12 bg-panel text-ink-text text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-500/40 resize-y"
                 />
               </div>
               {error && <p className="text-xs text-red-500">{error}</p>}
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100">
-              <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100 transition-colors">
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-white/10">
+              <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-xl text-sm text-ink-muted hover:bg-white/10 transition-colors">
                 取消
               </button>
               <button
@@ -554,7 +554,7 @@ export default function ShortDramaPage() {
     <RequireAuth>
       <Suspense
         fallback={
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-sm text-slate-400">加载中…</div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-sm text-ink-faint">加载中…</div>
         }
       >
         <ShortDramaPageInner />

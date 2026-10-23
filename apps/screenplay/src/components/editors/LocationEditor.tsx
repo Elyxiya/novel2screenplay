@@ -39,20 +39,20 @@ export function LocationEditor({ location, onSave, onDelete }: Props) {
     <div className="glass-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-mono">{location.locationId}</span>
+          <span className="text-xs text-ink-faint font-mono">{location.locationId}</span>
           {editing ? (
             <input
               value={draft.name}
               onChange={e => setDraft({ ...draft, name: e.target.value })}
-              className="font-medium border-b border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 rounded px-1 bg-transparent text-slate-700"
+              className="font-medium border-b border-[rgba(var(--accent-rgb),0.5)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.4)] rounded px-1 bg-transparent text-ink-text"
             />
           ) : (
-            <span className="font-medium text-slate-800">{location.name}</span>
+            <span className="font-medium text-ink-text">{location.name}</span>
           )}
           <span className={`text-xs px-1.5 py-0.5 rounded ${
-            location.type === 'exterior' ? 'bg-emerald-100 text-emerald-700' :
-            location.type === 'interior' ? 'bg-indigo-100 text-indigo-700' :
-            'bg-slate-100 text-slate-600'
+            location.type === 'exterior' ? 'bg-emerald-500/15 text-emerald-300' :
+            location.type === 'interior' ? 'bg-[rgba(var(--accent-rgb),0.15)] text-[var(--accent-soft)]' :
+            'bg-white/10 text-ink-muted'
           }`}>
             {TYPE_LABELS[location.type] || location.type}
           </span>
@@ -61,18 +61,18 @@ export function LocationEditor({ location, onSave, onDelete }: Props) {
           {onDelete && (
             <button
               onClick={async () => { if (confirm(`确定删除地点「${location.name}」？`)) await onDelete(location.locationId); }}
-              className="text-xs text-red-500 border border-red-200 rounded px-2 py-1 hover:bg-red-50 transition-colors"
+              className="text-xs text-red-400 border border-red-500/30 rounded px-2 py-1 hover:bg-red-500/10 transition-colors"
               title="删除地点"
             >
               删除
             </button>
           )}
           {!editing ? (
-            <button onClick={() => setEditing(true)} className="text-xs border border-slate-300 rounded px-2 py-1 hover:bg-white/70 text-slate-600 transition-colors">编辑</button>
+            <button onClick={() => setEditing(true)} className="text-xs border border-white/12 rounded px-2 py-1 hover:bg-white/5 text-ink-muted transition-colors">编辑</button>
           ) : (
             <div className="flex gap-1">
-              <button onClick={save} disabled={saving} className="text-xs bg-gradient-to-r from-indigo-600 to-cyan-500 text-white rounded px-2 py-1 disabled:opacity-50 shadow-sm shadow-indigo-200/50">{saving ? '...' : '保存'}</button>
-              <button onClick={cancel} className="text-xs border border-slate-300 rounded px-2 py-1 hover:bg-white/70 text-slate-600 transition-colors">取消</button>
+              <button onClick={save} disabled={saving} className="text-xs bg-gradient-to-r from-[#c8892f] to-[#e8b04a] text-white rounded px-2 py-1 disabled:opacity-50 shadow-sm shadow-[rgba(var(--accent-rgb),0.2)]">{saving ? '...' : '保存'}</button>
+              <button onClick={cancel} className="text-xs border border-white/12 rounded px-2 py-1 hover:bg-white/5 text-ink-muted transition-colors">取消</button>
             </div>
           )}
         </div>
@@ -81,7 +81,7 @@ export function LocationEditor({ location, onSave, onDelete }: Props) {
       {editing ? (
         <div className="space-y-2">
           <div>
-            <label className="text-xs text-slate-500 block mb-1">场景类型</label>
+            <label className="text-xs text-ink-muted block mb-1">场景类型</label>
             <select
               value={draft.type}
               onChange={e => setDraft({ ...draft, type: e.target.value as Location['type'] })}
@@ -93,7 +93,7 @@ export function LocationEditor({ location, onSave, onDelete }: Props) {
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-500 block mb-1">场景描述</label>
+            <label className="text-xs text-ink-muted block mb-1">场景描述</label>
             <textarea
               value={draft.description}
               onChange={e => setDraft({ ...draft, description: e.target.value })}
@@ -105,7 +105,7 @@ export function LocationEditor({ location, onSave, onDelete }: Props) {
         </div>
       ) : (
         location.description && (
-          <p className="text-xs text-slate-500">{location.description}</p>
+          <p className="text-xs text-ink-muted">{location.description}</p>
         )
       )}
     </div>

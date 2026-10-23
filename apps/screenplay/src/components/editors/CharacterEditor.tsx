@@ -44,34 +44,34 @@ export function CharacterEditor({ character, onSave, onDelete }: Props) {
     <div className="glass-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-mono">{character.characterId}</span>
+          <span className="text-xs text-ink-faint font-mono">{character.characterId}</span>
           {editing ? (
             <input
               value={draft.name}
               onChange={e => setDraft({ ...draft, name: e.target.value })}
-              className="font-bold border-b border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 rounded px-1 bg-transparent text-slate-700"
+              className="font-bold border-b border-[rgba(var(--accent-rgb),0.5)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.4)] rounded px-1 bg-transparent text-ink-text"
             />
           ) : (
-            <span className="font-bold text-slate-800">{character.name}</span>
+            <span className="font-bold text-ink-text">{character.name}</span>
           )}
-          {character.isMajor && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">主角</span>}
+          {character.isMajor && <span className="text-xs bg-[rgba(var(--accent-rgb),0.15)] text-[var(--accent-soft)] px-1.5 py-0.5 rounded">主角</span>}
         </div>
         <div className="flex gap-1 items-center">
           {onDelete && (
             <button
               onClick={async () => { if (confirm(`确定删除角色「${character.name}」？`)) await onDelete(character.characterId); }}
-              className="text-xs text-red-500 border border-red-200 rounded px-2 py-1 hover:bg-red-50 transition-colors"
+              className="text-xs text-red-400 border border-red-500/30 rounded px-2 py-1 hover:bg-red-500/10 transition-colors"
               title="删除角色"
             >
               删除
             </button>
           )}
           {!editing ? (
-            <button onClick={() => setEditing(true)} className="text-xs border border-slate-300 rounded px-2 py-1 hover:bg-white/70 text-slate-600 transition-colors">编辑</button>
+            <button onClick={() => setEditing(true)} className="text-xs border border-white/12 rounded px-2 py-1 hover:bg-white/5 text-ink-muted transition-colors">编辑</button>
           ) : (
             <div className="flex gap-1">
-              <button onClick={save} disabled={saving} className="text-xs bg-gradient-to-r from-indigo-600 to-cyan-500 text-white rounded px-2 py-1 disabled:opacity-50 shadow-sm shadow-indigo-200/50">{saving ? '...' : '保存'}</button>
-              <button onClick={cancel} className="text-xs border border-slate-300 rounded px-2 py-1 hover:bg-white/70 text-slate-600 transition-colors">取消</button>
+              <button onClick={save} disabled={saving} className="text-xs bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white rounded px-2 py-1 disabled:opacity-50 shadow-sm shadow-[rgba(var(--accent-rgb),0.2)]">{saving ? '...' : '保存'}</button>
+              <button onClick={cancel} className="text-xs border border-white/12 rounded px-2 py-1 hover:bg-white/5 text-ink-muted transition-colors">取消</button>
             </div>
           )}
         </div>
@@ -80,26 +80,26 @@ export function CharacterEditor({ character, onSave, onDelete }: Props) {
       {editing ? (
         <div className="space-y-2">
           <div>
-            <label className="text-xs text-slate-500">别名（用顿号分隔）</label>
+            <label className="text-xs text-ink-muted">别名（用顿号分隔）</label>
             <input value={aliasInput} onChange={e => setAliasInput(e.target.value)} className="tech-input !py-1.5 text-sm" placeholder="炎儿、三少爷" />
           </div>
           <div>
-            <label className="text-xs text-slate-500">性格标签（用顿号分隔）</label>
+            <label className="text-xs text-ink-muted">性格标签（用顿号分隔）</label>
             <input value={tagInput} onChange={e => setTagInput(e.target.value)} className="tech-input !py-1.5 text-sm" placeholder="坚韧、自尊" />
           </div>
           <div>
-            <label className="text-xs text-slate-500">角色描述</label>
+            <label className="text-xs text-ink-muted">角色描述</label>
             <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} rows={3} className="tech-input !py-1.5 text-sm resize-y" />
           </div>
           <div className="flex items-center gap-2">
-            <input type="checkbox" id={`major-${character.characterId}`} checked={draft.isMajor} onChange={e => setDraft({ ...draft, isMajor: e.target.checked })} className="accent-cyan-600" />
-            <label htmlFor={`major-${character.characterId}`} className="text-sm text-slate-600">主要角色</label>
+            <input type="checkbox" id={`major-${character.characterId}`} checked={draft.isMajor} onChange={e => setDraft({ ...draft, isMajor: e.target.checked })} className="accent-amber-500" />
+            <label htmlFor={`major-${character.characterId}`} className="text-sm text-ink-muted">主要角色</label>
           </div>
         </div>
       ) : (
         <div className="space-y-1">
           {character.aliases.length > 0 && (
-            <p className="text-xs text-slate-500">别名: {character.aliases.join('、')}</p>
+            <p className="text-xs text-ink-muted">别名: {character.aliases.join('、')}</p>
           )}
           {character.personalityTags.length > 0 && (
             <div className="flex flex-wrap gap-1">
@@ -109,7 +109,7 @@ export function CharacterEditor({ character, onSave, onDelete }: Props) {
             </div>
           )}
           {character.description && (
-            <p className="text-xs text-slate-500 leading-relaxed">{character.description}</p>
+            <p className="text-xs text-ink-muted leading-relaxed">{character.description}</p>
           )}
         </div>
       )}

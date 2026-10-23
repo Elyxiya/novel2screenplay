@@ -50,7 +50,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="glass-card p-3 text-center glass-card-hover">
       <p className="text-2xl font-bold neon-text font-mono">{value}</p>
-      <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+      <p className="text-xs text-ink-muted mt-0.5">{label}</p>
     </div>
   );
 }

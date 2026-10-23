@@ -229,30 +229,30 @@ function ConfigurePageInner() {
         )}
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">转换配置</h2>
-        <p className="text-slate-500 mt-1">
-          《{data.title}》 · <span className="font-mono font-semibold text-cyan-600">{chapters.length}</span> 章 · 已选 <span className="font-mono font-semibold text-indigo-600">{selected.size}</span> 章 · 约 {totalChars.toLocaleString()} 字
+        <h2 className="text-2xl font-bold text-white display-font">转换配置</h2>
+        <p className="text-ink-muted mt-1">
+          《{data.title}》 · <span className="font-mono font-semibold text-[var(--accent)]">{chapters.length}</span> 章 · 已选 <span className="font-mono font-semibold text-neon">{selected.size}</span> 章 · 约 {totalChars.toLocaleString()} 字
         </p>
       </div>
 
       {/* Chapter selection */}
       <div className="glass-card p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <h3 className="font-semibold text-white flex items-center gap-2">
+            <svg className="w-4 h-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h6" />
             </svg>
             选择章节
-            <span className="text-xs font-normal text-slate-400 ml-1">{selected.size}/{chapters.length}</span>
+            <span className="text-xs font-normal text-ink-faint ml-1">{selected.size}/{chapters.length}</span>
           </h3>
           <div className="flex gap-2">
-            <button onClick={selectAll} className="text-xs border border-slate-300 rounded-lg px-2.5 py-1 hover:border-cyan-400/60 hover:text-cyan-700 transition-colors bg-white/60">全选</button>
-            <button onClick={selectNone} className="text-xs border border-slate-300 rounded-lg px-2.5 py-1 hover:border-cyan-400/60 hover:text-cyan-700 transition-colors bg-white/60">清空</button>
-            <button onClick={invert} className="text-xs border border-slate-300 rounded-lg px-2.5 py-1 hover:border-cyan-400/60 hover:text-cyan-700 transition-colors bg-white/60">反选</button>
+            <button onClick={selectAll} className="text-xs border border-white/12 rounded-lg px-2.5 py-1 hover:border-[rgba(var(--accent-rgb),0.5)] hover:text-[var(--accent-soft)] transition-colors bg-white/5">全选</button>
+            <button onClick={selectNone} className="text-xs border border-white/12 rounded-lg px-2.5 py-1 hover:border-[rgba(var(--accent-rgb),0.5)] hover:text-[var(--accent-soft)] transition-colors bg-white/5">清空</button>
+            <button onClick={invert} className="text-xs border border-white/12 rounded-lg px-2.5 py-1 hover:border-[rgba(var(--accent-rgb),0.5)] hover:text-[var(--accent-soft)] transition-colors bg-white/5">反选</button>
           </div>
         </div>
 
-        <p className="text-xs text-slate-400 flex items-center gap-1.5">
+        <p className="text-xs text-ink-faint flex items-center gap-1.5">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -276,24 +276,24 @@ function ConfigurePageInner() {
 
       {/* Model & cost */}
       <div className="glass-card p-6 space-y-4">
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-          <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <h3 className="font-semibold text-white flex items-center gap-2">
+          <svg className="w-4 h-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
           LLM 模型
         </h3>
         <ModelSelector value={model} onChange={setModel} />
 
-        <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-          <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <h3 className="font-semibold text-white flex items-center gap-2">
+          <svg className="w-4 h-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           预估费用
         </h3>
-        <div className="relative rounded-xl border border-slate-200/70 bg-white/70 p-4 min-h-[54px] flex items-center overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-cyan-400/5" />
+        <div className="relative rounded-xl border border-white/10 bg-[#101014] p-4 min-h-[54px] flex items-center overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[rgba(var(--accent-rgb),0.05)] to-neon/5" />
           {costLoading ? (
-            <span className="relative text-slate-400 flex items-center gap-2">
+            <span className="relative text-ink-faint flex items-center gap-2">
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -305,17 +305,17 @@ function ConfigurePageInner() {
               {cost ? (
                 <>
                   <span className="text-lg font-bold neon-text font-mono">{cost.split('，')[0]}</span>
-                  <span className="text-slate-500 ml-2">{cost.split('，').slice(1).join('，')}</span>
+                  <span className="text-ink-muted ml-2">{cost.split('，').slice(1).join('，')}</span>
                 </>
               ) : '计算中...'}
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-400">实际费用取决于场景数量与转换质量，通常不超过 0.1 元</p>
+        <p className="text-xs text-ink-faint">实际费用取决于场景数量与转换质量，通常不超过 0.1 元</p>
       </div>
 
       {selected.size === 0 && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl text-center">
+        <div className="bg-[rgba(var(--accent-rgb),0.1)] border border-[rgba(var(--accent-rgb),0.3)] text-[var(--accent-soft)] text-sm px-4 py-3 rounded-xl text-center">
           ⚠️ 请至少选择 1 章章节进行转换
         </div>
       )}
@@ -369,10 +369,10 @@ function ChapterChip({ index, title, selected, converted = false, onToggle, onRa
       title={`第 ${index + 1} 章：${title}${converted ? '（已转换）' : ''}`}
       className={`relative flex flex-col items-center justify-center rounded-lg py-2 px-1 text-xs transition-all duration-200 select-none min-w-0 ${
         selected
-          ? 'bg-gradient-to-br from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/50 scale-[1.03]'
+          ? 'bg-gradient-to-br from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-md shadow-[rgba(var(--accent-rgb),0.3)] scale-[1.03]'
           : converted
-            ? 'bg-emerald-50/80 text-emerald-600 border border-emerald-300/60'
-            : 'bg-white/70 text-slate-500 hover:bg-white hover:border-cyan-300/50 border border-slate-200'
+            ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+            : 'bg-white/5 text-ink-muted hover:bg-white/10 hover:border-[rgba(var(--accent-rgb),0.4)] border border-white/10'
       }`}
     >
       <span className="font-medium">{index + 1}</span>
@@ -393,7 +393,7 @@ export default function ConfigurePage() {
     <RequireAuth>
       <Suspense
         fallback={
-          <div className="max-w-3xl mx-auto py-12 text-center text-sm text-slate-400">加载中…</div>
+          <div className="max-w-3xl mx-auto py-12 text-center text-sm text-ink-faint">加载中…</div>
         }
       >
         <ConfigurePageInner />

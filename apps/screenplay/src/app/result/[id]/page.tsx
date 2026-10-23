@@ -462,8 +462,8 @@ function ResultPageInner() {
     return Math.ceil(chars / 2);
   }, [chapterTexts]);
 
-  if (loading) return <div className="text-center py-20 text-gray-400">加载中...</div>;
-  if (!screenplay) return <div className="text-center py-20 text-gray-400">未找到剧本数据</div>;
+  if (loading) return <div className="text-center py-20 text-ink-faint">加载中...</div>;
+  if (!screenplay) return <div className="text-center py-20 text-ink-faint">未找到剧本数据</div>;
 
   const sp = screenplay;
   const currentScene = sp.scenes[activeScene];
@@ -481,14 +481,14 @@ function ResultPageInner() {
     <RequireAuth>
     <div className="flex flex-col h-full">
       {/* ── 工具栏：标题/统计 + 操作按钮 + Tabs ── */}
-      <div className="shrink-0 sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/70 shadow-sm">
+      <div className="shrink-0 sticky top-0 z-20 bg-[#101014]/90 backdrop-blur-xl border-b border-white/8 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 space-y-3">
           {/* 标题 + 统计徽章 */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{displayTitle}</h2>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+                <h2 className="text-xl sm:text-2xl font-bold text-white truncate display-font">{displayTitle}</h2>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-ink-muted">
                   <span className="inline-flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -510,16 +510,16 @@ function ResultPageInner() {
                   </span>
                   {a && (
                     <>
-                      <span className="inline-flex items-center gap-1 text-emerald-600">
+                      <span className="inline-flex items-center gap-1 text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />对白 {a.dialoguePercentage}%
                       </span>
-                      <span className="inline-flex items-center gap-1 text-cyan-600">
+                      <span className="inline-flex items-center gap-1 text-cyan-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />动作 {a.actionPercentage}%
                       </span>
                       <span>共 {a.totalWords >= 10000 ? `${(a.totalWords / 10000).toFixed(1)}万` : a.totalWords} 字</span>
                     </>
                   )}
-                  {createdAt > 0 && <span className="text-slate-400">{fmtDate(createdAt)}</span>}
+                  {createdAt > 0 && <span className="text-ink-faint">{fmtDate(createdAt)}</span>}
                 </div>
               </div>
             </div>
@@ -607,7 +607,7 @@ function ResultPageInner() {
 
           {/* Tabs */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1 bg-white/80 backdrop-blur rounded-xl border border-slate-200/70 p-1">
+            <div className="flex items-center gap-1 bg-white/8 backdrop-blur rounded-xl border border-white/10 p-1">
               {([
                 { key: 'scenes', label: '场景', count: sp.scenes.length },
                 { key: 'characters', label: '角色', count: sp.characters.length },
@@ -619,13 +619,13 @@ function ResultPageInner() {
                   onClick={() => setTab(t.key)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     tab === t.key
-                      ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/40'
-                      : 'text-slate-500 hover:bg-slate-100/70'
+                      ? 'bg-gradient-to-r from-[#c8892f] to-[#e8b04a] text-white shadow-md shadow-[rgba(var(--accent-rgb),0.3)]'
+                      : 'text-ink-muted hover:bg-white/5 hover:text-ink-text'
                   }`}
                 >
                   {t.label}
                   {t.count !== null && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-white/25' : 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-white/25' : 'bg-white/8 text-ink-muted'}`}>
                       {t.count}
                     </span>
                   )}
@@ -634,7 +634,7 @@ function ResultPageInner() {
             </div>
             <Link
               href={sourceKind === 'draft' && novelId ? `/writer/${novelId}` : '/workbench'}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-[var(--accent-soft)] transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -652,13 +652,13 @@ function ResultPageInner() {
           {/* ── 场景 Tab ── */}
           {tab === 'scenes' && sp.scenes.length === 0 && (
             <div className="glass-card flex flex-col items-center justify-center text-center py-24 px-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-cyan-50 border border-slate-200/70 flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-transparent border border-white/10 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16M4 12h16M4 19h10" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-700">暂无场景数据</h3>
-              <p className="text-sm text-slate-400 mt-1.5 max-w-md">
+              <h3 className="text-lg font-semibold text-ink-text">暂无场景数据</h3>
+              <p className="text-sm text-ink-faint mt-1.5 max-w-md">
                 本次转换未生成场景。可返回工作台重新配置（角色/地点已在下方 Tab 展示），或检查小说原文与模型选择。
               </p>
             </div>
@@ -668,24 +668,24 @@ function ResultPageInner() {
             <div className="flex gap-3" style={{ height: 'calc(100vh - 235px)' }}>
               {/* 场景导航（可折叠） */}
               {scenesCollapsed ? (
-                <div className="w-11 shrink-0 rounded-xl bg-white border border-slate-200/80 shadow-sm flex flex-col items-center py-3 gap-3">
+                <div className="w-11 shrink-0 rounded-xl bg-[#121216] border border-white/10 shadow-sm flex flex-col items-center py-3 gap-3">
                   <button
                     onClick={() => setScenesCollapsed(false)}
                     title="展开场景列表"
-                    className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg text-ink-faint hover:text-[var(--accent-soft)] hover:bg-[rgba(var(--accent-rgb),0.1)] transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                     </svg>
                   </button>
-                  <span className="text-[10px] text-slate-400 tracking-wide [writing-mode:vertical-rl]">
+                  <span className="text-[10px] text-ink-faint tracking-wide [writing-mode:vertical-rl]">
                     场景列表
                   </span>
-                  <span className="text-xs font-mono text-slate-400">{sp.scenes.length}</span>
+                  <span className="text-xs font-mono text-ink-faint">{sp.scenes.length}</span>
                   <button
                     onClick={() => setScenesCollapsed(false)}
                     title="展开场景列表"
-                    className="flex items-center justify-center w-7 h-7 rounded-lg text-indigo-500 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg text-[var(--accent-soft)] bg-[rgba(var(--accent-rgb),0.1)] hover:bg-[rgba(var(--accent-rgb),0.2)] transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -696,18 +696,18 @@ function ResultPageInner() {
                 <div className="w-60 shrink-0 space-y-1.5 overflow-y-auto pr-1 transition-all duration-300">
                   <div className="flex items-center justify-between px-2 pb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-400 tracking-wider">场景列表</span>
+                      <span className="text-xs font-semibold text-ink-faint tracking-wider">场景列表</span>
                       <button
                         onClick={() => setScenesCollapsed(true)}
                         title="收起场景列表"
-                        className="flex items-center justify-center w-5 h-5 rounded-md text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors"
+                        className="flex items-center justify-center w-5 h-5 rounded-md text-ink-faint hover:text-[var(--accent-soft)] hover:bg-[rgba(var(--accent-rgb),0.1)] transition-colors"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l-7 7 7 7M5 5l-7 7 7 7" />
                         </svg>
                       </button>
                     </div>
-                    <span className="text-xs font-mono text-slate-400">{activeScene + 1}/{sp.scenes.length}</span>
+                    <span className="text-xs font-mono text-ink-faint">{activeScene + 1}/{sp.scenes.length}</span>
                   </div>
                   {sp.scenes.map((s, i) => (
                     <button
@@ -715,11 +715,11 @@ function ResultPageInner() {
                       onClick={() => { setActiveScene(i); setReviseMsg(null); }}
                       className={`w-full text-left p-2.5 rounded-lg text-sm transition-all duration-200 border ${
                         i === activeScene
-                          ? 'bg-gradient-to-r from-indigo-50 to-cyan-50 border-indigo-200 text-indigo-700 shadow-sm'
-                          : 'hover:bg-slate-50 border-transparent text-slate-600'
+                          ? 'bg-gradient-to-r from-[var(--accent-from)]/20 to-transparent border-[rgba(var(--accent-rgb),0.4)] text-[var(--accent-soft)] shadow-sm'
+                          : 'hover:bg-white/5 border-transparent text-ink-muted'
                       }`}
                     >
-                      <span className={`font-mono text-xs ${i === activeScene ? 'text-indigo-500 font-semibold' : 'text-gray-400'}`}>
+                      <span className={`font-mono text-xs ${i === activeScene ? 'text-[var(--accent)] font-semibold' : 'text-ink-faint'}`}>
                         #{String(s.sceneNumber).padStart(2, '0')}
                       </span>
                       <span className="ml-1.5 truncate block">{s.summary || s.slugline}</span>
@@ -731,19 +731,19 @@ function ResultPageInner() {
               {/* 场景详情 */}
               <div className="flex-1 glass-card overflow-hidden flex flex-col">
                 {/* 详情头部：场景信息 + 编辑/对照切换 */}
-                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-200/70 bg-white/40 backdrop-blur z-10 sticky top-0">
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/8 bg-[#121216]/90 backdrop-blur z-10 sticky top-0">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-500 text-white text-sm font-bold shrink-0 shadow-md shadow-indigo-300/40">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#c8892f] to-[#e8b04a] text-white text-sm font-bold shrink-0 shadow-md shadow-[rgba(var(--accent-rgb),0.3)]">
                       {currentScene.sceneNumber}
                     </span>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 truncate text-sm">{currentScene.slugline}</p>
+                      <p className="font-semibold text-ink-text truncate text-sm">{currentScene.slugline}</p>
                       {currentScene.summary && (
-                        <p className="text-xs text-slate-400 truncate">{currentScene.summary}</p>
+                        <p className="text-xs text-ink-faint truncate">{currentScene.summary}</p>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0 ml-3">
+                  <div className="flex gap-1 bg-white/8 rounded-lg p-1 shrink-0 ml-3">
                     {([
                       { key: 'editor', label: '编辑' },
                       { key: 'compare', label: '原文对照' },
@@ -753,8 +753,8 @@ function ResultPageInner() {
                         onClick={() => setSceneViewMode(m.key)}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
                           sceneViewMode === m.key
-                            ? 'bg-white text-indigo-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-soft)] shadow-sm'
+                            : 'text-ink-faint hover:text-ink-text'
                         }`}
                       >
                         {m.label}
@@ -765,9 +765,9 @@ function ResultPageInner() {
 
                 {/* AI 修改栏：编辑视图下按当前场景局部追问（L2） */}
                 {sceneViewMode === 'editor' && (
-                  <div className="shrink-0 px-4 py-2.5 border-b border-amber-100 bg-amber-50/50">
+                  <div className="shrink-0 px-4 py-2.5 border-b border-[rgba(var(--accent-rgb),0.2)] bg-[rgba(var(--accent-rgb),0.05)]">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-amber-700 shrink-0">AI 修改</span>
+                      <span className="text-xs font-semibold text-[var(--accent-soft)] shrink-0">AI 修改</span>
                       <input
                         type="text"
                         value={reviseInputs[currentScene.sceneNumber] ?? ''}
@@ -797,7 +797,7 @@ function ResultPageInner() {
                       {reviseLoading && (
                         <button
                           onClick={stopSceneRevise}
-                          className="!px-2.5 !py-1.5 text-xs border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-50 shrink-0"
+                          className="!px-2.5 !py-1.5 text-xs border border-[rgba(var(--accent-rgb),0.4)] rounded-lg text-[var(--accent-soft)] hover:bg-[rgba(var(--accent-rgb),0.1)] shrink-0"
                         >
                           停止
                         </button>
@@ -805,18 +805,18 @@ function ResultPageInner() {
                     </div>
                     {/* 流式预览：生成中实时刷新；失败/中止时保留已生成内容（原子提交≠原子丢失） */}
                     {reviseStreamBuf && (
-                      <div className="mt-2 border border-amber-200/80 rounded-lg bg-white/70 px-2.5 py-2">
-                        <p className="text-[10px] font-medium text-amber-600 mb-1">
+                      <div className="mt-2 border border-[rgba(var(--accent-rgb),0.25)] rounded-lg bg-panel-2 px-2.5 py-2">
+                        <p className="text-[10px] font-medium text-[var(--accent)] mb-1">
                           {reviseLoading ? '生成中...（JSON 预览）' : '已保留预览（上次修改未提交）'}
                         </p>
-                        <pre className="text-[10px] leading-4 text-slate-500 whitespace-pre-wrap max-h-32 overflow-y-auto m-0">
+                        <pre className="text-[10px] leading-4 text-ink-muted whitespace-pre-wrap max-h-32 overflow-y-auto m-0">
                           {reviseStreamBuf}
-                          {reviseLoading && <span className="inline-block w-1 h-3 bg-amber-400 animate-pulse align-text-bottom ml-0.5" />}
+                          {reviseLoading && <span className="inline-block w-1 h-3 bg-[var(--accent)] animate-pulse align-text-bottom ml-0.5" />}
                         </pre>
                       </div>
                     )}
                     {reviseMsg && (
-                      <p className={`mt-1.5 text-xs ${reviseMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <p className={`mt-1.5 text-xs ${reviseMsg.type === 'ok' ? 'text-emerald-400' : 'text-red-400'}`}>
                         {reviseMsg.text}
                       </p>
                     )}
@@ -886,20 +886,20 @@ function ResultPageInner() {
           {/* ── YAML Tab ── */}
           {tab === 'yaml' && (
             <div className="glass-card flex flex-col min-h-[500px] overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-slate-200/70 shrink-0">
-                <h3 className="font-semibold text-sm text-slate-700">YAML 输出</h3>
+              <div className="flex items-center justify-between p-4 border-b border-white/8 shrink-0">
+                <h3 className="font-semibold text-sm text-ink-text">YAML 输出</h3>
                 <div className="flex gap-2">
                   {!editingYaml ? (
                     <>
-                      <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">编辑</button>
-                      <button onClick={copyYaml} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">复制</button>
+                      <button onClick={() => { setEditingYaml(true); setEditYaml(yaml); }} className="px-3 py-1.5 border border-white/12 rounded-lg text-xs hover:bg-white/5 text-ink-muted transition-colors">编辑</button>
+                      <button onClick={copyYaml} className="px-3 py-1.5 border border-white/12 rounded-lg text-xs hover:bg-white/5 text-ink-muted transition-colors">复制</button>
                     </>
                   ) : (
                     <>
-                      <button onClick={saveYaml} disabled={savingYaml} className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white rounded-lg text-xs shadow-md shadow-indigo-300/40 disabled:opacity-50">
+                      <button onClick={saveYaml} disabled={savingYaml} className="px-3 py-1.5 bg-gradient-to-r from-[#c8892f] to-[#e8b04a] text-white rounded-lg text-xs shadow-md shadow-[rgba(var(--accent-rgb),0.3)] disabled:opacity-50">
                         {savingYaml ? '保存中...' : '校验并保存'}
                       </button>
-                      <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs hover:bg-white/70 text-slate-600 transition-colors">取消</button>
+                      <button onClick={() => { setEditingYaml(false); setEditYaml(yaml); }} className="px-3 py-1.5 border border-white/12 rounded-lg text-xs hover:bg-white/5 text-ink-muted transition-colors">取消</button>
                     </>
                   )}
                 </div>
@@ -909,7 +909,7 @@ function ResultPageInner() {
                 onChange={e => editingYaml && setEditYaml(e.target.value)}
                 readOnly={!editingYaml}
                 rows={30}
-                className={`w-full p-4 text-xs font-mono resize-none focus:outline-none overflow-y-auto flex-1 bg-transparent ${editingYaml ? 'bg-cyan-50/50' : ''}`}
+                className={`w-full p-4 text-xs font-mono resize-none focus:outline-none overflow-y-auto flex-1 bg-transparent text-ink-muted ${editingYaml ? 'bg-[rgba(var(--accent-rgb),0.05)]' : ''}`}
                 spellCheck={false}
               />
             </div>
@@ -920,21 +920,21 @@ function ResultPageInner() {
       {/* ── 追加章节弹窗 ── */}
       {appendOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setAppendOpen(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAppendOpen(false)} />
           <div className="relative w-full max-w-lg glass-card rounded-3xl shadow-2xl p-6 animate-float-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-400 text-white shadow-lg shadow-indigo-300/40">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#c8892f] to-[#e8b04a] text-white shadow-lg shadow-[rgba(var(--accent-rgb),0.3)]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                   </svg>
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900">追加章节</h3>
-                  <p className="text-xs text-slate-500">《{displayTitle}》· 续写后可在配置页继续转换</p>
+                  <h3 className="font-bold text-white">追加章节</h3>
+                  <p className="text-xs text-ink-muted">《{displayTitle}》· 续写后可在配置页继续转换</p>
                 </div>
               </div>
-              <button onClick={() => setAppendOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => setAppendOpen(false)} className="text-ink-faint hover:text-ink-text transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -944,17 +944,17 @@ function ResultPageInner() {
             {/* 文件选择 */}
             <button
               onClick={() => document.getElementById('appendFileInput')?.click()}
-              className="w-full p-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-cyan-400/60 hover:bg-cyan-50/30 transition-all text-center"
+              className="w-full p-4 rounded-xl border-2 border-dashed border-white/15 hover:border-[rgba(var(--accent-rgb),0.5)] hover:bg-[rgba(var(--accent-rgb),0.05)] transition-all text-center"
             >
               {appendFile ? (
-                <p className="text-sm text-cyan-700 font-medium truncate">{appendFile.name}</p>
+                <p className="text-sm text-[var(--accent-soft)] font-medium truncate">{appendFile.name}</p>
               ) : (
                 <>
-                  <svg className="w-6 h-6 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <svg className="w-6 h-6 mx-auto text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <p className="text-sm text-slate-500 mt-2">选择 .txt / .md 文件</p>
-                  <p className="text-xs text-slate-400 mt-0.5">仅追加新章节，已有内容自动去重</p>
+                  <p className="text-sm text-ink-muted mt-2">选择 .txt / .md 文件</p>
+                  <p className="text-xs text-ink-faint mt-0.5">仅追加新章节，已有内容自动去重</p>
                 </>
               )}
             </button>
@@ -969,10 +969,10 @@ function ResultPageInner() {
             {/* 文本粘贴 */}
             <div className="relative mt-3">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+                <div className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-xs text-slate-400">或直接粘贴章节文本</span>
+                <span className="bg-panel px-3 text-xs text-ink-faint">或直接粘贴章节文本</span>
               </div>
             </div>
             <textarea
@@ -985,7 +985,7 @@ function ResultPageInner() {
 
             {/* 结果提示 */}
             {appendMsg && (
-              <div className={`mt-3 text-sm px-4 py-3 rounded-xl ${appendMsg.type === 'ok' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+              <div className={`mt-3 text-sm px-4 py-3 rounded-xl ${appendMsg.type === 'ok' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border border-red-500/30 text-red-300'}`}>
                 {appendMsg.text}
               </div>
             )}
@@ -1031,24 +1031,24 @@ function ResultPageInner() {
       {/* ── 全局套用弹窗（L3：scope=all）── */}
       {reviseAllOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !reviseAllLoading && setReviseAllOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 animate-float-up">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !reviseAllLoading && setReviseAllOpen(false)} />
+          <div className="relative w-full max-w-lg glass-card rounded-3xl shadow-2xl p-6 animate-float-up">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 text-white shadow-lg shadow-amber-300/40">
+                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-lg shadow-[rgba(var(--accent-rgb),0.3)]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900">全局套用 AI 修改</h3>
-                  <p className="text-xs text-slate-500">按一条指令重写全部 {sp.scenes.length} 个场景，建议先在单场景试用</p>
+                  <h3 className="font-bold text-white">全局套用 AI 修改</h3>
+                  <p className="text-xs text-ink-muted">按一条指令重写全部 {sp.scenes.length} 个场景，建议先在单场景试用</p>
                 </div>
               </div>
               <button
                 onClick={() => setReviseAllOpen(false)}
                 disabled={reviseAllLoading}
-                className="text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40"
+                className="text-ink-faint hover:text-ink-text transition-colors disabled:opacity-40"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1065,17 +1065,17 @@ function ResultPageInner() {
               disabled={reviseAllLoading}
             />
 
-            <div className="mt-3 flex items-start gap-2 text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200/70">
-              <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <div className="mt-3 flex items-start gap-2 text-xs text-ink-muted bg-panel-2 rounded-xl p-3 border border-white/10">
+              <svg className="w-4 h-4 shrink-0 mt-0.5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                预计输入约 <b className="text-slate-700">{estimateReviseAllTokens >= 1000 ? `${(estimateReviseAllTokens / 1000).toFixed(1)}k` : estimateReviseAllTokens}</b> tokens（按章节原文长度粗估），输出另计。全局重写耗时会明显长于单场景修改。
+                预计输入约 <b className="text-ink-text">{estimateReviseAllTokens >= 1000 ? `${(estimateReviseAllTokens / 1000).toFixed(1)}k` : estimateReviseAllTokens}</b> tokens（按章节原文长度粗估），输出另计。全局重写耗时会明显长于单场景修改。
               </span>
             </div>
 
             {reviseAllMsg && (
-              <div className={`mt-3 text-sm px-4 py-3 rounded-xl ${reviseAllMsg.type === 'ok' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+              <div className={`mt-3 text-sm px-4 py-3 rounded-xl ${reviseAllMsg.type === 'ok' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border border-red-500/30 text-red-300'}`}>
                 {reviseAllMsg.text}
               </div>
             )}
@@ -1121,7 +1121,7 @@ function ResultPageInner() {
 
 export default function ResultPage() {
   return (
-    <Suspense fallback={<div className="text-center py-20 text-gray-400">加载中...</div>}>
+    <Suspense fallback={<div className="text-center py-20 text-ink-faint">加载中...</div>}>
       <ResultPageInner />
     </Suspense>
   );

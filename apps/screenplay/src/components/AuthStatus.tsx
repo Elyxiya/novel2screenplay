@@ -52,7 +52,7 @@ export function AuthStatus() {
   };
 
   if (!loaded) {
-    return <div className="w-28 h-9 rounded-xl bg-slate-100 animate-pulse" aria-hidden />;
+    return <div className="w-28 h-9 rounded-xl bg-white/8 animate-pulse" aria-hidden />;
   }
 
   if (!user) {
@@ -63,13 +63,13 @@ export function AuthStatus() {
       <div className="flex items-center gap-2 shrink-0">
         <Link
           href={`/auth/login${next}`}
-          className="px-3.5 py-2 rounded-xl text-sm font-medium text-slate-600 border border-slate-300 bg-white/70 hover:border-cyan-400/60 hover:text-slate-900 transition-all duration-300"
+          className="px-3.5 py-2 rounded-xl text-sm font-medium text-ink-muted border border-white/12 bg-white/4 hover:border-[rgba(var(--accent-rgb),0.6)] hover:text-white transition-all duration-300"
         >
           登录
         </Link>
         <Link
           href="/auth/register"
-          className="px-3.5 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-cyan-500 shadow-md shadow-indigo-300/40 hover:shadow-lg hover:shadow-indigo-300/60 transition-all duration-300"
+          className="px-3.5 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] shadow-md shadow-[rgba(var(--accent-rgb),0.3)] hover:shadow-lg hover:shadow-[rgba(var(--accent-rgb),0.4)] transition-all duration-300"
         >
           注册
         </Link>
@@ -81,30 +81,30 @@ export function AuthStatus() {
     <div className="relative shrink-0" ref={menuRef}>
       <button
         onClick={() => setMenuOpen((v) => !v)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-xl border border-slate-300 bg-white/70 hover:border-cyan-400/60 hover:shadow-md hover:shadow-cyan-100/60 transition-all duration-300"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-xl border border-white/12 bg-white/4 hover:border-[rgba(var(--accent-rgb),0.6)] hover:shadow-md hover:shadow-[rgba(var(--accent-rgb),0.1)] transition-all duration-300"
         aria-label="账户菜单"
       >
-        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-400 text-white text-xs font-bold">
+        <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-[var(--accent-from)] to-[var(--accent-to)] text-white text-xs font-bold">
           {user.username.slice(0, 1).toUpperCase()}
         </span>
-        <span className="hidden sm:inline text-sm font-medium text-slate-700 max-w-[8rem] truncate">
+        <span className="hidden sm:inline text-sm font-medium text-ink-text max-w-[8rem] truncate">
           {user.username}
         </span>
-        <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <svg className={`w-3.5 h-3.5 text-ink-faint transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-white border border-slate-200 shadow-2xl shadow-slate-200/60 overflow-hidden z-50">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <p className="text-sm font-semibold text-slate-800 truncate">{user.username}</p>
-            <p className="text-xs text-slate-400 truncate">{user.email || '未绑定邮箱'}</p>
+        <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-[#151519] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-50">
+          <div className="px-4 py-3 border-b border-white/10">
+            <p className="text-sm font-semibold text-ink-text truncate">{user.username}</p>
+            <p className="text-xs text-ink-faint truncate">{user.email || '未绑定邮箱'}</p>
           </div>
           <Link
             href="/settings"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink-muted hover:bg-white/5 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -114,7 +114,7 @@ export function AuthStatus() {
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { HistoryPanel } from '@/components/HistoryPanel';
 import { WorkflowStepper, getStepFromPath } from '@/components/WorkflowStepper';
 import { AuthStatus } from '@/components/AuthStatus';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 export function HeaderNav({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -43,53 +44,53 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
       href: '/writer',
       label: '创作台',
       active: pathname?.startsWith('/writer'),
-      activeCls: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent shadow-lg shadow-amber-300/50',
-      idleCls: 'border-slate-300 bg-white/70 text-slate-500 hover:border-amber-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-amber-100/60',
+      activeCls: 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white border-transparent shadow-md shadow-[rgba(var(--accent-rgb),0.2)]',
+      idleCls: 'border-white/10 bg-white/4 text-ink-muted hover:border-[rgba(var(--accent-rgb),0.4)] hover:text-white hover:shadow-md hover:shadow-[rgba(var(--accent-rgb),0.1)]',
       icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
     },
     {
       href: '/agent',
       label: 'Agent 对话',
       active: pathname?.startsWith('/agent'),
-      activeCls: 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white border-transparent shadow-lg shadow-fuchsia-300/50',
-      idleCls: 'border-slate-300 bg-white/70 text-slate-500 hover:border-fuchsia-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-fuchsia-100/60',
+      activeCls: 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white border-transparent shadow-md shadow-fuchsia-500/20',
+      idleCls: 'border-white/10 bg-white/4 text-ink-muted hover:border-fuchsia-500/40 hover:text-white hover:shadow-md hover:shadow-fuchsia-500/10',
       icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
     },
     {
       href: '/shortdrama',
       label: '短剧分镜',
       active: pathname?.startsWith('/shortdrama'),
-      activeCls: 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white border-transparent shadow-lg shadow-teal-300/50',
-      idleCls: 'border-slate-300 bg-white/70 text-slate-500 hover:border-teal-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-teal-100/60',
+      activeCls: 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white border-transparent shadow-md shadow-teal-500/20',
+      idleCls: 'border-white/10 bg-white/4 text-ink-muted hover:border-teal-500/40 hover:text-white hover:shadow-md hover:shadow-teal-500/10',
       icon: 'M2 4h20v16H2zM10 9l5 3-5 3V9z',
     },
     {
       href: '/workbench',
       label: '工作台',
       active: isWorkbenchPage,
-      activeCls: 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-lg shadow-indigo-300/50',
-      idleCls: 'border-slate-300 bg-white/70 text-slate-500 hover:border-cyan-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-cyan-100/60',
+      activeCls: 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-md shadow-cyan-500/20',
+      idleCls: 'border-white/10 bg-white/4 text-ink-muted hover:border-cyan-500/40 hover:text-white hover:shadow-md hover:shadow-cyan-500/10',
       icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     },
   ];
 
   return (
     <>
-      <header className="shrink-0 relative z-50 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl">
+      <header className="shrink-0 relative z-50 border-b border-white/8 bg-[#101014]/85 backdrop-blur-xl">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0 group">
-            <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-400 text-white shadow-lg shadow-indigo-300/50 transition-transform duration-300 group-hover:scale-105">
+            <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-lg shadow-[rgba(var(--accent-rgb),0.3)] transition-transform duration-300 group-hover:scale-105">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6M9 17h4" />
               </svg>
               {/* 呼吸光点 */}
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-300 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--accent)] animate-pulse" />
             </span>
             <span className="hidden lg:flex flex-col leading-tight">
               <span className="text-base font-bold tracking-tight neon-text">Novel2Screenplay</span>
-              <span className="text-[10px] text-slate-400 tracking-widest">小说 → 剧本 · AI 工作台</span>
+              <span className="text-[10px] text-ink-faint tracking-widest">小说 → 剧本 · AI 工作台</span>
             </span>
           </Link>
 
@@ -115,8 +116,8 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
                     href={l.href}
                     className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-all duration-300 ${
                       active
-                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md shadow-indigo-300/40'
-                        : 'text-slate-500 hover:bg-white/70 hover:text-slate-800 hover:shadow-sm'
+                        ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white shadow-md shadow-[rgba(var(--accent-rgb),0.3)]'
+                        : 'text-ink-muted hover:bg-white/5 hover:text-white hover:shadow-sm'
                     }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -131,6 +132,17 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
 
           {/* 桌面端工具导航 */}
           <div className="hidden lg:flex ml-auto items-center gap-2 shrink-0">
+            {/* 全局上传 / 转换入口：处处可达，不再让用户找不到 */}
+            <Link
+              href="/upload"
+              prefetch={false}
+              className="glow-btn !px-4 !py-2 shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              上传 / 转换
+            </Link>
             {TOOL_LINKS.map((l) => (
               <Link
                 key={l.href}
@@ -150,8 +162,8 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               onClick={() => setShowHistory(v => !v)}
               className={`px-3.5 py-2 rounded-xl text-sm flex items-center gap-2 transition-all duration-300 border ${
                 showHistory
-                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-lg shadow-indigo-300/50'
-                  : 'border-slate-300 bg-white/70 text-slate-500 hover:border-cyan-400/60 hover:text-slate-800 hover:shadow-md hover:shadow-cyan-100/60'
+                  ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white border-transparent shadow-md shadow-[rgba(var(--accent-rgb),0.3)]'
+                  : 'border-white/10 bg-white/4 text-ink-muted hover:border-[rgba(var(--accent-rgb),0.4)] hover:text-white hover:shadow-md hover:shadow-[rgba(var(--accent-rgb),0.1)]'
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,6 +171,9 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               </svg>
               <span className="hidden xl:inline">历史</span>
             </button>
+
+            {/* 主题配色切换 */}
+            <ThemeSwitcher />
 
             {/* 用户状态：登录/注册 或 用户菜单 */}
             <AuthStatus />
@@ -170,8 +185,8 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               onClick={() => setShowHistory(v => !v)}
               className={`p-2 rounded-xl border transition-all duration-300 ${
                 showHistory
-                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent'
-                  : 'border-slate-300 bg-white/70 text-slate-500'
+                  ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white border-transparent'
+                  : 'border-white/10 bg-white/4 text-ink-muted'
               }`}
               aria-label="历史记录"
             >
@@ -180,12 +195,13 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               </svg>
             </button>
             <AuthStatus />
+            <ThemeSwitcher />
             <button
               onClick={() => setMobileOpen(v => !v)}
               className={`p-2 rounded-xl border transition-all duration-300 ${
                 mobileOpen
-                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent'
-                  : 'border-slate-300 bg-white/70 text-slate-500'
+                  ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white border-transparent'
+                  : 'border-white/10 bg-white/4 text-ink-muted'
               }`}
               aria-label="菜单"
             >
@@ -202,8 +218,19 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
 
         {/* 移动端下拉菜单 */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-xl">
+          <div className="lg:hidden border-t border-white/8 bg-[#0f0f13]/95 backdrop-blur-xl shadow-2xl">
             <div className="max-w-[1600px] mx-auto px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {/* 全局上传入口：移动端同样处处可达 */}
+              <Link
+                href="/upload"
+                onClick={() => setMobileOpen(false)}
+                className="glow-btn !justify-start !px-3.5 !py-2.5 col-span-full"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                上传小说 / 开始转换
+              </Link>
               {(showSiteNav ? SITE_LINKS : TOOL_LINKS).map((l) => {
                 const active = 'active' in l ? l.active : pathname === l.href;
                 return (
@@ -213,8 +240,8 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
                     onClick={() => setMobileOpen(false)}
                     className={`px-3.5 py-2.5 rounded-xl text-sm flex items-center gap-2.5 border transition-all duration-300 ${
                       active
-                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white border-transparent shadow-md shadow-indigo-300/40'
-                        : 'border-slate-200/70 text-slate-600 hover:bg-white/80 hover:border-cyan-300/60'
+                        ? 'bg-gradient-to-r from-[var(--accent-from)] to-[var(--accent-to)] text-white border-transparent shadow-md shadow-[rgba(var(--accent-rgb),0.3)]'
+                        : 'border-white/10 text-ink-muted hover:bg-white/5 hover:border-[rgba(var(--accent-rgb),0.4)]'
                     }`}
                   >
                     <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -257,7 +284,7 @@ export function HeaderNav({ children }: { children: React.ReactNode }) {
               onClick={() => setShowHistory(false)}
             />
           )}
-          <div className="fixed top-[61px] right-0 h-[calc(100vh-61px)] w-72 bg-white/90 backdrop-blur-xl border-l border-slate-200/70 shadow-2xl flex flex-col z-40 p-3">
+          <div className="fixed top-[61px] right-0 h-[calc(100vh-61px)] w-72 bg-[#121216] backdrop-blur-xl border-l border-white/8 shadow-2xl flex flex-col z-40 p-3">
             <HistoryPanel />
           </div>
         </>

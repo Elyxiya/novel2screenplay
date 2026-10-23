@@ -1,82 +1,180 @@
 @import "tailwindcss";
 
 @theme {
-  /* 科技感色板 */
-  --color-ink: #0f172a;
-  --color-neon: #22d3ee;
-  --color-primary-glow: #6366f1;
-  --color-bg-deep: #0b1020;
+  /* 影院工作台色板（深色） */
+  --color-ink: #0b0b0d;          /* 近黑底色 */
+  --color-panel: #151519;        /* 卡片面板 */
+  --color-panel-2: #1c1c22;      /* 内嵌 / 悬浮面板 */
+  --color-line: rgba(255, 255, 255, 0.08);  /* 弱分隔线 */
+  --color-tungsten: #e8b04a;     /* 主强调 · 钨丝琥珀 */
+  --color-amber-soft: #f5c876;
+  --color-neon: #22d3ee;         /* 次强调 · 管线青 */
+  --color-ink-text: #f2efe9;     /* 主文字 · 暖白 */
+  --color-ink-muted: #a9a49b;    /* 次级文字 · 暖灰 */
+  --color-ink-faint: #6e6a63;    /* 弱化文字 */
+  --color-ink-line: rgba(255, 255, 255, 0.08);
   --font-tech: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", system-ui, serif; /* 片名衬线 */
+}
+
+/* ══ 主题包语义变量 · 主视觉强调系统 ══
+   组件类（.glow-btn / .dropzone / .tech-tag / 进度条 / 背景氛围光…）全部引用
+   这组变量，运行时只切换 <html data-theme="…"> 即整站换肤。文字与升序色
+   （amber/teal 等 Tailwind 内置色板）保持全局一致，读性不破。 */
+
+:root {
+  /* 影院琥珀 · 默认 */
+  --bg-base: #0b0b0d;
+  --bg-base-2: #0e0e11;
+  --glow-a: rgba(232, 176, 74, 0.06); /* 背景主氛围光 */
+  --glow-b: rgba(34, 211, 238, 0.05); /* 背景次氛围光 */
+  --glow-c: rgba(232, 176, 74, 0.04);
+  --accent-rgb: 232, 176, 74;         /* 主强调 RGB（拼 rgba 透明度用） */
+  --accent: #e8b04a;
+  --accent-from: #c8892f;
+  --accent-to: #e8b04a;
+  --accent-soft: #f5c876;
+}
+
+[data-theme="teal"] {
+  /* 冷调片场 · 管线青 */
+  --bg-base: #071317;
+  --bg-base-2: #0a1a1f;
+  --glow-a: rgba(34, 211, 238, 0.10);
+  --glow-b: rgba(232, 176, 74, 0.05);
+  --glow-c: rgba(34, 211, 238, 0.07);
+  --accent-rgb: 34, 211, 238;
+  --accent: #22d3ee;
+  --accent-from: #0ea5c9;
+  --accent-to: #22d3ee;
+  --accent-soft: #7dd3fc;
+}
+
+[data-theme="violet"] {
+  /* 深夜霓虹紫 */
+  --bg-base: #101018;
+  --bg-base-2: #14141f;
+  --glow-a: rgba(167, 139, 250, 0.12);
+  --glow-b: rgba(34, 211, 238, 0.06);
+  --glow-c: rgba(167, 139, 250, 0.08);
+  --accent-rgb: 167, 139, 250;
+  --accent: #a78bfa;
+  --accent-from: #7c3aed;
+  --accent-to: #a78bfa;
+  --accent-soft: #c4b5fd;
+}
+
+[data-theme="emerald"] {
+  /* 翡翠剪辑台 */
+  --bg-base: #08130f;
+  --bg-base-2: #0a1914;
+  --glow-a: rgba(52, 211, 153, 0.10);
+  --glow-b: rgba(34, 211, 238, 0.05);
+  --glow-c: rgba(52, 211, 153, 0.07);
+  --accent-rgb: 52, 211, 153;
+  --accent: #34d399;
+  --accent-from: #059669;
+  --accent-to: #34d399;
+  --accent-soft: #6ee7b9;
 }
 
 @layer base {
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-    @apply text-slate-800 antialiased;
+    @apply text-ink-text antialiased;
+    color: var(--color-ink-text);
     background:
-      radial-gradient(1100px 520px at 88% -12%, rgba(34, 211, 238, 0.16), transparent 62%),
-      radial-gradient(950px 520px at -8% 2%, rgba(99, 102, 241, 0.14), transparent 58%),
-      radial-gradient(700px 420px at 50% 115%, rgba(168, 85, 247, 0.08), transparent 60%),
-      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      radial-gradient(1200px 560px at 88% -12%, var(--glow-a), transparent 62%),
+      radial-gradient(1000px 540px at -8% 2%, var(--glow-b), transparent 58%),
+      radial-gradient(760px 440px at 50% 118%, var(--glow-c), transparent 60%),
+      linear-gradient(180deg, var(--bg-base) 0%, var(--bg-base-2) 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }
 }
 
 @layer components {
-  /* ── 玻璃拟态卡片 ── */
+  /* ── 深色影院面板卡片 ── */
   .glass-card {
-    @apply bg-white/75 backdrop-blur-xl border border-slate-200/70 shadow-lg shadow-indigo-100/60 rounded-2xl;
+    background: var(--color-panel);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 30px rgba(0, 0, 0, 0.35);
   }
   .glass-card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:shadow-cyan-200/40 hover:border-cyan-300/60 hover:-translate-y-0.5;
+    transition: all 0.3s ease;
+  }
+  .glass-card-hover:hover {
+    border-color: rgba(var(--accent-rgb), 0.45);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 38px rgba(var(--accent-rgb), 0.1);
+    transform: translateY(-2px);
   }
 
-  /* ── 霓虹渐变按钮 ── */
+  /* ── 主 CTA · 主题强调 ── */
   .glow-btn {
     @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300;
-    background-image: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-    box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35), 0 1px 3px rgba(34, 211, 238, 0.25);
+    background-image: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+    box-shadow: 0 3px 14px rgba(var(--accent-rgb), 0.28), 0 1px 3px rgba(0, 0, 0, 0.4);
   }
   .glow-btn:hover:not(:disabled) {
-    box-shadow: 0 6px 26px rgba(99, 102, 241, 0.5), 0 0 14px rgba(34, 211, 238, 0.45);
+    box-shadow: 0 6px 24px rgba(var(--accent-rgb), 0.42), 0 0 12px rgba(var(--accent-rgb), 0.3);
     transform: translateY(-1px);
+    filter: brightness(1.05);
   }
   .glow-btn:disabled {
     @apply opacity-40 cursor-not-allowed;
     box-shadow: none;
   }
 
+  /* 暗色描边按钮 */
   .glow-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-300 border border-slate-300 bg-white/60 backdrop-blur text-slate-600 hover:border-cyan-400/70 hover:text-slate-900 hover:shadow-md hover:shadow-cyan-100/60;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-300 border;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--color-ink-text);
+  }
+  .glow-btn-ghost:hover {
+    border-color: rgba(var(--accent-rgb), 0.6);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   }
 
-  /* ── 科技感输入框 ── */
+  /* ── 深色输入框 ── */
   .tech-input {
-    @apply w-full rounded-xl border border-slate-300/80 bg-white/70 backdrop-blur px-4 py-2.5 text-sm outline-none transition-all duration-300 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-300/40 placeholder:text-slate-400;
+    @apply w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-all duration-300;
+    background: var(--color-panel-2);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-ink-text);
+  }
+  .tech-input::placeholder {
+    color: var(--color-ink-faint);
+  }
+  .tech-input:focus {
+    border-color: rgba(var(--accent-rgb), 0.65);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
   }
 
   /* ── 深色终端面板 ── */
   .terminal-panel {
     @apply rounded-xl font-mono text-xs leading-relaxed;
-    background: linear-gradient(180deg, #0b1020 0%, #0d1526 100%);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: inset 0 0 40px rgba(34, 211, 238, 0.05), 0 8px 24px rgba(11, 16, 32, 0.35);
+    background: linear-gradient(180deg, #101014 0%, #0d0d10 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 40px rgba(var(--accent-rgb), 0.04), 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 
-  /* ── 网格背景装饰 ── */
+  /* ── 暗色网格底纹装饰 ── */
   .bg-tech-grid {
     background-image:
-      linear-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
     background-size: 32px 32px;
     mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 100%);
     -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, black 30%, transparent 100%);
   }
 
-  /* ── 霓虹文字 ── */
+  /* ── 片名强调文字（主题强调 → 高光）── */
   .neon-text {
-    background-image: linear-gradient(120deg, #4f46e5 0%, #06b6d4 55%, #7c3aed 100%);
+    background-image: linear-gradient(120deg, var(--accent-from) 0%, var(--accent) 55%, var(--accent-soft) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -89,79 +187,86 @@
   }
   .step-badge-done {
     @apply text-white;
-    background-image: linear-gradient(135deg, #10b981, #22d3ee);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
+    background-image: linear-gradient(135deg, #16a34a, #34d399);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
   }
   .step-badge-active {
     @apply text-white;
-    background-image: linear-gradient(135deg, #6366f1, #22d3ee);
-    box-shadow: 0 0 16px rgba(99, 102, 241, 0.55), 0 0 6px rgba(34, 211, 238, 0.6);
+    background-image: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+    box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.5), 0 0 6px rgba(var(--accent-rgb), 0.6);
     animation: pulse-glow 2s ease-in-out infinite;
   }
   .step-badge-idle {
-    @apply bg-slate-200/80 text-slate-500 border border-slate-300/60;
+    @apply text-ink-faint border;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   /* ── 连接线 ── */
   .step-connector {
     @apply h-px flex-1 mx-2;
-    background-image: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.35), transparent);
+    background-image: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.35), transparent);
   }
   .step-connector-done {
-    background-image: linear-gradient(90deg, rgba(16, 185, 129, 0.5), rgba(34, 211, 238, 0.5));
+    background-image: linear-gradient(90deg, rgba(16, 185, 129, 0.5), rgba(52, 211, 153, 0.5));
   }
 
   /* ── 流光进度条 ── */
   .progress-flow {
     position: relative;
     overflow: hidden;
-    background-image: linear-gradient(90deg, #6366f1 0%, #22d3ee 100%);
+    background-image: linear-gradient(90deg, var(--accent-from) 0%, var(--accent-to) 100%);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .progress-flow::after {
     content: "";
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+    background-image: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
     animation: flow-shine 1.8s linear infinite;
   }
 
   /* ── 发光标签 ── */
   .tech-tag {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.22);
-    color: #4f46e5;
+    background: rgba(var(--accent-rgb), 0.08);
+    border: 1px solid rgba(var(--accent-rgb), 0.22);
+    color: var(--accent);
   }
   .tech-tag-cyan {
     background: rgba(34, 211, 238, 0.08);
     border-color: rgba(34, 211, 238, 0.3);
-    color: #0891b2;
+    color: #22d3ee;
   }
 
   /* ── 拖拽上传区 ── */
   .dropzone-tech {
     @apply relative rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden;
-    border-color: rgba(99, 102, 241, 0.35);
+    border-color: rgba(var(--accent-rgb), 0.35);
     background:
-      radial-gradient(420px 180px at 50% 0%, rgba(99, 102, 241, 0.07), transparent 70%),
-      rgba(255, 255, 255, 0.5);
+      radial-gradient(420px 180px at 50% 0%, rgba(var(--accent-rgb), 0.06), transparent 70%),
+      var(--color-panel-2);
   }
   .dropzone-tech:hover {
-    border-color: rgba(34, 211, 238, 0.7);
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08), 0 12px 32px rgba(99, 102, 241, 0.12);
+    border-color: rgba(var(--accent-rgb), 0.7);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.07), 0 12px 32px rgba(0, 0, 0, 0.4);
   }
   .dropzone-tech-active {
-    border-color: #22d3ee !important;
-    background: rgba(34, 211, 238, 0.06) !important;
-    box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.12), 0 0 32px rgba(34, 211, 238, 0.2);
+    border-color: var(--accent) !important;
+    background: rgba(var(--accent-rgb), 0.06) !important;
+    box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.12), 0 0 32px rgba(var(--accent-rgb), 0.18);
+  }
+
+  /* ── 片名衬线排版辅助类 ── */
+  .display-font {
+    font-family: var(--font-display);
   }
 }
 
 /* ── 动效 ── */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 14px rgba(99, 102, 241, 0.5), 0 0 6px rgba(34, 211, 238, 0.5); }
-  50% { box-shadow: 0 0 22px rgba(99, 102, 241, 0.75), 0 0 12px rgba(34, 211, 238, 0.8); }
+  0%, 100% { box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.4), 0 0 6px rgba(var(--accent-rgb), 0.45); }
+  50% { box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.7), 0 0 12px rgba(var(--accent-rgb), 0.75); }
 }
 
 @keyframes flow-shine {
@@ -183,4 +288,17 @@
 }
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
+}
+
+/* ── 尊重减弱动效偏好：关闭自动 / 循环动画 ── */
+@media (prefers-reduced-motion: reduce) {
+  .step-badge-active,
+  .progress-flow::after,
+  .animate-spin-slow,
+  .animate-pulse {
+    animation: none !important;
+  }
+  .animate-float-up {
+    animation-duration: 0.01ms !important;
+  }
 }

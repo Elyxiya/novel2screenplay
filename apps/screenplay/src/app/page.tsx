@@ -77,11 +77,11 @@ export default function HomePage() {
             <span className="tech-tag tech-tag-cyan">小说 → 剧本</span>
             <span className="tech-tag">全流程可视化</span>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight display-font">
             把小说，变成
             <span className="neon-text">专业剧本</span>
           </h1>
-          <p className="mt-6 text-slate-500 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-ink-muted text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
             Novel2Screenplay 是一款 AI 辅助剧本创作工作台：上传小说，自动完成章节识别、
             角色与地点抽取、场景化重构，输出符合行业规范的结构化剧本，全流程可追踪。
           </p>
@@ -96,28 +96,28 @@ export default function HomePage() {
               查看功能介绍
             </Link>
           </div>
-          <p className="mt-6 text-xs text-slate-400">无需安装 · 注册即用 · 数据与账户绑定</p>
+          <p className="mt-6 text-xs text-ink-faint">无需安装 · 注册即用 · 数据与账户绑定</p>
         </div>
       </section>
 
       {/* ── 核心能力 ── */}
       <section>
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white display-font">
             核心能力<span className="neon-text">一览</span>
           </h2>
-          <p className="text-slate-500 mt-2 text-sm sm:text-base">从原始小说到可拍摄剧本，每个环节都有 AI 加持</p>
+          <p className="text-ink-muted mt-2 text-sm sm:text-base">从原始小说到可拍摄剧本，每个环节都有 AI 加持</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="glass-card glass-card-hover p-6 rounded-2xl group">
-              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-400 text-white shadow-lg shadow-indigo-300/40 transition-transform duration-300 group-hover:scale-110">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-[#c8892f] to-[#e8b04a] text-white shadow-lg shadow-[rgba(var(--accent-rgb),0.3)] transition-transform duration-300 group-hover:scale-110">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
                 </svg>
               </span>
-              <h3 className="mt-4 font-bold text-slate-900 text-lg">{f.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+              <h3 className="mt-4 font-bold text-white text-lg">{f.title}</h3>
+              <p className="mt-2 text-sm text-ink-muted leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -128,23 +128,23 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-tech-grid pointer-events-none opacity-60" />
         <div className="relative">
           <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              三步完成<span className="neon-text">转换</span>
-            </h2>
-            <p className="text-slate-500 mt-2 text-sm sm:text-base">极简流程，几分钟内从小说得到剧本初稿</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white display-font">
+            三步完成<span className="neon-text">转换</span>
+          </h2>
+            <p className="text-ink-muted mt-2 text-sm sm:text-base">极简流程，几分钟内从小说得到剧本初稿</p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <div key={s.no} className="relative p-6 rounded-2xl bg-white/70 border border-slate-200/70 hover:shadow-xl hover:shadow-indigo-100/60 hover:-translate-y-1 transition-all duration-300">
-                <span className="font-mono text-4xl font-extrabold bg-gradient-to-br from-indigo-600 to-cyan-400 bg-clip-text text-transparent">{s.no}</span>
+              <div key={s.no} className="relative p-6 rounded-2xl bg-[#141419] border border-white/10 hover:shadow-xl hover:shadow-[rgba(var(--accent-rgb),0.1)] hover:-translate-y-1 transition-all duration-300">
+                <span className="font-mono text-4xl font-extrabold bg-gradient-to-br from-[#c8892f] to-[#e8b04a] bg-clip-text text-transparent">{s.no}</span>
                 {i < STEPS.length - 1 && (
-                  <svg className="hidden md:block absolute top-1/2 -right-5 w-5 h-5 text-cyan-400 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <svg className="hidden md:block absolute top-1/2 -right-5 w-5 h-5 text-[var(--accent)] -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 )}
-                <h3 className="mt-3 font-bold text-slate-900 text-lg">{s.title}</h3>
-                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{s.desc}</p>
-                <Link href={s.href} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:underline">
+                <h3 className="mt-3 font-bold text-white text-lg">{s.title}</h3>
+                <p className="mt-2 text-sm text-ink-muted leading-relaxed">{s.desc}</p>
+                <Link href={s.href} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-soft)] hover:underline">
                   了解更多
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -159,7 +159,7 @@ export default function HomePage() {
       {/* ── 适用场景 ── */}
       <section>
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white display-font">
             为谁<span className="neon-text">而生</span>
           </h2>
         </div>
@@ -170,8 +170,8 @@ export default function HomePage() {
             { title: '内容团队', desc: '集中管理小说资产与转换历史，成员间分工协作，数据安全隔离。' },
           ].map((s) => (
             <div key={s.title} className="glass-card glass-card-hover p-6 rounded-2xl text-center">
-              <h3 className="font-bold text-slate-900 text-lg">{s.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+              <h3 className="font-bold text-white text-lg">{s.title}</h3>
+              <p className="mt-2 text-sm text-ink-muted leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -182,10 +182,10 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-tech-grid pointer-events-none" />
         <div className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[36rem] h-36 rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="relative">
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white display-font">
             准备好了吗？让小说<span className="neon-text">动起来</span>
           </h2>
-          <p className="mt-4 text-slate-500 text-sm sm:text-base">注册账户，上传你的第一部小说，看看 AI 会怎样改编它。</p>
+          <p className="mt-4 text-ink-muted text-sm sm:text-base">注册账户，上传你的第一部小说，看看 AI 会怎样改编它。</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link href="/auth/register" className="glow-btn !px-8 !py-4">立即注册</Link>
             <Link href="/upload" className="glow-btn-ghost !px-8 !py-4">直接体验</Link>

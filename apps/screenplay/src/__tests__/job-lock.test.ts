@@ -5,7 +5,7 @@
  * 锁语义：DB 持久化 CAS（UPDATE ... WHERE 未持有或已过期）+ TTL 过期可夺 + 心跳续锁。
  * PG leg 仅在 DATABASE_URL 配置时追加运行（describeBackends 自动分流）。
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { it, expect, beforeAll, afterAll } from 'vitest';
 import { describeBackends, setupBackend } from './helpers/dual-backend';
 import { getJobRepository } from '@/lib/store/sqlite/job-repository';
 import { jobStore, RECOVER_LOCK_TTL_MS } from '@/lib/store/job-store';

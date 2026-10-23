@@ -293,7 +293,6 @@ export default function WriterEditorPage() {
 
     // 先在本地快照上排序：按 volumeId 分组、每组内按 order 升序
     const snap = novel.chapters.slice();
-    const snapVolumeIds = Array.from(new Set(snap.map((c) => String(c.volumeId))));
     const group = (volId: string | null) =>
       snap.filter((c) => String(c.volumeId) === String(volId)).sort((a, b) => a.order - b.order);
 
@@ -338,9 +337,6 @@ export default function WriterEditorPage() {
     );
     // 注意：当 src==dst 时 newDst 就是最新的 newSrc，避免重复拼接
     if (moving.volumeId !== targetVolumeId) {
-      for (const c of newDst) {
-        // 已经移到 dst 了，先从 applied 里去掉旧版本（如果有）
-      }
       // 拼接新 dst 组
       for (let i = 0; i < newDst.length; i++) {
         applied.push({ ...newDst[i], volumeId: targetVolumeId, order: i });

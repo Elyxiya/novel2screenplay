@@ -49,24 +49,34 @@ const DEFAULT_RUNS = {
 };
 
 const MIN_MERGE_CHARS = 800;
-const SHORT_SCENE_CHARS = 200;
+const DEFAULT_SHORT_CHARS = 200;
 
 function parseArgs(argv) {
-  const out = { jobs: null };
+  const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS] };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === '--jobs') {
       const value = argv[++i];
       if (!value) throw new Error('--jobs 缺少取值（逗号分隔的 jobId）');
       out.jobs = value.split(',').map((s) => s.trim()).filter(Boolean);
+    } else if (flag === '--short-chars') {
+      const value = argv[++i];
+      if (!value) throw new Error('--short-chars 缺少取值（逗号分隔的正整数）');
+      const list = value.split(',').map((s) => s.trim()).filter(Boolean).map(Number);
+      if (!list.length || list.some((n) => !Number.isInteger(n) || n <= 0)) {
+        throw new Error(`--short-chars 取值必须是正整数：${value}`);
+      }
+      out.shortChars = [...new Set(list)];
     } else {
-      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id>）`);
+      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id> | --short-chars <n,n,...>）`);
     }
   }
   return out;
 }
 
 const args = parseArgs(process.argv.slice(2));
+// 逐 job 表固定按 200 展示（与已发布的 P2 报告可比）；敏感性扫描另出表。
+const PRIMARY_SHORT_CHARS = args.shortChars.includes(DEFAULT_SHORT_CHARS) ? DEFAULT_SHORT_CHARS : args.shortChars[0];
 const db = new Database(DB, { readonly: true });
 
 /** 非空行 = 一段，返回每段结束位置的字符偏移（与 Phase2Segmenter 同一口径）。 */
@@ -280,10 +290,10 @@ function resolveOverlappingPerChapter(scenes, offsetsByChapter, truncate) {
 }
 
 /**
- * 候选规则 B：单段落且 <200 字的场景并入相邻场。
+ * 候选规则 B：单段落且短于阈值（默认 200 字）的场景并入相邻场。
  * 优先并后场（后场起点 ≤ 本场终点 +1 段）；否则并前场（本场起点 ≤ 前场终点 +1 段）。
  */
-function mergeShortScenes(scenes) {
+function mergeShortScenes(scenes, shortChars = DEFAULT_SHORT_CHARS) {
   const out = [];
   let mergedCount = 0;
   const chapterGroups = new Map();
@@ -300,7 +310,7 @@ function mergeShortScenes(scenes) {
       const scene = list[i];
       const isShort =
         scene.startParagraph === scene.endParagraph &&
-        scene.originalEndOffset - scene.originalStartOffset < SHORT_SCENE_CHARS;
+        scene.originalEndOffset - scene.originalStartOffset < shortChars;
       if (!isShort) {
         out.push(scene);
         i += 1;
@@ -336,13 +346,16 @@ function mergeShortScenes(scenes) {
 /** 完整后处理链；返回 scenes 与统计。 */
 function postprocess(allScenes, offsetsByChapter, opts = {}) {
   const { truncate = false, shortMerge = false } = opts;
-  const filtered = allScenes.filter((s) => s.originalEndOffset > s.originalStartOffset);
+  // 深拷贝：mergeAdjacentScenes 会原地改 last.summary/endParagraph，共享对象会让
+  // 下一次候选规则读到被上一次污染的场景（会让各候选互相影响）。
+  const base = allScenes.map((s) => ({ ...s, keyCharacterNames: [...s.keyCharacterNames] }));
+  const filtered = base.filter((s) => s.originalEndOffset > s.originalStartOffset);
   const merged = mergeAdjacentScenes(filtered);
   const resolved = resolveOverlappingPerChapter(merged.scenes, offsetsByChapter, truncate);
   let scenes = resolved.scenes;
   let shortMerged = 0;
   if (shortMerge) {
-    const shortResult = mergeShortScenes(scenes);
+    const shortResult = mergeShortScenes(scenes, opts.shortChars ?? DEFAULT_SHORT_CHARS);
     scenes = shortResult.scenes;
     shortMerged = shortResult.mergedCount;
   }
@@ -435,8 +448,8 @@ for (const { jobId, sampleId } of jobs) {
   }
 
   const candidateA = postprocess(allScenes, offsetsByChapter, { truncate: true });
-  const candidateB = postprocess(allScenes, offsetsByChapter, { shortMerge: true });
-  const candidateAB = postprocess(allScenes, offsetsByChapter, { truncate: true, shortMerge: true });
+  const candidateB = postprocess(allScenes, offsetsByChapter, { shortMerge: true, shortChars: PRIMARY_SHORT_CHARS });
+  const candidateAB = postprocess(allScenes, offsetsByChapter, { truncate: true, shortMerge: true, shortChars: PRIMARY_SHORT_CHARS });
 
   let gold = null;
   if (sampleId) gold = loadGold(sampleId);
@@ -454,6 +467,10 @@ for (const { jobId, sampleId } of jobs) {
     b: { scenes: candidateB.scenes.length, single: countSingleParagraph(candidateB.scenes), f1: score(candidateB.scenes).f1 },
     ab: { scenes: candidateAB.scenes.length, single: countSingleParagraph(candidateAB.scenes), f1: score(candidateAB.scenes).f1 },
     stats: { current: current.stats, a: candidateA.stats, b: candidateB.stats, ab: candidateAB.stats },
+    // 仅用于 --short-chars 敏感性扫描，不打印
+    allScenes,
+    offsetsByChapter,
+    gold,
   });
 }
 
@@ -494,6 +511,56 @@ for (const sampleId of samples) {
   const b = mean(list.map((r) => r.b.f1));
   const ab = mean(list.map((r) => r.ab.f1));
   console.log(`| ${sampleId} | ${fmt(cur)} | ${fmt(a)} | ${fmt(delta(cur, a))} | ${fmt(b)} | ${fmt(delta(cur, b))} | ${fmt(ab)} | ${fmt(delta(cur, ab))} |`);
+}
+
+console.log('\n## 阈值敏感性（B 短场合并 · --short-chars）');
+if (args.shortChars.length === 1) {
+  console.log(`- 仅给定阈值 ${args.shortChars[0]}，未做扫描（示例：--short-chars 100,150,200,300,400）`);
+} else {
+  console.log('决策口径（先写死）：单段落 ≤ 2 的阈值里，选「三样本均值降幅之和」最小者；并列时取「最差样本降幅」更小者。');
+  console.log('');
+  console.log('| 阈值 | 单段落 | doupo | Δ | zhanlan | Δ | xiuzhen | Δ | 单 job 最大降幅 |');
+  console.log('|---|---|---|---|---|---|---|---|---|');
+  const sweep = [];
+  for (const threshold of args.shortChars) {
+    const perJob = rows.map((r) => {
+      const result = postprocess(r.allScenes, r.offsetsByChapter, { shortMerge: true, shortChars: threshold });
+      const f1 = r.gold ? scorePhase2(r.gold.doc.scenes, result.scenes, 0.5).f1 : null;
+      return { jobId: r.jobId, sampleId: r.sampleId, single: countSingleParagraph(result.scenes), f1 };
+    });
+    const singleTotal = perJob.reduce((s, r) => s + r.single, 0);
+    const perSample = samples.map((sampleId) => {
+      const list = perJob.filter((r) => r.sampleId === sampleId);
+      const listBase = rows.filter((r) => r.sampleId === sampleId);
+      return { sampleId, cur: mean(listBase.map((r) => r.f1)), cand: mean(list.map((r) => r.f1)) };
+    });
+    const drops = perJob
+      .filter((r) => r.f1 !== null)
+      .map((r) => {
+        const base = rows.find((b) => b.jobId === r.jobId).f1;
+        return { jobId: r.jobId, sampleId: r.sampleId, drop: base === null ? null : Number((base - r.f1).toFixed(4)) };
+      })
+      .filter((d) => d.drop !== null);
+    const worst = drops.reduce((m, d) => (d.drop > m.drop ? d : m), { drop: -Infinity, jobId: '—', sampleId: '' });
+    const sumDrop = perSample.reduce((s, m) => s + (m.cur ?? 0) - (m.cand ?? m.cur ?? 0), 0);
+    const worstSampleDrop = perSample.reduce((s, m) => Math.max(s, (m.cur ?? 0) - (m.cand ?? m.cur ?? 0)), -Infinity);
+    sweep.push({ threshold, singleTotal, perSample, sumDrop: Number(sumDrop.toFixed(4)), worstSampleDrop: Number(worstSampleDrop.toFixed(4)), worst });
+    console.log(
+      `| ${threshold} | ${singleTotal} | ${fmt(perSample[0]?.cand)} | ${fmt(delta(perSample[0]?.cur, perSample[0]?.cand))} | ${fmt(perSample[1]?.cand)} | ${fmt(delta(perSample[1]?.cur, perSample[1]?.cand))} | ${fmt(perSample[2]?.cand)} | ${fmt(delta(perSample[2]?.cur, perSample[2]?.cand))} | ${worst.drop === -Infinity ? '—' : `${worst.drop > 0 ? '−' : ''}${Math.abs(worst.drop)}（\`${worst.jobId.slice(-6)}\`）`} |`,
+    );
+  }
+  const eligible = sweep.filter((s) => s.singleTotal <= 2);
+  if (!eligible.length) {
+    console.log('\n- 没有阈值满足「单段落 ≤ 2」，需要重新考虑 B 的合并条件。');
+  } else {
+    const picked = [...eligible].sort(
+      (a, b) => a.sumDrop - b.sumDrop || a.worstSampleDrop - b.worstSampleDrop || a.threshold - b.threshold,
+    )[0];
+    console.log(
+      `\n- 可选阈值：${eligible.map((s) => s.threshold).join(' / ')}；选中 **${picked.threshold}**（降幅之和 ${picked.sumDrop}，最差样本降幅 ${picked.worstSampleDrop}）。`,
+    );
+    console.log(`- 默认 200 ${picked.threshold === DEFAULT_SHORT_CHARS ? '即最优值，实现批按 200 走' : `不是最优，实现批改按 ${picked.threshold}，报告需说明改动理由`}。`);
+  }
 }
 
 console.log('\n## 预注册门槛（逐候选规则）');

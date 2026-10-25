@@ -30,23 +30,31 @@ const Database = require('better-sqlite3');
 
 const DB = 'apps/screenplay/data-test/1b-data.db';
 
-/** 与 baseline.mjs 同步的 10 次运行（保持只读副本，避免脚本互相 import 耦合）。 */
+/**
+ * 与 baseline.mjs 同步的 15 次运行（保持只读副本，避免脚本互相 import 耦合）。
+ * 2026-10-25 换血：B 短场合并上线后重采（全 0 fallback）；旧 10 次见 git 历史。
+ */
 const DEFAULT_RUNS = {
   'doupo-short': [
-    'job_1792640675117_wpflqx',
-    'job_1792640765755_4j11si',
-    'job_1792640851305_milgkx',
-    'job_1792642895616_gqzukg',
+    'job_1792911662230_uog5wl',
+    'job_1792912089237_nlo6bt',
+    'job_1792912504709_4xwm2q',
+    'job_1792922018860_9l6kvn',
+    'job_1792922120452_co66mw',
   ],
   'zhanlan-short': [
-    'job_1792638287888_iratsw',
-    'job_1792640141470_tuttso',
-    'job_1792640239639_2b9x8i',
+    'job_1792911759868_dza1ha',
+    'job_1792912185607_ms3nfo',
+    'job_1792922201709_yfc3t2',
+    'job_1792922298157_bcysoc',
+    'job_1792922389591_sqsfy4',
   ],
   'xiuzhen-short': [
-    'job_1792640445832_681fmc',
-    'job_1792640954103_o4rspd',
-    'job_1792641155110_ylp2u7',
+    'job_1792911856432_gb7qc5',
+    'job_1792912297043_5nibx9',
+    'job_1792922506465_aj9pa2',
+    'job_1792922729384_2afmqy',
+    'job_1792922931987_z7gr4o',
   ],
 };
 

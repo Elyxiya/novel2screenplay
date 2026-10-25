@@ -60,6 +60,9 @@ data-test/
 *.db-wal
 *.db-shm
 
+# 本地 IDE 插件 bundle（按 profile 安装，不属于产品代码）
+plugins/
+
 # Trae 缓存
 .trae-html-share-packages/
 

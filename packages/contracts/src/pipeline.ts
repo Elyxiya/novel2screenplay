@@ -183,6 +183,8 @@ export const Phase2OutputSchema = z.object({
     .object({
       mergedPairs: z.number().int().min(0),
       overlapFixes: z.number().int().min(0),
+      /** P3-b 短场合并次数（B 方案；旧产物无此字段） */
+      shortMerged: z.number().int().min(0).optional(),
     })
     .optional(),
 });

@@ -40,8 +40,8 @@ export function resolvePhase2Temperature(env: Record<string, string | undefined>
  * Phase 2: Segment chapters into scenes based on time/location/character changes.
  */
 export class Phase2Segmenter {
-  /** FIX-03：后处理事件计数（每次 segment() 开始时重置） */
-  private postProcessStats = { mergedPairs: 0, overlapFixes: 0 };
+  /** FIX-03：后处理事件计数（每次 segment() 开始时重置）；shortMerged 为 P3-b 新增 */
+  private postProcessStats = { mergedPairs: 0, overlapFixes: 0, shortMerged: 0 };
 
   constructor(
     private provider: LLMProvider,
@@ -200,11 +200,12 @@ export class Phase2Segmenter {
     // Each chapter's offsets start from 0, so we must NOT run resolveOverlappingBoundaries
     // on the global flat list. Instead, group by chapter and resolve per-chapter.
     // FIX-03：后处理事件计数（过程信息，读时不可复现 → 随产物落库）
-    this.postProcessStats = { mergedPairs: 0, overlapFixes: 0 };
+    this.postProcessStats = { mergedPairs: 0, overlapFixes: 0, shortMerged: 0 };
     let scenes = allScenes.filter(s => s.originalEndOffset > s.originalStartOffset);
     scenes = this.mergeAdjacentScenes(scenes);
     scenes = this.resolveOverlappingPerChapter(scenes);
-    console.log(`[Phase2] 场景后处理完成, 最终 ${scenes.length} 个场景（合并 ${this.postProcessStats.mergedPairs}、重叠修正 ${this.postProcessStats.overlapFixes}）`);
+    scenes = this.mergeShortScenes(scenes);
+    console.log(`[Phase2] 场景后处理完成, 最终 ${scenes.length} 个场景（合并 ${this.postProcessStats.mergedPairs}、重叠修正 ${this.postProcessStats.overlapFixes}、短场合并 ${this.postProcessStats.shortMerged}）`);
     return { scenes, rawResponses, stats: { ...this.postProcessStats } };
   }
 
@@ -336,6 +337,70 @@ export class Phase2Segmenter {
     }
 
     return resolved;
+  }
+
+  /**
+   * 短场合并（P3-b · B 方案）：单段落且短于 SHORT_SCENE_CHARS 的场景并入相邻场。
+   *
+   * 顺序按离线重放验证过的候选链：mergeAdjacentScenes → resolveOverlappingPerChapter →
+   * 短场合并。P3 文档原写「resolve 之前」，但报告里的预注册数字全部来自 resolve 之后；
+   * 先合并会改变重叠集合，预测值不再成立，故以证据为准（见报告 §六）。
+   * 优先并后场（后场起点 ≤ 本场终点 +1 段），否则并前场；只并同章场景。
+   */
+  private mergeShortScenes(scenes: SceneBoundary[]): SceneBoundary[] {
+    const byChapter = new Map<number, SceneBoundary[]>();
+    for (const scene of scenes) {
+      const list = byChapter.get(scene.chapterIndex) ?? [];
+      list.push(scene);
+      byChapter.set(scene.chapterIndex, list);
+    }
+
+    const out: SceneBoundary[] = [];
+    let mergedCount = 0;
+
+    for (const [, chapterScenes] of [...byChapter.entries()].sort((a, b) => a[0] - b[0])) {
+      const list = [...chapterScenes];
+      let i = 0;
+      while (i < list.length) {
+        const scene = list[i];
+        const isShort =
+          scene.startParagraph === scene.endParagraph &&
+          scene.originalEndOffset - scene.originalStartOffset < SHORT_SCENE_CHARS;
+        if (!isShort) {
+          out.push(scene);
+          i += 1;
+          continue;
+        }
+
+        const next = list[i + 1];
+        if (next && next.startParagraph <= scene.endParagraph + 1) {
+          next.startParagraph = scene.startParagraph;
+          next.originalStartOffset = scene.originalStartOffset;
+          next.summary = scene.summary ? `${scene.summary} | ${next.summary}` : next.summary;
+          next.keyCharacterNames = [...new Set([...scene.keyCharacterNames, ...next.keyCharacterNames])];
+          mergedCount += 1;
+          i += 1;
+          continue;
+        }
+
+        const prev = out[out.length - 1];
+        if (prev && prev.chapterIndex === scene.chapterIndex && scene.startParagraph <= prev.endParagraph + 1) {
+          prev.endParagraph = scene.endParagraph;
+          prev.originalEndOffset = scene.originalEndOffset;
+          prev.summary = scene.summary ? `${prev.summary} | ${scene.summary}` : prev.summary;
+          prev.keyCharacterNames = [...new Set([...prev.keyCharacterNames, ...scene.keyCharacterNames])];
+          mergedCount += 1;
+          i += 1;
+          continue;
+        }
+
+        out.push(scene);
+        i += 1;
+      }
+    }
+
+    this.postProcessStats.shortMerged += mergedCount;
+    return out.map((s, i) => ({ ...s, sceneIndex: i + 1 }));
   }
 
   /**

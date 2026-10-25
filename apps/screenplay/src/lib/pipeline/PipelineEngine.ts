@@ -812,6 +812,7 @@ export class PipelineEngine {
       scenes: phase2Output.scenes.length,
       mergedPairs: phase2Output.stats?.mergedPairs ?? 0,
       overlapFixes: phase2Output.stats?.overlapFixes ?? 0,
+      shortMerged: phase2Output.stats?.shortMerged ?? 0,
     });
     throwIfAborted(signal);
     const spanP3 = startSpan({

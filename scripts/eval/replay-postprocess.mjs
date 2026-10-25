@@ -8,6 +8,7 @@
  *   node scripts/eval/replay-postprocess.mjs                  # baseline 运行集
  *   node scripts/eval/replay-postprocess.mjs --jobs <id,id>   # 指定 job
  *   node scripts/eval/replay-postprocess.mjs --no-short-merge # 校验 B 上线前的旧产物
+ *   node scripts/eval/replay-postprocess.mjs --legacy-cross-chapter # 校验跨章合并修复前的产物
  *   node scripts/eval/replay-postprocess.mjs --short-chars 100,200,300  # 阈值敏感性
  *
  * 步骤：
@@ -63,7 +64,7 @@ const MIN_MERGE_CHARS = 800;
 const DEFAULT_SHORT_CHARS = 300;
 
 function parseArgs(argv) {
-  const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS], noShortMerge: false };
+  const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS], noShortMerge: false, legacyCrossChapter: false };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === '--jobs') {
@@ -73,6 +74,9 @@ function parseArgs(argv) {
     } else if (flag === '--no-short-merge') {
       // 旧 job（B 方案上线前）落库不含短场合并；校验历史产物时用它关掉。
       out.noShortMerge = true;
+    } else if (flag === '--legacy-cross-chapter') {
+      // 跨章合并修复上线前的 job：校验时复刻旧的「不判章」合并行为。
+      out.legacyCrossChapter = true;
     } else if (flag === '--short-chars') {
       const value = argv[++i];
       if (!value) throw new Error('--short-chars 缺少取值（逗号分隔的正整数）');
@@ -82,7 +86,7 @@ function parseArgs(argv) {
       }
       out.shortChars = [...new Set(list)];
     } else {
-      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id> | --short-chars <n,n,...> | --no-short-merge）`);
+      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id> | --short-chars <n,n,...> | --no-short-merge | --legacy-cross-chapter）`);
     }
   }
   return out;
@@ -221,8 +225,11 @@ function rebuildScenes(chapters, rawResponses) {
   return { allScenes, offsetsByChapter };
 }
 
-/** 复刻 mergeAdjacentScenes（同地点 + 同时间 + 双短 <800 字）。 */
-function mergeAdjacentScenes(scenes) {
+/**
+ * 复刻 mergeAdjacentScenes（同地点 + 同时间 + 双短 <800 字）。
+ * chapterGuard=false 复刻跨章合并的历史缺陷，仅用于校验修复前的落库产物。
+ */
+function mergeAdjacentScenes(scenes, { chapterGuard = true } = {}) {
   if (scenes.length <= 1) return { scenes, mergedPairs: 0 };
   const merged = [scenes[0]];
   let mergedPairs = 0;
@@ -235,7 +242,10 @@ function mergeAdjacentScenes(scenes) {
     const currentLocation = current.draftSlugline.split(' - ')[0] || '';
     const lastTime = last.draftSlugline.split(' - ')[1] || '';
     const currentTime = current.draftSlugline.split(' - ')[1] || '';
+    // 与产品实现同步：不同章节之间不做合并（offset 是章内局部坐标）。
+    const sameChapter = !chapterGuard || last.chapterIndex === current.chapterIndex;
     const shouldMerge =
+      sameChapter &&
       lastLen < MIN_MERGE_CHARS &&
       currentLen < MIN_MERGE_CHARS &&
       lastLocation === currentLocation &&
@@ -363,12 +373,12 @@ function mergeShortScenes(scenes, shortChars = DEFAULT_SHORT_CHARS) {
  * 校验当前产品时显式传 `shortMerge: true`。
  */
 function postprocess(allScenes, offsetsByChapter, opts = {}) {
-  const { truncate = false, shortMerge = false } = opts;
+  const { truncate = false, shortMerge = false, chapterGuard = true } = opts;
   // 深拷贝：mergeAdjacentScenes 会原地改 last.summary/endParagraph，共享对象会让
   // 下一次候选规则读到被上一次污染的场景（会让各候选互相影响）。
   const base = allScenes.map((s) => ({ ...s, keyCharacterNames: [...s.keyCharacterNames] }));
   const filtered = base.filter((s) => s.originalEndOffset > s.originalStartOffset);
-  const merged = mergeAdjacentScenes(filtered);
+  const merged = mergeAdjacentScenes(filtered, { chapterGuard });
   const resolved = resolveOverlappingPerChapter(merged.scenes, offsetsByChapter, truncate);
   let scenes = resolved.scenes;
   let shortMerged = 0;
@@ -422,6 +432,14 @@ function countSingleParagraph(scenes) {
   return scenes.filter((s) => s.startParagraph === s.endParagraph).length;
 }
 
+/** gold 有场景、pred 一个场景都没有的章节（整章丢失）。 */
+function emptyChapters(goldScenes, predictedScenes) {
+  if (!goldScenes) return null;
+  const predChapters = new Set((predictedScenes ?? []).map((s) => s.chapterIndex));
+  const goldChapters = new Set(goldScenes.map((s) => s.chapterIndex));
+  return [...goldChapters].filter((ch) => !predChapters.has(ch)).sort((a, b) => a - b);
+}
+
 function mean(xs) {
   if (!xs.length) return null;
   return Number((xs.reduce((sum, n) => sum + n, 0) / xs.length).toFixed(4));
@@ -460,15 +478,21 @@ for (const { jobId, sampleId } of jobs) {
   const { allScenes, offsetsByChapter } = rebuildScenes(chapters, phase2.rawResponses);
   // 表内对照口径 = B 前（merge → resolve），与已发布的 P2 报告可比。
   const legacy = postprocess(allScenes, offsetsByChapter, { shortMerge: false });
-  // 校验口径：默认按当前产品链（含 B@300）；--no-short-merge 用来校验 B 上线前的旧产物。
-  const expected = args.noShortMerge
-    ? legacy
-    : postprocess(allScenes, offsetsByChapter, { shortMerge: true, shortChars: DEFAULT_SHORT_CHARS });
+  // 校验口径：默认按当前产品链（含 B@300、跨章保护）；
+  // --no-short-merge / --legacy-cross-chapter 用来校验对应修复之前的旧产物。
+  const expected = postprocess(allScenes, offsetsByChapter, {
+    shortMerge: !args.noShortMerge,
+    chapterGuard: !args.legacyCrossChapter,
+    shortChars: DEFAULT_SHORT_CHARS,
+  });
+  // 当前产品链（含跨章保护 + B@300）：历史 job 用它衡量修复后的变化。
+  const fixed = postprocess(allScenes, offsetsByChapter, { shortMerge: true, chapterGuard: true, shortChars: DEFAULT_SHORT_CHARS });
   const diff = sceneDiff(expected.scenes, phase2.scenes);
   if (diff.length) {
     failures.push(
       `${jobId}: 重放与落库不一致（${diff.slice(0, 3).join('；')}）` +
-        `${args.noShortMerge ? '' : '；若该 job 产生于 B 上线前，加 --no-short-merge'}`,
+        `${args.noShortMerge ? '' : '；若该 job 产生于 B 上线前，加 --no-short-merge'}` +
+        `${args.legacyCrossChapter ? '' : '；若该 job 产生于跨章合并修复前，加 --legacy-cross-chapter'}`,
     );
     continue;
   }
@@ -507,6 +531,15 @@ for (const { jobId, sampleId } of jobs) {
       single: countSingleParagraph(expected.scenes),
       f1: score(expected.scenes).f1,
       shortMerged: expected.stats.shortMerged,
+      empties: gold ? emptyChapters(gold.doc.scenes, expected.scenes) : null,
+    },
+    // 当前产品链（跨章保护 + B@300）：仅在 --legacy-cross-chapter 时与 product 不同。
+    fixed: {
+      scenes: fixed.scenes.length,
+      single: countSingleParagraph(fixed.scenes),
+      f1: score(fixed.scenes).f1,
+      shortMerged: fixed.stats.shortMerged,
+      empties: gold ? emptyChapters(gold.doc.scenes, fixed.scenes) : null,
     },
     a: { scenes: candidateA.scenes.length, single: countSingleParagraph(candidateA.scenes), f1: score(candidateA.scenes).f1 },
     b: { scenes: candidateB.scenes.length, single: countSingleParagraph(candidateB.scenes), f1: score(candidateB.scenes).f1 },
@@ -549,6 +582,32 @@ console.log(`- 通过 ${rows.length} / 尝试 ${rows.length + failures.length}�
 console.log(
   `- 产品口径合计：场景 ${rows.reduce((s, r) => s + r.product.scenes, 0)} / 单段落 ${rows.reduce((s, r) => s + r.product.single, 0)} / 短场合并 ${rows.reduce((s, r) => s + (r.product.shortMerged ?? 0), 0)} 次`,
 );
+
+if (args.legacyCrossChapter) {
+  const fmtEmpty = (list) => (list === null ? '—' : list.length ? list.map((ch) => chapterLabel(ch)).join(',') : '0');
+  console.log('\n## 跨章合并修复影响（修复前 = 落库 / 修复后 = 当前产品链）');
+  console.log('| 样本 | job | 修复前场景 | 空章 | 修复前 F1 | 修复后场景 | 空章 | 修复后 F1 | ΔF1 |');
+  console.log('|---|---|---|---|---|---|---|---|---|');
+  for (const r of rows) {
+    console.log(
+      `| ${r.sampleId ?? '—'} | \`${r.jobId.slice(-6)}\` | ${r.product.scenes} | ${fmtEmpty(r.product.empties)} | ${fmt(r.product.f1)} | ${r.fixed.scenes} | ${fmtEmpty(r.fixed.empties)} | ${fmt(r.fixed.f1)} | ${fmt(delta(r.product.f1, r.fixed.f1))} |`,
+    );
+  }
+  const samplesFixed = [...new Set(rows.map((r) => r.sampleId).filter(Boolean))];
+  console.log('\n| 样本 | 修复前 F1 均值 | 修复后 F1 均值 | Δ | 修复前空章 | 修复后空章 |');
+  console.log('|---|---|---|---|---|---|');
+  for (const sampleId of samplesFixed) {
+    const list = rows.filter((r) => r.sampleId === sampleId);
+    const before = mean(list.map((r) => r.product.f1));
+    const after = mean(list.map((r) => r.fixed.f1));
+    const e0 = list.reduce((s, r) => s + (r.product.empties?.length ?? 0), 0);
+    const e1 = list.reduce((s, r) => s + (r.fixed.empties?.length ?? 0), 0);
+    console.log(`| ${sampleId} | ${fmt(before)} | ${fmt(after)} | ${fmt(delta(before, after))} | ${e0} | ${e1} |`);
+  }
+  console.log(
+    `- 修复后合计：场景 ${rows.reduce((s, r) => s + r.fixed.scenes, 0)} / 单段落 ${rows.reduce((s, r) => s + r.fixed.single, 0)} / 短场合并 ${rows.reduce((s, r) => s + (r.fixed.shortMerged ?? 0), 0)} 次`,
+  );
+}
 
 console.log('\n## 汇总');
 console.log(`- 单段落合计：B 前 ${rows.reduce((s, r) => s + r.single, 0)} / A ${rows.reduce((s, r) => s + r.a.single, 0)} / B ${rows.reduce((s, r) => s + r.b.single, 0)} / A+B ${rows.reduce((s, r) => s + r.ab.single, 0)}`);

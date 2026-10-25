@@ -67,6 +67,24 @@ describe('Phase2 后处理事件计数（FIX-03）', () => {
     expect(priv.postProcessStats.mergedPairs).toBe(0);
   });
 
+  it('跨章同地点同时间的短场景不合并（否则会吞掉整章并产生非法区间）', () => {
+    const conv = new Phase2Segmenter(mockProvider, new ContextManager());
+    const priv = asPrivate(conv);
+
+    // 复刻真实缺陷形态：第 7 章末尾与第 8 章首场都是「内景. 秘库 - 夜」且都 <800 字；
+    // 旧实现会把第 8 章并进第 7 章，产生 startParagraph 19 > endParagraph 5 的非法区间。
+    const result = priv.mergeAdjacentScenes([
+      mkScene({ sceneIndex: 1, chapterIndex: 6, startParagraph: 19, endParagraph: 42, originalStartOffset: 772, originalEndOffset: 1500 }),
+      mkScene({ sceneIndex: 2, chapterIndex: 7, startParagraph: 0, endParagraph: 5, originalStartOffset: 0, originalEndOffset: 700 }),
+    ]);
+
+    expect(result).toHaveLength(2);
+    expect(priv.postProcessStats.mergedPairs).toBe(0);
+    expect(result[0]).toMatchObject({ chapterIndex: 6, endParagraph: 42, originalEndOffset: 1500 });
+    expect(result[1]).toMatchObject({ chapterIndex: 7, originalEndOffset: 700 });
+    for (const s of result) expect(s.startParagraph).toBeLessThanOrEqual(s.endParagraph);
+  });
+
   it('重叠修正：部分重叠计 1 次、完全覆盖再计 1 次（同章局部处理）', () => {
     const conv = new Phase2Segmenter(mockProvider, new ContextManager());
     const priv = asPrivate(conv);

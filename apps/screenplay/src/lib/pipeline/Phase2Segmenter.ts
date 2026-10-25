@@ -263,7 +263,10 @@ export class Phase2Segmenter {
       const lastTime = last.draftSlugline.split(' - ')[1] || '';
       const currentTime = current.draftSlugline.split(' - ')[1] || '';
 
+      // 章节必须相同：offset 是章内局部坐标，跨章合并会把 A 章起点与 B 章终点拼成
+      // 非法区间（startParagraph > endParagraph），并把 B 章整章吞掉。
       const shouldMerge =
+        last.chapterIndex === current.chapterIndex &&
         lastLen < MIN_MERGE_CHARS &&
         currentLen < MIN_MERGE_CHARS &&
         lastLocation === currentLocation &&

@@ -486,6 +486,8 @@ doupo +0.0066 / zhanlan −0.0058 / xiuzhen 0。
 
 **完整快照由脚本生成，不再手抄**。最新：[snapshots/snapshot-2026-10-25.md](snapshots/snapshot-2026-10-25.md)
 （提交 `56fe6ff`，含体检、B 上线后基线、A/B 全额表格与生成时间）；历史：[2026-10-21](snapshots/snapshot-2026-10-21.md) / [2026-10-22](snapshots/snapshot-2026-10-22.md)。
+**注意**：该快照与 `baseline.mjs` 的当前输出均为**跨章合并修复前**的产物（空章 3/15）；
+修复后的离线数字见 §七，重采换血后需重新生成快照。
 
 ```bash
 node scripts/eval/snapshot.mjs   # 生成 docs/conversion-quality/snapshots/snapshot-<date>.md

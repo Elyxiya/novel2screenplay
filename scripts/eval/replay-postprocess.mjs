@@ -5,11 +5,13 @@
  * （mergeAdjacentScenes / resolveOverlappingPerChapter）是纯函数，可对历史 job 重放。
  *
  * 用法：
- *   node scripts/eval/replay-postprocess.mjs                  # baseline 10 次运行
+ *   node scripts/eval/replay-postprocess.mjs                  # baseline 运行集
  *   node scripts/eval/replay-postprocess.mjs --jobs <id,id>   # 指定 job
+ *   node scripts/eval/replay-postprocess.mjs --no-short-merge # 校验 B 上线前的旧产物
+ *   node scripts/eval/replay-postprocess.mjs --short-chars 100,200,300  # 阈值敏感性
  *
  * 步骤：
- *   1. 用「当前」后处理重放，必须与落库 scenes 完全一致（差异 0 才算脚本正确）；
+ *   1. 用「当前」后处理重放（默认含 B 短场合并），必须与落库 scenes + stats 完全一致；
  *   2. 候选规则 A（重叠截断）/ B（短场合并）/ A+B 重放，逐 job 比较单段落数与 P2 F1。
  *
  * 只读库、不调 LLM、不改产品代码。
@@ -53,13 +55,16 @@ const MIN_MERGE_CHARS = 800;
 const DEFAULT_SHORT_CHARS = 300;
 
 function parseArgs(argv) {
-  const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS] };
+  const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS], noShortMerge: false };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === '--jobs') {
       const value = argv[++i];
       if (!value) throw new Error('--jobs 缺少取值（逗号分隔的 jobId）');
       out.jobs = value.split(',').map((s) => s.trim()).filter(Boolean);
+    } else if (flag === '--no-short-merge') {
+      // 旧 job（B 方案上线前）落库不含短场合并；校验历史产物时用它关掉。
+      out.noShortMerge = true;
     } else if (flag === '--short-chars') {
       const value = argv[++i];
       if (!value) throw new Error('--short-chars 缺少取值（逗号分隔的正整数）');
@@ -69,7 +74,7 @@ function parseArgs(argv) {
       }
       out.shortChars = [...new Set(list)];
     } else {
-      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id> | --short-chars <n,n,...>）`);
+      throw new Error(`未知参数: ${flag}（支持 --jobs <id,id> | --short-chars <n,n,...> | --no-short-merge）`);
     }
   }
   return out;
@@ -344,7 +349,11 @@ function mergeShortScenes(scenes, shortChars = DEFAULT_SHORT_CHARS) {
   return { scenes: out.map((s, i) => ({ ...s, sceneIndex: i + 1 })), mergedCount };
 }
 
-/** 完整后处理链；返回 scenes 与统计。 */
+/**
+ * 完整后处理链；返回 scenes 与统计。
+ * 默认是 **B 前**口径（merge → resolve），用于保留 P2 报告的可比性；
+ * 校验当前产品时显式传 `shortMerge: true`。
+ */
 function postprocess(allScenes, offsetsByChapter, opts = {}) {
   const { truncate = false, shortMerge = false } = opts;
   // 深拷贝：mergeAdjacentScenes 会原地改 last.summary/endParagraph，共享对象会让
@@ -441,14 +450,34 @@ for (const { jobId, sampleId } of jobs) {
   }
 
   const { allScenes, offsetsByChapter } = rebuildScenes(chapters, phase2.rawResponses);
-  const current = postprocess(allScenes, offsetsByChapter);
-  const diff = sceneDiff(current.scenes, phase2.scenes);
+  // 表内对照口径 = B 前（merge → resolve），与已发布的 P2 报告可比。
+  const legacy = postprocess(allScenes, offsetsByChapter, { shortMerge: false });
+  // 校验口径：默认按当前产品链（含 B@300）；--no-short-merge 用来校验 B 上线前的旧产物。
+  const expected = args.noShortMerge
+    ? legacy
+    : postprocess(allScenes, offsetsByChapter, { shortMerge: true, shortChars: DEFAULT_SHORT_CHARS });
+  const diff = sceneDiff(expected.scenes, phase2.scenes);
   if (diff.length) {
-    failures.push(`${jobId}: 重放与落库不一致（${diff.slice(0, 3).join('；')}）`);
+    failures.push(
+      `${jobId}: 重放与落库不一致（${diff.slice(0, 3).join('；')}）` +
+        `${args.noShortMerge ? '' : '；若该 job 产生于 B 上线前，加 --no-short-merge'}`,
+    );
     continue;
   }
+  // 统计也要对得上：阶段计数随产物落库，是「重放 = 线上」的第二重证据。
+  if (phase2.stats) {
+    for (const key of ['mergedPairs', 'overlapFixes', 'shortMerged']) {
+      if (typeof phase2.stats[key] === 'number' && phase2.stats[key] !== expected.stats[key]) {
+        diff.push(`stats.${key}: ${phase2.stats[key]} vs ${expected.stats[key]}`);
+      }
+    }
+    if (diff.length) {
+      failures.push(`${jobId}: 重放统计与落库不一致（${diff.slice(0, 3).join('；')}）`);
+      continue;
+    }
+  }
 
-  const candidateA = postprocess(allScenes, offsetsByChapter, { truncate: true });
+  const candidateA = postprocess(allScenes, offsetsByChapter, { truncate: true, shortMerge: false });
   const candidateB = postprocess(allScenes, offsetsByChapter, { shortMerge: true, shortChars: PRIMARY_SHORT_CHARS });
   const candidateAB = postprocess(allScenes, offsetsByChapter, { truncate: true, shortMerge: true, shortChars: PRIMARY_SHORT_CHARS });
 
@@ -461,13 +490,20 @@ for (const { jobId, sampleId } of jobs) {
     jobId,
     sampleId,
     reviewed: gold?.reviewed ?? null,
-    scenes: phase2.scenes.length,
-    single: countSingleParagraph(phase2.scenes),
-    f1: score(phase2.scenes).f1,
+    // 表内「场景/单段落/P2 F1」保持 B 前口径，便于与 P2 报告逐行对照。
+    scenes: legacy.scenes.length,
+    single: countSingleParagraph(legacy.scenes),
+    f1: score(legacy.scenes).f1,
+    product: {
+      scenes: expected.scenes.length,
+      single: countSingleParagraph(expected.scenes),
+      f1: score(expected.scenes).f1,
+      shortMerged: expected.stats.shortMerged,
+    },
     a: { scenes: candidateA.scenes.length, single: countSingleParagraph(candidateA.scenes), f1: score(candidateA.scenes).f1 },
     b: { scenes: candidateB.scenes.length, single: countSingleParagraph(candidateB.scenes), f1: score(candidateB.scenes).f1 },
     ab: { scenes: candidateAB.scenes.length, single: countSingleParagraph(candidateAB.scenes), f1: score(candidateAB.scenes).f1 },
-    stats: { current: current.stats, a: candidateA.stats, b: candidateB.stats, ab: candidateAB.stats },
+    stats: { legacy: legacy.stats, product: expected.stats, a: candidateA.stats, b: candidateB.stats, ab: candidateAB.stats },
     // 仅用于 --short-chars 敏感性扫描，不打印
     allScenes,
     offsetsByChapter,
@@ -497,13 +533,22 @@ for (const r of rows) {
   );
 }
 
+console.log('\n> 表内「场景 / 单段落 / P2 F1」= **B 前**口径（merge → resolve），便于与 P2 报告逐行对照。');
+console.log('> 当前产品口径（含 B，默认阈值 300）在 B 列；本批重采的 job 应与其一致。');
+
+console.log('\n## 产品校验（重放 = 落库）');
+console.log(`- 通过 ${rows.length} / 尝试 ${rows.length + failures.length}（场景与 stats 差异均为 0 才算通过）`);
+console.log(
+  `- 产品口径合计：场景 ${rows.reduce((s, r) => s + r.product.scenes, 0)} / 单段落 ${rows.reduce((s, r) => s + r.product.single, 0)} / 短场合并 ${rows.reduce((s, r) => s + (r.product.shortMerged ?? 0), 0)} 次`,
+);
+
 console.log('\n## 汇总');
-console.log(`- 单段落合计：现状 ${rows.reduce((s, r) => s + r.single, 0)} / A ${rows.reduce((s, r) => s + r.a.single, 0)} / B ${rows.reduce((s, r) => s + r.b.single, 0)} / A+B ${rows.reduce((s, r) => s + r.ab.single, 0)}`);
-console.log(`- 场景合计：现状 ${rows.reduce((s, r) => s + r.scenes, 0)} / A ${rows.reduce((s, r) => s + r.a.scenes, 0)} / B ${rows.reduce((s, r) => s + r.b.scenes, 0)} / A+B ${rows.reduce((s, r) => s + r.ab.scenes, 0)}`);
+console.log(`- 单段落合计：B 前 ${rows.reduce((s, r) => s + r.single, 0)} / A ${rows.reduce((s, r) => s + r.a.single, 0)} / B ${rows.reduce((s, r) => s + r.b.single, 0)} / A+B ${rows.reduce((s, r) => s + r.ab.single, 0)}`);
+console.log(`- 场景合计：B 前 ${rows.reduce((s, r) => s + r.scenes, 0)} / A ${rows.reduce((s, r) => s + r.a.scenes, 0)} / B ${rows.reduce((s, r) => s + r.b.scenes, 0)} / A+B ${rows.reduce((s, r) => s + r.ab.scenes, 0)}`);
 
 const samples = [...new Set(rows.map((r) => r.sampleId).filter(Boolean))];
 console.log('\n## 逐样本 P2 均值');
-console.log('| 样本 | 现状 | A | ΔA | B | ΔB | A+B | ΔA+B |');
+console.log('| 样本 | B 前 | A | ΔA | B | ΔB | A+B | ΔA+B |');
 console.log('|---|---|---|---|---|---|---|---|');
 for (const sampleId of samples) {
   const list = rows.filter((r) => r.sampleId === sampleId);
@@ -560,7 +605,9 @@ if (args.shortChars.length === 1) {
     console.log(
       `\n- 可选阈值：${eligible.map((s) => s.threshold).join(' / ')}；选中 **${picked.threshold}**（降幅之和 ${picked.sumDrop}，最差样本降幅 ${picked.worstSampleDrop}）。`,
     );
-    console.log(`- 默认 200 ${picked.threshold === DEFAULT_SHORT_CHARS ? '即最优值，实现批按 200 走' : `不是最优，实现批改按 ${picked.threshold}，报告需说明改动理由`}。`);
+    console.log(
+      `- 默认 ${DEFAULT_SHORT_CHARS} ${picked.threshold === DEFAULT_SHORT_CHARS ? '即最优值' : `不是最优，实现批改按 ${picked.threshold}，报告需说明改动理由`}。`,
+    );
   }
 }
 

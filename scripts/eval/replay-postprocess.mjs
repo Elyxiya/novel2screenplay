@@ -49,7 +49,8 @@ const DEFAULT_RUNS = {
 };
 
 const MIN_MERGE_CHARS = 800;
-const DEFAULT_SHORT_CHARS = 200;
+/** 与产品实现 Phase2Segmenter.SHORT_SCENE_CHARS 保持一致（300，见报告 §六）。 */
+const DEFAULT_SHORT_CHARS = 300;
 
 function parseArgs(argv) {
   const out = { jobs: null, shortChars: [DEFAULT_SHORT_CHARS] };
@@ -75,7 +76,7 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
-// 逐 job 表固定按 200 展示（与已发布的 P2 报告可比）；敏感性扫描另出表。
+// 逐 job 表按默认阈值（现为 300，与产品实现一致）展示；要复现历史 P2 报告（200 的数据）传 --short-chars 200。
 const PRIMARY_SHORT_CHARS = args.shortChars.includes(DEFAULT_SHORT_CHARS) ? DEFAULT_SHORT_CHARS : args.shortChars[0];
 const db = new Database(DB, { readonly: true });
 

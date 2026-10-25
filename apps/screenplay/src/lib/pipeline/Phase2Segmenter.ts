@@ -12,6 +12,16 @@ import { recordArtifact, startSpan, type RunLogContext } from '../observability/
 export type { Phase1Output, Phase2Output, SceneBoundary } from '@novel/contracts/pipeline';
 
 /**
+ * 短场合并阈值（P3-b · B 方案）：单段落场景短于该字数时并入相邻场。
+ *
+ * 300 由零成本离线重放扫描（100/150/200/300/400）选定：单段落场景清零、
+ * 三样本 P2 全为正收益（doupo +0.0103 / zhanlan +0.0028 / xiuzhen +0.0041）、
+ * 单 job 零降幅；300 与 400 同数，按并列取小。
+ * 证据：docs/conversion-quality/postprocess-replay-2026-10.md §六。
+ */
+export const SHORT_SCENE_CHARS = 300;
+
+/**
  * Phase2 切分温度。默认 0.3（与历史行为一致）；`PHASE2_TEMPERATURE=0` 可用于消融实验。
  * 非法值回退默认并告警——静默回退会让实验条件与记录不符。
  */

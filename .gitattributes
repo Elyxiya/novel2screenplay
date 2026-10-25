@@ -1,0 +1,19 @@
+# 统一行尾：仓库内一律 LF，避免 Windows 工作区出现「零内容差异」的 CRLF 噪音。
+# 参考：`git add --renormalize .` 一次性刷新索引；之后 git status 只反映真实改动。
+* text=auto eol=lf
+
+# 二进制资源不参与行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
+*.zip binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
